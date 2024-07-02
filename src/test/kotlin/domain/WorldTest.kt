@@ -51,4 +51,33 @@ internal class WorldTest {
         assertThat(world.getClient("4")?.position).isEqualTo(Point(1,0))
     }
 
+    @Test
+    fun `boundary size stretches to maximum rectangle to contain all clients and is 1 based`() {
+        val world = World()
+        world.addClient(GameClient(id = "1", name = "Client 1"))
+        assertThat(world.worldBoundary()).isEqualTo(Point(1,1))
+        world.addClient(GameClient(id = "2", name = "Client 2"))
+        assertThat(world.worldBoundary()).isEqualTo(Point(2,1))
+        world.addClient(GameClient(id = "3", name = "Client 3"))
+        assertThat(world.worldBoundary()).isEqualTo(Point(2,2))
+        world.addClient(GameClient(id = "4", name = "Client 4"))
+        assertThat(world.worldBoundary()).isEqualTo(Point(2,2))
+        world.addClient(GameClient(id = "5", name = "Client 5"))
+        assertThat(world.worldBoundary()).isEqualTo(Point(3,2))
+        world.addClient(GameClient(id = "6", name = "Client 6"))
+        assertThat(world.worldBoundary()).isEqualTo(Point(3,2))
+        world.addClient(GameClient(id = "7", name = "Client 7"))
+        assertThat(world.worldBoundary()).isEqualTo(Point(3,3))
+        world.addClient(GameClient(id = "8", name = "Client 8"))
+        assertThat(world.worldBoundary()).isEqualTo(Point(3,3))
+        world.addClient(GameClient(id = "9", name = "Client 9"))
+        assertThat(world.worldBoundary()).isEqualTo(Point(3,3))
+    }
+
+    @Test
+    fun `world boundary size with no points has size 0,0`() {
+        val world = World()
+        assertThat(world.worldBoundary()).isEqualTo(Point(0,0))
+    }
+
 }

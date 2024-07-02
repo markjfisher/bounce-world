@@ -7,8 +7,10 @@ plugins {
     id("io.micronaut.aot") version "4.4.0"
 }
 
-version = "0.1"
+version = "1.0.0"
 group = "bounce.world"
+
+val jomlVersion: String by project
 
 val assertJVersion: String by project
 val mockkVersion: String by project
@@ -29,8 +31,10 @@ dependencies {
     runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin")
     runtimeOnly("org.slf4j:jul-to-slf4j:2.0.13")
     runtimeOnly("org.slf4j:slf4j-simple")
-    testImplementation("io.micronaut:micronaut-http-client")
 
+    implementation("org.joml:joml:$jomlVersion")
+
+    testImplementation("io.micronaut:micronaut-http-client")
     testImplementation("org.assertj:assertj-core:$assertJVersion")
     testImplementation("io.mockk:mockk:$mockkVersion")
 }

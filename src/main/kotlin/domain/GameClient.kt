@@ -12,6 +12,7 @@ data class ScreenSize(var width: Int, var height: Int)
 data class GameClient(
     val id: String,
     val name: String,
+    val version: Int = 1,
     var position: Point = Point(0, 0),
     var screenSize: ScreenSize = ScreenSize(0, 0)
 )

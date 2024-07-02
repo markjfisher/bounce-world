@@ -34,7 +34,11 @@ class GameClientControllerTest {
 
     @Test
     fun `register client should create client and return it`() {
-        val gameClientInfo = GameClientInfo("Test Client", ScreenSize(1920, 1080))
+        val gameClientInfo = GameClientInfo(
+            name = "Test Client",
+            version = 1,
+            screenSize = ScreenSize(1920, 1080)
+        )
         every { world.addClient(any<GameClient>()) } just Runs
 
         val request = HttpRequest.POST("/clients", gameClientInfo)

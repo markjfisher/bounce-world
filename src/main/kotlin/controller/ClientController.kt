@@ -19,6 +19,7 @@ class ClientController(private val world: World) {
         val gameClient = GameClient(
             id = clientId,
             name = gameClientInfo.name,
+            version = gameClientInfo.version,
             screenSize = gameClientInfo.screenSize
         )
         world.addClient(gameClient)
