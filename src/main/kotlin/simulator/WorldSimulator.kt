@@ -3,15 +3,13 @@ package simulator
 import domain.Body
 import maths.QuadraticSolver
 import org.joml.Vector2f
-import kotlin.math.min
-import kotlin.math.sqrt
 
 data class WorldSimulator(
     var width: Int,
     var height: Int,
     val bodies: MutableList<Body>
 ) {
-    fun step() {
+    fun step(isWrapping: Boolean = true) {
         bodies.forEach { body ->
             body.intendedPosition.set(body.position).add(body.velocity)
         }
@@ -27,8 +25,25 @@ data class WorldSimulator(
         }
 
         bodies.forEach { body ->
-            body.position.set(body.intendedPosition)
+            if (isWrapping) {
+                // Wrap the position to the world dimensions
+                val wrappedX = if (body.intendedPosition.x < 0) {
+                    (body.intendedPosition.x % width + width) % width
+                } else {
+                    body.intendedPosition.x % width
+                }
+                val wrappedY = if (body.intendedPosition.y < 0) {
+                    (body.intendedPosition.y % height + height) % height
+                } else {
+                    body.intendedPosition.y % height
+                }
+
+                body.position.set(Vector2f(wrappedX, wrappedY))
+            } else {
+                body.position.set(body.intendedPosition)
+            }
         }
+
     }
 
     private fun calculateCollisionTime(a: Body, b: Body): Float? {
