@@ -14,15 +14,24 @@ data class WorldSimulator(
             body.intendedPosition.set(body.position).add(body.velocity)
         }
 
-        bodies.forEachIndexed { i, a ->
-            for (j in i + 1 until bodies.size) {
-                val b = bodies[j]
-                val collisionTime = calculateCollisionTime(a, b)
-                if (collisionTime != null) {
-                    resolveCollision(a, b, collisionTime)
+        var collisionsDetected: Boolean
+        val maxIterations = 10 // Limit the number of iterations to prevent infinite loops
+        var currentIteration = 0
+
+        do {
+            collisionsDetected = false
+            bodies.forEachIndexed { i, a ->
+                for (j in i + 1 until bodies.size) {
+                    val b = bodies[j]
+                    val collisionTime = calculateCollisionTime(a, b)
+                    if (collisionTime != null) {
+                        resolveCollision(a, b, collisionTime)
+                        collisionsDetected = true
+                    }
                 }
             }
-        }
+            currentIteration++
+        } while (collisionsDetected && currentIteration < maxIterations)
 
         bodies.forEach { body ->
             if (isWrapping) {
