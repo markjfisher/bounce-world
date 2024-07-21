@@ -2,6 +2,7 @@ package simulator
 
 import domain.Body
 import domain.Shape
+import geometry.Point
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.joml.Vector2f
@@ -12,7 +13,8 @@ class WorldSimulatorTest {
         Shape(0, 1f, 2, emptyList()),
         Shape(1, 2f, 2, emptyList()),
         Shape(2, 0.5f, 2, emptyList()),
-    )
+    ).associateBy { it.id }
+
     @Test
     fun `bodies on a collision course should collide and change velocities`() {
         val bodyA = Body(position = Vector2f(0f, 0f), velocity = Vector2f(0.5f, 0f), shapeId = 0)
@@ -206,5 +208,158 @@ class WorldSimulatorTest {
         assertThat(bodyB.velocity.x).isEqualTo(2.0f)
         assertThat(bodyA.position.x).isEqualTo(2.0f)
         assertThat(bodyB.position.x).isEqualTo(14.0f)
+    }
+
+    @Test
+    fun `can find points of bodies added to simulator`() {
+        val shapes = mutableMapOf(
+            0 to Shape(0, 1.0f, 1, emptyList()),
+            1 to Shape(1, 1.0f, 2, emptyList()),
+            2 to Shape(2, 1.0f, 3, emptyList()),
+        )
+
+        // 1x1 body @5,5 should only cover 5,5
+        val bodyA = Body(position = Vector2f(5f, 5f), velocity = Vector2f(0f, 0f), shapeId = 0)
+        val world1 = WorldSimulator(80, 80, 1, mutableListOf(bodyA), shapes)
+        assertThat(world1.gridPoints()).containsExactly(
+            Point(5,5)
+        )
+
+        // 2x2 body @5,5 should cover 5,5 to 6,6 points
+        val bodyB = Body(position = Vector2f(5f, 5f), velocity = Vector2f(0f, 0f), shapeId = 1)
+        val world2 = WorldSimulator(80, 80, 1, mutableListOf(bodyB), shapes)
+        assertThat(world2.gridPoints()).containsExactlyInAnyOrder(
+            Point(5, 5),
+            Point(6, 5),
+            Point(5, 6),
+            Point(6, 6)
+        )
+
+        // 3x3 body @5,5 should cover 4,4 to 6,6
+        val bodyC = Body(position = Vector2f(5f, 5f), velocity = Vector2f(0f, 0f), shapeId = 2)
+        val world3 = WorldSimulator(80, 80, 1, mutableListOf(bodyC), shapes)
+        assertThat(world3.gridPoints()).containsExactlyInAnyOrder(
+            Point(4, 4),
+            Point(5, 4),
+            Point(6, 4),
+            Point(4, 5),
+            Point(5, 5),
+            Point(6, 5),
+            Point(4, 6),
+            Point(5, 6),
+            Point(6, 6)
+        )
+
+        // a 2x2 and 3x3 body added to the world
+        val bodyD = Body(position = Vector2f(5f, 5f), velocity = Vector2f(0f, 0f), shapeId = 1)
+        val bodyE = Body(position = Vector2f(10f, 10f), velocity = Vector2f(0f, 0f), shapeId = 2)
+        val world4 = WorldSimulator(80, 80, 1, mutableListOf(bodyD, bodyE), shapes)
+        assertThat(world4.gridPoints()).containsExactlyInAnyOrder(
+            Point(5, 5),
+            Point(6, 5),
+            Point(5, 6),
+            Point(6, 6),
+            Point(9, 9),
+            Point(10, 9),
+            Point(11, 9),
+            Point(9, 10),
+            Point(10, 10),
+            Point(11, 10),
+            Point(9, 11),
+            Point(10, 11),
+            Point(11, 11)
+        )
+    }
+
+    @Test
+    fun `can calculate points that wrap at edges`() {
+        val shapes = mutableMapOf(
+            0 to Shape(2, 1.0f, 3, emptyList()),
+        )
+
+        // 3x3 body @0,0 should wrap left and up
+        val bodyA = Body(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 0f), shapeId = 0)
+        val world1 = WorldSimulator(5, 5, 1, mutableListOf(bodyA), shapes)
+        assertThat(world1.gridPoints()).containsExactlyInAnyOrder(
+            Point(0, 0),
+            Point(1, 0),
+            Point(4, 0),
+            Point(0, 1),
+            Point(1, 1),
+            Point(4, 1),
+            Point(0, 4),
+            Point(1, 4),
+            Point(4, 4),
+        )
+
+        // 3x3 body @4,0 should wrap right and up
+        val bodyB = Body(position = Vector2f(4f, 0f), velocity = Vector2f(0f, 0f), shapeId = 0)
+        val world2 = WorldSimulator(5, 5, 1, mutableListOf(bodyB), shapes)
+        assertThat(world2.gridPoints()).containsExactlyInAnyOrder(
+            Point(3, 0),
+            Point(4, 0),
+            Point(0, 0),
+            Point(3, 1),
+            Point(4, 1),
+            Point(0, 1),
+            Point(3, 4),
+            Point(4, 4),
+            Point(0, 4),
+        )
+
+        // 3x3 body @0,4 should wrap left and down
+        val bodyC = Body(position = Vector2f(0f, 4f), velocity = Vector2f(0f, 0f), shapeId = 0)
+        val world3 = WorldSimulator(5, 5, 1, mutableListOf(bodyC), shapes)
+        assertThat(world3.gridPoints()).containsExactlyInAnyOrder(
+            Point(4, 3),
+            Point(0, 3),
+            Point(1, 3),
+            Point(4, 4),
+            Point(0, 4),
+            Point(1, 4),
+            Point(4, 0),
+            Point(0, 0),
+            Point(1, 0),
+        )
+
+        // 3x3 body @4,4 should wrap right and down
+        val bodyD = Body(position = Vector2f(4f, 4f), velocity = Vector2f(0f, 0f), shapeId = 0)
+        val world4 = WorldSimulator(5, 5, 1, mutableListOf(bodyD), shapes)
+        assertThat(world4.gridPoints()).containsExactlyInAnyOrder(
+            Point(3, 3),
+            Point(4, 3),
+            Point(0, 3),
+            Point(3, 4),
+            Point(4, 4),
+            Point(0, 4),
+            Point(3, 0),
+            Point(4, 0),
+            Point(0, 0),
+        )
+    }
+
+    @Test
+    fun `cannot add to grid if it does not have enough space`() {
+        val shapes = mutableMapOf(
+            0 to Shape(2, 1.0f, 5, emptyList()),
+            1 to Shape(2, 1.0f, 2, emptyList()),
+            2 to Shape(2, 1.0f, 1, emptyList()),
+        )
+        val world = WorldSimulator(5, 5, 1, mutableListOf(), shapes)
+        // fill it with 1 body of width 5,5
+        val bodyA = Body(position = Vector2f(2.5f, 2.5f), velocity = Vector2f(0f, 0f), shapeId = 0)
+        world.addBodies(listOf(bodyA))
+
+        // try to add a 2x2, it won't fit anywhere, so should have only 1 body in world
+        val bodyB = Body(position = Vector2f(1.2f, 1.2f), velocity = Vector2f(0f, 0f), shapeId = 1)
+        world.addBodies(listOf(bodyB))
+        assertThat(world.bodies.size).isEqualTo(1)
+
+        // try to add a 1x1, it will fit after spiraling out eventually to 0,0, because of circles, we can just fit it into a corner
+        val bodyC = Body(position = Vector2f(2.2f, 2.3f), velocity = Vector2f(0f, 0f), shapeId = 2)
+        world.addBodies(listOf(bodyC))
+        assertThat(world.bodies.size).isEqualTo(2)
+        assertThat(world.bodies[1].position.x).isCloseTo(0.2f, Offset.offset(0.001f))
+        assertThat(world.bodies[1].position.y).isCloseTo(0.3f, Offset.offset(0.001f))
     }
 }

@@ -15,16 +15,21 @@ open class World {
     private val occupiedScreens = mutableMapOf<Point, GameClient>()
 
     private val shapes = ShapeCreator.createShapes()
-    private val shapesById = shapes.groupBy { it.id }
+    private val shapesById = shapes.associateBy { it.id }
     private val shapesByLength = shapes.groupBy { it.sideLength }
 
     private val simulator = WorldSimulator(
         width = SCREEN_WIDTH,
         height = SCREEN_HEIGHT,
         scalingFactor = 4,
-        bodies = createBodies(0, 0, listOf(5, 3, 3, 2, 2, 2, 1, 1, 1, 1)).toMutableList(),
-        shapes = shapes.toMutableList()
+        bodies = mutableListOf(),
+        shapes = shapesById
     )
+
+    init {
+        val newBodies = createBodies(0, 0, listOf(5, 3, 3, 2, 2, 2, 1, 1, 1, 1))
+
+    }
 
     open fun addClient(gameClient: GameClient) {
         val nextPoint = findNextUnoccupiedScreen()
