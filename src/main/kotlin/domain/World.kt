@@ -1,48 +1,69 @@
 package domain
 
+import data.ShapeCreator
 import geometry.GridPatternGenerator
 import geometry.Point
 import geometry.bounds
 import jakarta.inject.Singleton
+import org.joml.Vector2f
 import simulator.WorldSimulator
+import kotlin.random.Random
 
 @Singleton
 open class World {
     private val clients = mutableMapOf<String, GameClient>()
-    private val occupiedPoints = mutableMapOf<Point, GameClient>()
+    private val occupiedScreens = mutableMapOf<Point, GameClient>()
 
-    // screens of 40x20 and 32x16 have good mappings down from these sizes
-    // The world size will be its boundary * these values.
-    private val tileWidth = 160
-    private val tileHeight = 80
+    private val shapes = ShapeCreator.createShapes()
+    private val shapesById = shapes.groupBy { it.id }
+    private val shapesByLength = shapes.groupBy { it.sideLength }
 
-    private val simulator = WorldSimulator(0, 0, mutableListOf())
-
-    // calculate a client's position within the whole world
-
-    // generate points
-
-    // define shapes the client should draw, the client will get these when registering, and store them. We can then present animations maybe.
-    // each shape will be indexed, and only those indices will be passed to client for movement data, so it can draw the screen but with minimal data.
-    // the client will be told 10 moves ahead, changes to the world that alter that will only occur on the tick.. maybe
+    private val simulator = WorldSimulator(
+        width = SCREEN_WIDTH,
+        height = SCREEN_HEIGHT,
+        scalingFactor = 4,
+        bodies = createBodies(0, 0, listOf(5, 3, 3, 2, 2, 2, 1, 1, 1, 1)).toMutableList(),
+        shapes = shapes.toMutableList()
+    )
 
     open fun addClient(gameClient: GameClient) {
-        val nextPoint = findNextUnoccupiedPoint()
+        val nextPoint = findNextUnoccupiedScreen()
         gameClient.position = nextPoint
         clients[gameClient.id] = gameClient
-        occupiedPoints[nextPoint] = gameClient
+        occupiedScreens[nextPoint] = gameClient
     }
 
-    fun at(point: Point): GameClient? = occupiedPoints[point]
+    fun at(point: Point): GameClient? = occupiedScreens[point]
     fun getClient(id: String): GameClient? = clients[id]
 
-    private fun findNextUnoccupiedPoint(): Point {
+    private fun createRandomBodyWithShape(shapeId: Int, offsetX: Int, offsetY: Int) = Body(
+        // id = id,
+        // position is a random location: [(offsetX to offsetX + screenWidth), (offsetY to offsetY + screenHeight)]
+        position = Vector2f(
+            Random.nextFloat() * SCREEN_WIDTH + offsetX,
+            Random.nextFloat() * SCREEN_HEIGHT + offsetY
+        ),
+        // velocity is a random direction: [(-1 to 1), (-1 to 1)]
+        velocity = Vector2f(
+            Random.nextFloat() * 2 - 1f,
+            Random.nextFloat() * 2 - 1f
+        ),
+        shapeId = shapeId
+    )
+
+    // generates new bodies within a screen, adding the offsets given to position, the world simulator will fit them as close as it can to their position
+    private fun createBodies(offsetX: Int, offsetY: Int, sizes: List<Int>): List<Body> = sizes.map { size ->
+        // find a random shape with the given size and create a body from it
+        createRandomBodyWithShape(shapesByLength.getOrDefault(size, shapesByLength[1]!!).random().id, offsetX, offsetY)
+    }
+
+    private fun findNextUnoccupiedScreen(): Point {
         // walk the sequence of grid points until we find one not in occupiedPoints.
         // This will allow clients to be removed from the world, and replaced by new joiners
         val spiralPoints = GridPatternGenerator().generate().iterator()
         while (spiralPoints.hasNext()) {
             val point = spiralPoints.next()
-            if (!occupiedPoints.containsKey(point)) {
+            if (!occupiedScreens.containsKey(point)) {
                 return point
             }
         }
@@ -52,13 +73,22 @@ open class World {
     fun removeClient(id: String) {
         val client = getClient(id) ?: return
         clients.remove(client.id)
-        val entriesForClient = occupiedPoints.filterValues { c -> c.id == id }
-        if (entriesForClient.isNotEmpty()) { occupiedPoints.remove(entriesForClient.keys.first()) }
+        val entriesForClient = occupiedScreens.filterValues { c -> c.id == id }
+        if (entriesForClient.isNotEmpty()) {
+            occupiedScreens.remove(entriesForClient.keys.first())
+        }
     }
 
     fun worldBoundary(): Point {
-        if (occupiedPoints.isEmpty()) return Point(0, 0)
-        return occupiedPoints.keys.bounds().second + Point(1, 1)
+        if (occupiedScreens.isEmpty()) return Point(1, 1)
+        return occupiedScreens.keys.bounds().second + Point(1, 1)
+    }
+
+    companion object {
+        // screens of 40x20 and 32x16 have good mappings down from these sizes
+        // The world size will be its boundary * these values.
+        const val SCREEN_WIDTH = 160
+        const val SCREEN_HEIGHT = 80
     }
 
 }

@@ -75,9 +75,9 @@ internal class WorldTest {
     }
 
     @Test
-    fun `world boundary size with no points has size 0,0`() {
+    fun `world boundary size with no clients has size 1,1`() {
         val world = World()
-        assertThat(world.worldBoundary()).isEqualTo(Point(0,0))
+        assertThat(world.worldBoundary()).isEqualTo(Point(1,1))
     }
 
 }

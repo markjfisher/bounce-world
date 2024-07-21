@@ -1,13 +1,17 @@
 package simulator
 
 import domain.Body
+import domain.Shape
 import maths.QuadraticSolver
 import org.joml.Vector2f
 
 data class WorldSimulator(
     var width: Int,
     var height: Int,
-    val bodies: MutableList<Body>
+    // this only affects the shape's radius as the shape data is based on 40x20 screen, not 160x80 world coords
+    val scalingFactor: Int,
+    val bodies: MutableList<Body>,
+    val shapes: MutableList<Shape>
 ) {
     fun step(isWrapping: Boolean = true) {
         bodies.forEach { body ->
@@ -63,7 +67,8 @@ data class WorldSimulator(
 
         val qa = vx * vx + vy * vy
         val qb = 2 * (px * vx + py * vy)
-        val radii = (a.shape.sideLength + b.shape.sideLength) / 2f
+        // The shape data is based on a 40x20 screen, not the world size, so shapes have to be scaled up to the world sizes by the scaling factor, e.g. 160x80 means scalingFactor = 4x
+        val radii = (shapes[a.shapeId].sideLength * scalingFactor + shapes[b.shapeId].sideLength * scalingFactor) / 2f
         val qc = px * px + py * py - radii * radii
 
         val quadraticSolver = QuadraticSolver(qa, qb, qc)
@@ -89,14 +94,14 @@ data class WorldSimulator(
         val e = 1.0f // Coefficient of restitution; e = 1 for perfectly elastic collisions
 
         // Calculate impulse scalar
-        val j = -(1 + e) * velocityAlongNormal / (1 / a.shape.mass + 1 / b.shape.mass)
+        val j = -(1 + e) * velocityAlongNormal / (1 / shapes[a.shapeId].mass + 1 / shapes[b.shapeId].mass)
 
         // Apply impulse.
         val impulse = Vector2f(collisionNormal).mul(j)
 
         // calculate the new velocity of each body
-        a.velocity.add(Vector2f(impulse).mul(1 / a.shape.mass).negate())
-        b.velocity.add(Vector2f(impulse).mul(1 / b.shape.mass))
+        a.velocity.add(Vector2f(impulse).mul(1 / shapes[a.shapeId].mass).negate())
+        b.velocity.add(Vector2f(impulse).mul(1 / shapes[b.shapeId].mass))
 
         // time in a step is 1s by design, work out how much time it would be travelling from the CP with its new velocity
         val timeRemaining = 1.0f - collisionTime
