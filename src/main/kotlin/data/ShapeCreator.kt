@@ -52,7 +52,7 @@ object ShapeCreator {
                 | * 
                 """.trimMargin()
             )),
-            Shape(1, 6f, 3, fromString(
+            Shape(1, 4.1f, 3, fromString(
                 """
                 |▗▄▖
                 |▐ ▌
@@ -73,14 +73,14 @@ object ShapeCreator {
                 | ─ 
                 """.trimMargin()
             )),
-            Shape(4, 3f, 3, fromString(
+            Shape(4, 3.8f, 3, fromString(
                 """
                 | n 
                 | * 
                 | u 
                 """.trimMargin()
             )),
-            Shape(5, 3f, 3, fromString(
+            Shape(5, 3.8f, 3, fromString(
                 """
                 |   
                 |<O>
@@ -94,7 +94,7 @@ object ShapeCreator {
                 |└┘ 
                 """.trimMargin()
             )),
-            Shape(7, 9f, 5, fromString(
+            Shape(7, 4.4f, 5, fromString(
                 """
                 | ┬┬  
                 |└┤├┼┤
@@ -103,7 +103,7 @@ object ShapeCreator {
                 | ┼┴┴ 
                 """.trimMargin()
             )),
-            Shape(8, 9f, 5, fromString(
+            Shape(8, 4.5f, 5, fromString(
                 """
                 | \/  
                 |\/\/ 
@@ -112,7 +112,7 @@ object ShapeCreator {
                 |  /\ 
                 """.trimMargin()
             )),
-            Shape(9,10f, 5, fromString(
+            Shape(9,4.5f, 5, fromString(
                 """
                 |  ▄  
                 | /$\ 
@@ -121,7 +121,7 @@ object ShapeCreator {
                 |  ▀  
                 """.trimMargin()
             )),
-            Shape(10, 7f, 5, fromString(
+            Shape(10, 4.3f, 5, fromString(
                 """
                 |  ┌┐ 
                 |┌─┘└┐
@@ -130,7 +130,7 @@ object ShapeCreator {
                 |  └┘ 
                 """.trimMargin()
             )),
-            Shape(11, 7f, 5, fromString(
+            Shape(11, 4.3f, 5, fromString(
                 """
                 |  ┬  
                 | ┌┼┐ 
@@ -139,83 +139,83 @@ object ShapeCreator {
                 |  ┴  
                 """.trimMargin()
             )),
-            Shape(12, 3f, 2, fromString(
+            Shape(12, 3.6f, 2, fromString(
                 """
                 |/\
                 |\/
                 """.trimMargin()
             )),
-            Shape(13, 2f, 2, fromString(
+            Shape(13, 3.6f, 2, fromString(
                 """
                 |┌┐
                 |└┘
                 """.trimMargin()
             )),
-            Shape(14, 3f, 2, fromString(
+            Shape(14, 3.7f, 2, fromString(
                 """
                 |##
                 |##
                 """.trimMargin()
             )),
-            Shape(15, 2f, 2, fromString(
+            Shape(15, 3.5f, 2, fromString(
                 """
                 | *
                 |* 
                 """.trimMargin()
             )),
-            Shape(16, 2f, 2, fromString(
+            Shape(16, 3.5f, 2, fromString(
                 """
                 |+ 
                 | +
                 """.trimMargin()
             )),
-            Shape(17, 3f, 2, fromString(
+            Shape(17, 3.6f, 2, fromString(
                 """
                 |%/
                 |/%
                 """.trimMargin()
             )),
-            Shape(18, 6f, 3, fromString(
+            Shape(18, 3.3f, 3, fromString(
                 """
                 |┼
                 """.trimMargin()
             )),
-            Shape(19, 1f, 1, fromString(
+            Shape(19, 3.3f, 1, fromString(
                 """
                 |*
                 """.trimMargin()
             )),
-            Shape(20, 1f, 1, fromString(
+            Shape(20, 3.3f, 1, fromString(
                 """
                 |O
                 """.trimMargin()
             )),
-            Shape(21, 1f, 1, fromString(
+            Shape(21, 3.3f, 1, fromString(
                 """
                 |#
                 """.trimMargin()
             )),
-            Shape(22, 1f, 1, fromString(
+            Shape(22, 3.3f, 1, fromString(
                 """
                 |X
                 """.trimMargin()
             )),
-            Shape(23, 1f, 1, fromString(
+            Shape(23, 3.3f, 1, fromString(
                 """
                 |%
                 """.trimMargin()
             )),
-            Shape(24, 1f, 1, fromString(
+            Shape(24, 3.3f, 1, fromString(
                 """
                 |0
                 """.trimMargin()
             )),
-            Shape(25, 1f, 1, fromString(
+            Shape(25, 3.3f, 1, fromString(
                 """
                 |$
                 """.trimMargin()
             )),
-            Shape(26, 1f, 1, fromString(
+            Shape(26, 3.3f, 1, fromString(
                 """
                 |=
                 """.trimMargin()

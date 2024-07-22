@@ -18,7 +18,7 @@ open class World {
     private val shapesById = shapes.associateBy { it.id }
     private val shapesByLength = shapes.groupBy { it.sideLength }
 
-    private val simulator = WorldSimulator(
+    val simulator = WorldSimulator(
         width = SCREEN_WIDTH,
         height = SCREEN_HEIGHT,
         scalingFactor = 4,
@@ -27,8 +27,8 @@ open class World {
     )
 
     init {
-        val newBodies = createBodies(0, 0, listOf(5, 3, 3, 2, 2, 2, 1, 1, 1, 1))
-
+        val newBodies = createBodies(0, 0, listOf(5, 5, 5, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1))
+        simulator.addBodies(newBodies)
     }
 
     open fun addClient(gameClient: GameClient) {
@@ -50,9 +50,9 @@ open class World {
         ),
         // velocity is a random direction: [(-1 to 1), (-1 to 1)]
         velocity = Vector2f(
-            Random.nextFloat() * 2 - 1f,
-            Random.nextFloat() * 2 - 1f
-        ),
+            Random.nextFloat() * 2f - 1f,
+            Random.nextFloat() * 2f - 1f
+        ).normalize().mul(0.4f),
         shapeId = shapeId
     )
 

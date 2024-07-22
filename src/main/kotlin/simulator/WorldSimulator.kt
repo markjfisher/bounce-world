@@ -43,9 +43,7 @@ data class WorldSimulator(
             v.y % height
         }
 
-        v.x = wrappedX
-        v.y = wrappedY
-        return v
+        return Vector2f(wrappedX, wrappedY)
     }
 
     // calculates all points in the entire grid that are covered by bodies
@@ -164,23 +162,7 @@ data class WorldSimulator(
         } while (collisionsDetected && currentIteration < maxIterations)
 
         bodies.forEach { body ->
-            if (isWrapping) {
-                // Wrap the position to the world dimensions
-                val wrappedX = if (body.intendedPosition.x < 0) {
-                    (body.intendedPosition.x % width + width) % width
-                } else {
-                    body.intendedPosition.x % width
-                }
-                val wrappedY = if (body.intendedPosition.y < 0) {
-                    (body.intendedPosition.y % height + height) % height
-                } else {
-                    body.intendedPosition.y % height
-                }
-
-                body.position.set(Vector2f(wrappedX, wrappedY))
-            } else {
-                body.position.set(body.intendedPosition)
-            }
+            body.position.set(if (isWrapping) boundVector(body.intendedPosition) else body.intendedPosition)
         }
 
     }
@@ -194,13 +176,13 @@ data class WorldSimulator(
         val qa = vx * vx + vy * vy
         val qb = 2 * (px * vx + py * vy)
         // The shape data is based on a 40x20 screen, not the world size, so shapes have to be scaled up to the world sizes by the scaling factor, e.g. 160x80 means scalingFactor = 4x
-        val radii = (shapes[a.shapeId]!!.sideLength * scalingFactor + shapes[b.shapeId]!!.sideLength * scalingFactor) / 2f
+        val radii = scalingFactor * (shapes[a.shapeId]!!.sideLength + shapes[b.shapeId]!!.sideLength) / 2f
         val qc = px * px + py * py - radii * radii
 
         val quadraticSolver = QuadraticSolver(qa, qb, qc)
         val roots = quadraticSolver.solveRealRoots()
 
-        // Check if any of the roots are within the step duration (0 to 1)
+        // Check if any of the roots are within the step duration (0 to 1 second)
         val validRoots = roots.filter { it >= 0.0f && it < 1.0f }
         return validRoots.minOrNull()
     }

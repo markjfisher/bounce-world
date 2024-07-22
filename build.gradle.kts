@@ -11,6 +11,7 @@ version = "1.0.0"
 group = "bounce.world"
 
 val jomlVersion: String by project
+val tornadoFXVersion: String by project
 
 val assertJVersion: String by project
 val mockkVersion: String by project
@@ -27,6 +28,10 @@ dependencies {
     implementation("io.micronaut.serde:micronaut-serde-jackson")
     implementation("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
+
+    implementation("no.tornado:tornadofx:$tornadoFXVersion")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0")
+
     compileOnly("io.micronaut:micronaut-http-client")
     runtimeOnly("com.fasterxml.jackson.module:jackson-module-kotlin")
     runtimeOnly("org.slf4j:jul-to-slf4j:2.0.13")
