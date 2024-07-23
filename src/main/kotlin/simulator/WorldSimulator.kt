@@ -6,7 +6,13 @@ import geometry.Point
 import geometry.SpiralGenerator
 import geometry.points
 import maths.QuadraticSolver
+import maths.distinctByTolerance
 import org.joml.Vector2f
+import kotlin.math.abs
+import kotlin.math.min
+import kotlin.math.pow
+import kotlin.math.sqrt
+import kotlin.random.Random
 
 data class WorldSimulator(
     var width: Int,
@@ -102,7 +108,7 @@ data class WorldSimulator(
 
         // ensure we don't accidentally loop forever by checking we don't do more than every point in the grid.
         while (spiralPoints.hasNext() && testedPoints < width * height) {
-            val offset = boundPoint(spiralPoints.next())
+            val offset = spiralPoints.next()
             val testPosition = boundVector(Vector2f(bodyPos).add(offset.x.toFloat(), offset.y.toFloat()))
             // change the body's position by the spiral offset, which circles the original point
             mutB.position.set(testPosition)
@@ -114,15 +120,14 @@ data class WorldSimulator(
         return null
     }
 
-    private fun isOverlapping(b: Body): Boolean {
-        val radiusB = shapes[b.shapeId]!!.sideLength / 2.0f
+    private fun isOverlapping(a: Body, b: Body): Boolean {
+        val distanceApart = calculateDistance(a, b)
+        val sumOfRadii = (shapes[a.shapeId]!!.sideLength + shapes[b.shapeId]!!.sideLength) / 2f * scalingFactor
+        return distanceApart < sumOfRadii
+    }
 
-        // Check if there's any body in the list that overlaps with b
-        return bodies.any { otherBody ->
-            val radiusOther = shapes[otherBody.shapeId]!!.sideLength / 2.0f
-            val centerDistance = b.position.distance(otherBody.position)
-            centerDistance <= (radiusB + radiusOther)
-        }
+    private fun isOverlapping(b: Body): Boolean = bodies.any { otherBody ->
+        isOverlapping(otherBody, b)
     }
 
     fun addBodies(newBodies: List<Body>) {
@@ -167,7 +172,49 @@ data class WorldSimulator(
 
     }
 
-    private fun calculateCollisionTime(a: Body, b: Body): Float? {
+    private fun calculateWrappedDistance(a: Float, b: Float, maxDistance: Float): Float {
+        val directDistance = abs(a - b)
+        val wrappedDistance = min(directDistance, abs(maxDistance - directDistance))
+        return wrappedDistance
+    }
+
+    fun calculateDistance(a: Body, b: Body): Float {
+        val xDistance = calculateWrappedDistance(a.position.x, b.position.x, width.toFloat())
+        val yDistance = calculateWrappedDistance(a.position.y, b.position.y, height.toFloat())
+        val distance = sqrt(xDistance.pow(2) + yDistance.pow(2))
+        return distance
+    }
+
+    fun findClosestWrappedPosition(a: Vector2f, b: Vector2f): Vector2f {
+        val w = width.toFloat()
+        val h = height.toFloat()
+        // Define the shifts for the 8 surrounding positions plus the original (0,0) position
+        val shifts = listOf(
+            Pair(0f, 0f), // Original
+            Pair(-w, 0f), // W
+            Pair(w, 0f), // E
+            Pair(0f, -h), // N
+            Pair(0f, h), // S
+            Pair(-w, -h), // NW
+            Pair(w, -h), // NE
+            Pair(-w, h), // SW
+            Pair(w, h) // SE
+        )
+
+        val (dx, dy) = shifts.minByOrNull { (dx, dy) ->
+            val wrappedB = Vector2f(b.x + dx, b.y + dy)
+            a.distance(wrappedB)
+        } ?: Pair(0f, 0f)
+
+        return Vector2f(b.x + dx, b.y + dy)
+    }
+
+    // Will the 2 bodies collide in the current 1s timeframe?
+    fun calculateCollisionTimes(a: Body, b: Body): List<Float> {
+        val bClosestPosition = findClosestWrappedPosition(a.position, b.position)
+        // this will be bound later
+        b.position.set(bClosestPosition)
+
         val px = a.position.x - b.position.x
         val py = a.position.y - b.position.y
         val vx = a.velocity.x - b.velocity.x
@@ -181,10 +228,14 @@ data class WorldSimulator(
 
         val quadraticSolver = QuadraticSolver(qa, qb, qc)
         val roots = quadraticSolver.solveRealRoots()
-
-        // Check if any of the roots are within the step duration (0 to 1 second)
+        // look for intercept time in range 0 to 1 second
         val validRoots = roots.filter { it >= 0.0f && it < 1.0f }
-        return validRoots.minOrNull()
+        // println("a: $a, b: $b, validRoots: $validRoots")
+        return validRoots
+    }
+
+    private fun calculateCollisionTime(a: Body, b: Body): Float? {
+        return calculateCollisionTimes(a, b).minOrNull()
     }
 
     private fun resolveCollision(a: Body, b: Body, collisionTime: Float) {
@@ -198,8 +249,13 @@ data class WorldSimulator(
         // Do not resolve if velocities are separating, nothing has changed, the normal position will be calculated
         if (velocityAlongNormal > 0) return
 
+        // give a bit of randomness to the elasticity, this is 0.9 to + 1.1, so on average it will keep the energy in the total system
+        // but some collisions will kick off, some will absorb
+        // val e = 1f + Random.nextFloat() / 5f - 0.1f
+
         // Calculate restitution (elastic collision)
-        val e = 1.0f // Coefficient of restitution; e = 1 for perfectly elastic collisions
+        // Coefficient of restitution; e = 1 for perfectly elastic collisions
+        val e = 1f
 
         // Calculate impulse scalar
         val j = -(1 + e) * velocityAlongNormal / (1 / shapes[a.shapeId]!!.mass + 1 / shapes[b.shapeId]!!.mass)

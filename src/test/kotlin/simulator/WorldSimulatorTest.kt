@@ -362,4 +362,50 @@ class WorldSimulatorTest {
         assertThat(world.bodies[1].position.x).isCloseTo(0.2f, Offset.offset(0.001f))
         assertThat(world.bodies[1].position.y).isCloseTo(0.3f, Offset.offset(0.001f))
     }
+
+    @Test
+    fun `can detect collision at boundary`() {
+        val shapes = mutableMapOf(
+            0 to Shape(2, 1.0f, 5, emptyList())
+        )
+        val world = WorldSimulator(160, 80, 4, mutableListOf(), shapes)
+        val bodyA = Body(position = Vector2f(31.375097f, 3.468848f), velocity = Vector2f(-0.54833025f, -0.12327973f), shapeId = 0)
+        val bodyB = Body(position = Vector2f(12.075428f, 77.72633f), velocity = Vector2f(0.05472869f, 0.033775542f), shapeId = 0)
+        world.addBodies(listOf(bodyA, bodyB))
+
+        // work out the distance to the nearest version of B in wrapped (toroidal) space
+        var distance = world.calculateDistance(bodyA, bodyB)
+        assertThat(distance).isCloseTo(20.135881f, Offset.offset(0.000001f))
+
+        // find the position of B that is closest to A in toroidal mapping
+        val closestB = world.findClosestWrappedPosition(bodyA.position, bodyB.position)
+        assertThat(closestB.x).isCloseTo(12.075428f, Offset.offset(0.000001f))
+        assertThat(closestB.y).isCloseTo(-2.273666f, Offset.offset(0.000001f))
+
+        var collisionTimes = world.calculateCollisionTimes(bodyA, bodyB)
+        assertThat(collisionTimes).hasSize(1)
+        assertThat(collisionTimes[0]).isCloseTo(0.21817695f, Offset.offset(0.000001f))
+
+        // we know these should collide, as the time is between 0 and 1 (which is our step time)
+        world.step()
+
+        // calculate new distance apart, should still be over 20 as we bounced
+        distance = world.calculateDistance(bodyA, bodyB)
+        assertThat(distance).isCloseTo(20.486927f, Offset.offset(0.000001f))
+
+        // check a and b are at correct locations and speeds (note directions have changed
+        assertThat(bodyA.position.x).isCloseTo(31.293434f, Offset.offset(0.000001f))
+        assertThat(bodyA.position.y).isCloseTo(3.4845412f, Offset.offset(0.000001f))
+        assertThat(bodyA.velocity.x).isCloseTo(0.048564315f, Offset.offset(0.000001f))
+        assertThat(bodyA.velocity.y).isCloseTo(0.054475166f, Offset.offset(0.000001f))
+        assertThat(bodyB.position.x).isCloseTo(11.663491f, Offset.offset(0.000001f))
+        assertThat(bodyB.position.y).isCloseTo(77.62114f, Offset.offset(0.000001f))
+        assertThat(bodyB.velocity.x).isCloseTo(-0.5421659f, Offset.offset(0.000001f))
+        assertThat(bodyB.velocity.y).isCloseTo(-0.14397936f, Offset.offset(0.000001f))
+
+        // and there's no longer a collision about to happen as they are moving apart
+        collisionTimes = world.calculateCollisionTimes(bodyA, bodyB)
+        assertThat(collisionTimes).hasSize(0)
+
+    }
 }

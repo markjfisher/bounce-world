@@ -27,7 +27,9 @@ open class World {
     )
 
     init {
-        val newBodies = createBodies(0, 0, listOf(5, 5, 5, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1))
+//        val newBodies = createBodies(0, 0, 0, listOf(5, 3, 3, 2, 2, 2, 1, 1, 1, 1))
+//        val newBodies = createBodies(0,0, 0, listOf(5, 5))
+        val newBodies = createBodies(0,0, 0, List(30) { 1 } + List(10) { 2 } + List(5) { 3 } + List(2) { 5 })
         simulator.addBodies(newBodies)
     }
 
@@ -41,25 +43,26 @@ open class World {
     fun at(point: Point): GameClient? = occupiedScreens[point]
     fun getClient(id: String): GameClient? = clients[id]
 
-    private fun createRandomBodyWithShape(shapeId: Int, offsetX: Int, offsetY: Int) = Body(
-        // id = id,
+    private fun createRandomBodyWithShape(id: Int, shapeId: Int, offsetX: Int, offsetY: Int) = Body(
+        id = id,
         // position is a random location: [(offsetX to offsetX + screenWidth), (offsetY to offsetY + screenHeight)]
         position = Vector2f(
             Random.nextFloat() * SCREEN_WIDTH + offsetX,
             Random.nextFloat() * SCREEN_HEIGHT + offsetY
         ),
         // velocity is a random direction: [(-1 to 1), (-1 to 1)]
+        // everything starts at 0.25 in some random direction
         velocity = Vector2f(
             Random.nextFloat() * 2f - 1f,
             Random.nextFloat() * 2f - 1f
-        ).normalize().mul(0.4f),
+        ).normalize().mul(0.25f),
         shapeId = shapeId
     )
 
     // generates new bodies within a screen, adding the offsets given to position, the world simulator will fit them as close as it can to their position
-    private fun createBodies(offsetX: Int, offsetY: Int, sizes: List<Int>): List<Body> = sizes.map { size ->
+    private fun createBodies(startId: Int, offsetX: Int, offsetY: Int, sizes: List<Int>): List<Body> = sizes.mapIndexed { i, size ->
         // find a random shape with the given size and create a body from it
-        createRandomBodyWithShape(shapesByLength.getOrDefault(size, shapesByLength[1]!!).random().id, offsetX, offsetY)
+        createRandomBodyWithShape(startId + i, shapesByLength.getOrDefault(size, shapesByLength[1]!!).random().id, offsetX, offsetY)
     }
 
     private fun findNextUnoccupiedScreen(): Point {
