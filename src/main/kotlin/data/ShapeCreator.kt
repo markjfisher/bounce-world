@@ -157,6 +157,13 @@ object ShapeCreator {
                 |└┘ 
                 """.trimMargin()
             )),
+            createShape(3.7f, 3, fromString(
+                """
+                |┌┐ 
+                |└┼┐
+                | └┘
+                """.trimMargin()
+            )),
             createShape(3.6f, 2, fromString(
                 """
                 |/\
