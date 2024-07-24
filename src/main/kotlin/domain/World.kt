@@ -50,7 +50,6 @@ open class World {
             Random.nextFloat() * SCREEN_WIDTH + offsetX,
             Random.nextFloat() * SCREEN_HEIGHT + offsetY
         ),
-        // velocity is a random direction: [(-1 to 1), (-1 to 1)]
         // everything starts at 0.25 in some random direction
         velocity = Vector2f(
             Random.nextFloat() * 2f - 1f,

@@ -8,14 +8,17 @@ import io.micronaut.http.MediaType.APPLICATION_JSON
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Post
+import io.micronaut.scheduling.TaskExecutors
+import io.micronaut.scheduling.annotation.ExecuteOn
+import jakarta.validation.Valid
 import java.util.UUID
 
-@Controller("/clients")
-class ClientController(private val world: World) {
-
+@Controller("/client")
+@ExecuteOn(TaskExecutors.BLOCKING)
+open class ClientController(private val world: World) {
     @Post(produces = [APPLICATION_JSON], consumes = [APPLICATION_JSON])
-    fun registerClient(@Body gameClientInfo: GameClientInfo): HttpResponse<GameClient> {
-        val clientId = UUID.randomUUID().toString()
+    open fun registerClient(@Valid @Body gameClientInfo: GameClientInfo): HttpResponse<GameClient> {
+        val clientId = UUID.randomUUID().toString().substring(0, 8)
         val gameClient = GameClient(
             id = clientId,
             name = gameClientInfo.name,
