@@ -28,8 +28,8 @@ open class World {
 
     init {
 //        val newBodies = createBodies(0, 0, 0, listOf(5, 3, 3, 2, 2, 2, 1, 1, 1, 1))
-//        val newBodies = createBodies(0,0, 0, listOf(5, 5))
-        val newBodies = createBodies(0,0, 0, List(30) { 1 } + List(10) { 2 } + List(5) { 3 } + List(2) { 5 })
+        val newBodies = createBodies(0,0, 0, listOf(5, 5))
+//        val newBodies = createBodies(0,0, 0, List(30) { 1 } + List(10) { 2 } + List(5) { 3 } + List(2) { 5 })
         simulator.addBodies(newBodies)
     }
 

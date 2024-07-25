@@ -41,7 +41,7 @@ class GameClientControllerTest {
         )
         every { world.addClient(any<GameClient>()) } just Runs
 
-        val request = HttpRequest.POST("/clients", gameClientInfo)
+        val request = HttpRequest.POST("/client", gameClientInfo)
         val response = client.toBlocking().exchange(request, GameClient::class.java)
 
         assertThat(response.status).isEqualTo(HttpStatus.CREATED)

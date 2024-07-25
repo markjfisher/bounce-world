@@ -1,9 +1,6 @@
 package controller
 
-import domain.Shape
-import domain.ShapeInfo
 import domain.World
-import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
