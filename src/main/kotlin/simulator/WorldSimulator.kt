@@ -2,10 +2,7 @@ package simulator
 
 import domain.Body
 import domain.GameClient
-import domain.Shape
 import domain.VisibleShape
-import domain.World.Companion.SCREEN_HEIGHT
-import domain.World.Companion.SCREEN_WIDTH
 import geometry.Point
 import geometry.SpiralGenerator
 import maths.QuadraticSolver
@@ -13,18 +10,16 @@ import org.joml.Vector2f
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 data class WorldSimulator(
     var width: Int,
     var height: Int,
-    // this only affects the shape's radius as the shape data is based on 40x20 screen, not 160x80 world coords
-    val scalingFactor: Int,
-    val bodies: MutableList<Body>,
-    val shapes: Map<Int, Shape>,
-    val screenWidth: Int = SCREEN_WIDTH,
-    val screenHeight: Int = SCREEN_HEIGHT,
+    val scalingFactor: Int
 ) {
+    val bodies: MutableList<Body> = mutableListOf()
+
     private fun boundPoint(p: Point): Point {
         val wrappedX = if (p.x < 0) {
             (p.x % width + width) % width
@@ -55,21 +50,21 @@ data class WorldSimulator(
         return Vector2f(wrappedX, wrappedY)
     }
 
-    // find the world coordinates of the 4 corner points a body covers
+    // find the world coordinates of the 4 corner points a body covers, with scaling of the world
     fun bodyCorners(b: Body): List<Point> {
-        val centre = Point(b.position.x.toInt(), b.position.y.toInt())
-        val sideLength = shapes[b.shapeId]!!.sideLength
+        val centre = Point(b.position.x.roundToInt(), b.position.y.roundToInt())
+        val n = (b.radius * 2).roundToInt()
         // calculate the offsets to the centre point for grid positions this body covers
         val offsets = when {
             // even width needs offset of -[(n/2 -1),(n/2 -1)], +[n/2, n/2]
-            sideLength.mod(2) == 0 -> Pair(
-                Point(sideLength / 2 - 1, sideLength / 2 - 1),
-                Point(sideLength / 2, sideLength / 2)
+            n.mod(2) == 0 -> Pair(
+                Point(n / 2 - 1, n / 2 - 1),
+                Point(n / 2, n / 2)
             )
             // odd width needs offset of +/- [(n-1)/2]
             else -> Pair(
-                Point((sideLength - 1) / 2, (sideLength - 1) / 2),
-                Point((sideLength - 1) / 2, (sideLength - 1) / 2)
+                Point((n - 1) / 2, (n - 1) / 2),
+                Point((n - 1) / 2, (n - 1) / 2)
             )
         }
         // find the extreme points from centre with these offsets
@@ -86,14 +81,15 @@ data class WorldSimulator(
 
         var testedPoints = 0
         val bodyPos = Vector2f(b.position)
-        val mutB = Body(position = Vector2f(b.position), velocity = Vector2f(b.velocity), shapeId = b.shapeId)
+//        val mutB = b.copy(position = Vector2f(b.position), velocity = Vector2f(b.velocity))
+        val mutB = Body(position = Vector2f(b.position), velocity = Vector2f(b.velocity), mass = b.mass, id = b.id, radius = b.radius, shapeId = b.shapeId)
 
         // spiral out from our current position until we hit a point that does not intersect with anything on the grid
         val spiralPoints = SpiralGenerator().generate().iterator()
         spiralPoints.next() // skip the first point, it's 0,0 which won't generate a change
 
         // ensure we don't accidentally loop forever by checking we don't do more than every point in the grid.
-        while (spiralPoints.hasNext() && testedPoints < width * height) {
+        while (testedPoints < width * height) {
             val offset = spiralPoints.next()
             val testPosition = boundVector(Vector2f(bodyPos).add(offset.x.toFloat(), offset.y.toFloat()))
             // change the body's position by the spiral offset, which circles the original point
@@ -108,7 +104,7 @@ data class WorldSimulator(
 
     private fun isOverlapping(a: Body, b: Body): Boolean {
         val distanceApart = calculateDistance(a, b)
-        val sumOfRadii = (shapes[a.shapeId]!!.sideLength + shapes[b.shapeId]!!.sideLength) / 2f * scalingFactor
+        val sumOfRadii = (a.radius + b.radius) * scalingFactor
         return distanceApart < sumOfRadii
     }
 
@@ -209,7 +205,7 @@ data class WorldSimulator(
         val qa = vx * vx + vy * vy
         val qb = 2 * (px * vx + py * vy)
         // The shape data is based on a 40x20 screen, not the world size, so shapes have to be scaled up to the world sizes by the scaling factor, e.g. 160x80 means scalingFactor = 4x
-        val radii = scalingFactor * (shapes[a.shapeId]!!.sideLength + shapes[b.shapeId]!!.sideLength) / 2f
+        val radii = scalingFactor * (a.radius + b.radius)
         val qc = px * px + py * py - radii * radii
 
         val quadraticSolver = QuadraticSolver(qa, qb, qc)
@@ -244,14 +240,14 @@ data class WorldSimulator(
         val e = 1f
 
         // Calculate impulse scalar
-        val j = -(1 + e) * velocityAlongNormal / (1 / shapes[a.shapeId]!!.mass + 1 / shapes[b.shapeId]!!.mass)
+        val j = -(1 + e) * velocityAlongNormal / (1 / a.mass + 1 / b.mass)
 
         // Apply impulse.
         val impulse = Vector2f(collisionNormal).mul(j)
 
         // calculate the new velocity of each body
-        a.velocity.add(Vector2f(impulse).mul(1 / shapes[a.shapeId]!!.mass).negate())
-        b.velocity.add(Vector2f(impulse).mul(1 / shapes[b.shapeId]!!.mass))
+        a.velocity.add(Vector2f(impulse).mul(1 / a.mass).negate())
+        b.velocity.add(Vector2f(impulse).mul(1 / b.mass))
 
         // time in a step is 1s by design, work out how much time it would be travelling from the CP with its new velocity
         val timeRemaining = 1.0f - collisionTime
@@ -277,6 +273,8 @@ data class WorldSimulator(
             }.id
         }
 
+        if (clients.isEmpty()) return emptyMap()
+
         // initialise the returned map
         val visibleShapesByClient = mutableMapOf<String, MutableSet<VisibleShape>>()
         clients.forEach { client ->
@@ -284,14 +282,9 @@ data class WorldSimulator(
         }
 
         bodies.forEach { body ->
-//            val bodyCentre = Point(body.position.x.toInt(), body.position.y.toInt())
-            val bodyWidth = shapes[body.shapeId]!!.sideLength
+            val bodyWidth = (body.radius * 2).roundToInt()
 
             val corners = bodyCorners(body)
-            // look at the corners of the body in order (NW, NE, SW, SE), and for the single client it is in, work out what the visibleshape is for it.
-            // this may end up with 4 visibleshapes even for the same client if it wraps in a way to show it that way (there would only be a single client)
-            // Equally it could be shown in 4 different clients if there are 4 of them and the body is in a corner between all 4.
-
             // We can use each corner in turn, work out its "centre point" relative to a grid that would cover from that corner, and see if the new centre matches the body centre.
             // Add that to a set of visible points for the shape and "new centre", which will remove duplicates where the corners were in the same non-wrapped position
             // We won't bother optimizing for 1x1 shape, it will just fall out in the wash, 4 calculations on the same point isn't that much
@@ -300,9 +293,9 @@ data class WorldSimulator(
             val cSW = corners[2]
             val cSE = corners[3]
 
-            val nd2_1 = bodyWidth / 2 - 1
-            val nd2 = bodyWidth / 2
-            val n_1d2 = (bodyWidth - 1) / 2
+            val nd2_1 = (bodyWidth / 2 - 1) * scalingFactor
+            val nd2 = (bodyWidth / 2) * scalingFactor
+            val n_1d2 = ((bodyWidth - 1) / 2) * scalingFactor
 
             val centre1 = cNW + if (bodyWidth % 2 == 0) Point(nd2_1, nd2_1) else Point(n_1d2, n_1d2)
             val centre2 = cNE + if (bodyWidth % 2 == 0) Point(-nd2, nd2_1) else Point(-n_1d2, n_1d2)
@@ -314,22 +307,6 @@ data class WorldSimulator(
             visibleShapesByClient[clientIdThatOwns(cNE)]!!.add(VisibleShape(body.shapeId, centre2))
             visibleShapesByClient[clientIdThatOwns(cSW)]!!.add(VisibleShape(body.shapeId, centre3))
             visibleShapesByClient[clientIdThatOwns(cSE)]!!.add(VisibleShape(body.shapeId, centre4))
-
-//            if (centre1 != bodyCentre) {
-//                visibleShapesByClient[clientIdThatOwns(cNW)]!!.add(VisibleShape(body.shapeId, centre1))
-//            }
-//
-//            if (centre2 != bodyCentre) {
-//                visibleShapesByClient[clientIdThatOwns(cNE)]!!.add(VisibleShape(body.shapeId, centre2))
-//            }
-//
-//            if (centre3 != bodyCentre) {
-//                visibleShapesByClient[clientIdThatOwns(cSW)]!!.add(VisibleShape(body.shapeId, centre3))
-//            }
-//
-//            if (centre4 != bodyCentre) {
-//                visibleShapesByClient[clientIdThatOwns(cSE)]!!.add(VisibleShape(body.shapeId, centre4))
-//            }
 
         }
         return visibleShapesByClient

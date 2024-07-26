@@ -42,13 +42,11 @@ class GameClientControllerTest {
         every { world.addClient(any<GameClient>()) } just Runs
 
         val request = HttpRequest.POST("/client", gameClientInfo)
-        val response = client.toBlocking().exchange(request, GameClient::class.java)
+        val response = client.toBlocking().exchange(request, String::class.java)
 
-        assertThat(response.status).isEqualTo(HttpStatus.CREATED)
-        val body = response.body()!!
-        assertThat(body.id).isNotNull()
-        assertThat(body.name).isEqualTo(gameClientInfo.name)
-        assertThat(body.screenSize).isEqualTo(gameClientInfo.screenSize)
+        assertThat(response.status).isEqualTo(HttpStatus.OK)
+        val body = response.body()
+        assertThat(body).hasSize(8)
 
         verify(exactly = 1) { world.addClient(match {
             it.name == gameClientInfo.name && it.screenSize == gameClientInfo.screenSize

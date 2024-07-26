@@ -29,6 +29,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
     implementation("io.micronaut.validation:micronaut-validation")
+    implementation("io.micronaut.toml:micronaut-toml")
 
     implementation("no.tornado:tornadofx:$tornadoFXVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")

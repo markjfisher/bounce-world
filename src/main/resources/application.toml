@@ -1,0 +1,9 @@
+[micronaut.application]
+name = "bounce-world"
+
+[world]
+width = 160
+height = 80
+scalingFactor = 4
+shouldAutoStart = true
+initialSpeed = 2.5
