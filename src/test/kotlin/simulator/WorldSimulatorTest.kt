@@ -331,9 +331,9 @@ class WorldSimulatorTest {
     @Test
     fun `create visible shapes by client for 2 clients and single wrapping in horizontal direction`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "2", name = "gc2", position = Point(1, 0), viewWidth = 50, viewHeight = 50)
-        )
+            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
+            GameClient(id = "2", name = "gc2", position = Point(1, 0))
+        ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
@@ -354,9 +354,9 @@ class WorldSimulatorTest {
     @Test
     fun `create visible shapes by client for 2 clients and single wrapping with wrapping in vertical direction`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "2", name = "gc2", position = Point(0, 1), viewWidth = 50, viewHeight = 50)
-        )
+            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
+            GameClient(id = "2", name = "gc2", position = Point(0, 1))
+        ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
@@ -377,11 +377,11 @@ class WorldSimulatorTest {
     @Test
     fun `create visible shapes by client for 4 clients in all 4 directions from client 1 position`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "2", name = "gc2", position = Point(1, 0), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "3", name = "gc3", position = Point(1, 1), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "4", name = "gc4", position = Point(0, 1), viewWidth = 50, viewHeight = 50),
-        )
+            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
+            GameClient(id = "2", name = "gc2", position = Point(1, 0)),
+            GameClient(id = "3", name = "gc3", position = Point(1, 1)),
+            GameClient(id = "4", name = "gc4", position = Point(0, 1)),
+        ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
@@ -408,11 +408,11 @@ class WorldSimulatorTest {
     @Test
     fun `create visible shapes by client for 4 clients in all 4 directions from client 3 position`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "2", name = "gc2", position = Point(1, 0), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "3", name = "gc3", position = Point(1, 1), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "4", name = "gc4", position = Point(0, 1), viewWidth = 50, viewHeight = 50),
-        )
+            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
+            GameClient(id = "2", name = "gc2", position = Point(1, 0)),
+            GameClient(id = "3", name = "gc3", position = Point(1, 1)),
+            GameClient(id = "4", name = "gc4", position = Point(0, 1)),
+        ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
@@ -439,11 +439,11 @@ class WorldSimulatorTest {
     @Test
     fun `create visible shapes by client for 4 clients where only contained in client 2`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "2", name = "gc2", position = Point(1, 0), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "3", name = "gc3", position = Point(1, 1), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "4", name = "gc4", position = Point(0, 1), viewWidth = 50, viewHeight = 50),
-        )
+            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
+            GameClient(id = "2", name = "gc2", position = Point(1, 0)),
+            GameClient(id = "3", name = "gc3", position = Point(1, 1)),
+            GameClient(id = "4", name = "gc4", position = Point(0, 1)),
+        ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
@@ -464,11 +464,11 @@ class WorldSimulatorTest {
     @Test
     fun `create visible shapes by client for 4 clients with multiple bodies from previous tests`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "2", name = "gc2", position = Point(1, 0), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "3", name = "gc3", position = Point(1, 1), viewWidth = 50, viewHeight = 50),
-            GameClient(id = "4", name = "gc4", position = Point(0, 1), viewWidth = 50, viewHeight = 50),
-        )
+            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
+            GameClient(id = "2", name = "gc2", position = Point(1, 0)),
+            GameClient(id = "3", name = "gc3", position = Point(1, 1)),
+            GameClient(id = "4", name = "gc4", position = Point(0, 1)),
+        ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
