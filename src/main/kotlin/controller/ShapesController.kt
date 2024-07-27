@@ -1,7 +1,6 @@
 package controller
 
 import domain.World
-import io.micronaut.http.MediaType
 import io.micronaut.http.MediaType.TEXT_PLAIN
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get

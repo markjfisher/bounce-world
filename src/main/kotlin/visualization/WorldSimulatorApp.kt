@@ -4,9 +4,17 @@ import config.WorldConfiguration
 import domain.World
 import javafx.scene.canvas.Canvas
 import javafx.scene.paint.Color
-import tornadofx.*
-import kotlinx.coroutines.*
-import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import tornadofx.App
+import tornadofx.View
+import tornadofx.borderpane
+import tornadofx.center
+import tornadofx.launch
+import tornadofx.runLater
 import kotlin.random.Random
 
 class WorldSimulatorApp: App(WorldView::class)
