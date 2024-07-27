@@ -12,12 +12,15 @@ data class GameClient(
     val name: String,
     val version: Int = 1,
     var position: Point = Point(0, 0),
-    var screenSize: ScreenSize = ScreenSize(0, 0),
-    val viewWidth: Int,
-    val viewHeight: Int,
+    var screenSize: ScreenSize = ScreenSize(0, 0)
 ) {
-    val worldBounds: Pair<Point, Point> = Pair(
-        Point(position.x * viewWidth, position.y * viewHeight),
-        Point((position.x + 1) * viewWidth - 1, (position.y + 1) * viewHeight)
-    )
+    var worldBounds: Pair<Point, Point> = Pair(Point(0, 0), Point(0, 0))
+
+    fun updateWorldBounds(width: Int, height: Int) {
+        worldBounds = Pair(
+            Point(position.x * width, position.y * height),
+            Point((position.x + 1) * width - 1, (position.y + 1) * height - 1)
+        )
+    }
+
 }

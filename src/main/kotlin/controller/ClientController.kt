@@ -17,8 +17,8 @@ import jakarta.validation.Valid
 @ExecuteOn(TaskExecutors.BLOCKING)
 open class ClientController(private val world: World) {
     @Post(produces = [TEXT_PLAIN], consumes = [APPLICATION_JSON])
-    open fun registerClient(@Valid @Body gameClientInfo: GameClientInfo): String {
+    open fun registerClient(@Valid @Body gameClientInfo: GameClientInfo): HttpResponse<String> {
         val gameClient = world.createClient(gameClientInfo)
-        return gameClient.id
+        return HttpResponse.ok(gameClient.id)
     }
 }

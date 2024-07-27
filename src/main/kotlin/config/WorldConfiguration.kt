@@ -11,4 +11,6 @@ class WorldConfiguration {
     var scalingFactor: Int = 4
     var shouldAutoStart: Boolean = true
     var initialSpeed: Float = 1.5f
+    var stepDelayMillis: Long = 1000
+    var heartbeatTimeoutMillis: Long = 10000
 }

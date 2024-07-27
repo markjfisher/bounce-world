@@ -19,6 +19,7 @@ data class WorldSimulator(
     val scalingFactor: Int
 ) {
     val bodies: MutableList<Body> = mutableListOf()
+    var currentStep: Int = 0
 
     private fun boundPoint(p: Point): Point {
         val wrappedX = if (p.x < 0) {
@@ -151,7 +152,8 @@ data class WorldSimulator(
         bodies.forEach { body ->
             body.position.set(if (isWrapping) boundVector(body.intendedPosition) else body.intendedPosition)
         }
-
+        // bound the step number to a byte value
+        if (currentStep++ > 255) currentStep = 0
     }
 
     private fun calculateWrappedDistance(a: Float, b: Float, maxDistance: Float): Float {
@@ -268,9 +270,9 @@ data class WorldSimulator(
     fun findVisibleShapesByClient(clients: List<GameClient>): Map<String, MutableSet<VisibleShape>> {
 
         fun clientIdThatOwns(p: Point): String {
-            return clients.first { c ->
+            return clients.firstOrNull { c ->
                 p.within(c.worldBounds)
-            }.id
+            }?.id ?: ""
         }
 
         if (clients.isEmpty()) return emptyMap()
@@ -303,10 +305,10 @@ data class WorldSimulator(
             val centre4 = cSE + if (bodyWidth % 2 == 0) Point(-nd2, -nd2) else Point(-n_1d2, -n_1d2)
 
             // add the visibleshape to the client's list. dupes will be removed, and this also caters for both wrapping and no wrapping
-            visibleShapesByClient[clientIdThatOwns(cNW)]!!.add(VisibleShape(body.shapeId, centre1))
-            visibleShapesByClient[clientIdThatOwns(cNE)]!!.add(VisibleShape(body.shapeId, centre2))
-            visibleShapesByClient[clientIdThatOwns(cSW)]!!.add(VisibleShape(body.shapeId, centre3))
-            visibleShapesByClient[clientIdThatOwns(cSE)]!!.add(VisibleShape(body.shapeId, centre4))
+            visibleShapesByClient[clientIdThatOwns(cNW)]?.add(VisibleShape(body.shapeId, centre1))
+            visibleShapesByClient[clientIdThatOwns(cNE)]?.add(VisibleShape(body.shapeId, centre2))
+            visibleShapesByClient[clientIdThatOwns(cSW)]?.add(VisibleShape(body.shapeId, centre3))
+            visibleShapesByClient[clientIdThatOwns(cSE)]?.add(VisibleShape(body.shapeId, centre4))
 
         }
         return visibleShapesByClient

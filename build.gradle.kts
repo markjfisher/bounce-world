@@ -33,6 +33,8 @@ dependencies {
 
     implementation("no.tornado:tornadofx:$tornadoFXVersion")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-rx2:1.8.1")
+    implementation("io.reactivex.rxjava2:rxjava")
 
     annotationProcessor("io.micronaut.validation:micronaut-validation-processor")
 
