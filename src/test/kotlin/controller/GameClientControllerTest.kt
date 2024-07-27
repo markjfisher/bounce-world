@@ -6,6 +6,7 @@ import domain.ScreenSize
 import domain.World
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
+import io.micronaut.http.MediaType
 import io.micronaut.http.client.HttpClient
 import io.micronaut.http.client.annotation.Client
 import io.micronaut.test.annotation.MockBean
@@ -41,12 +42,13 @@ class GameClientControllerTest {
         )
         every { world.addClient(any<GameClient>()) } just Runs
 
-        val request = HttpRequest.POST("/client", gameClientInfo)
+        val request = HttpRequest.POST("/client", "Test Client,1,1920,1080")
+        request.contentType(MediaType.TEXT_PLAIN_TYPE)
         val response = client.toBlocking().exchange(request, String::class.java)
 
-        assertThat(response.status).isEqualTo(HttpStatus.OK)
+        assertThat(response.status).isEqualTo(HttpStatus.CREATED)
         val body = response.body()
-        assertThat(body).hasSize(8)
+        assertThat(body).startsWith("Created client, id: ")
 
         verify(exactly = 1) { world.addClient(match {
             it.name == gameClientInfo.name && it.screenSize == gameClientInfo.screenSize
