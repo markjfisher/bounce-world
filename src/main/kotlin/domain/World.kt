@@ -85,7 +85,7 @@ open class World(
             clientChannels.forEach { (clientId, channel) ->
                 val data = try {
                     val csv = asCSV(clientId)
-                    println("sending ${clients[clientId]!!.name}: $csv")
+                    // println("sending ${clients[clientId]!!.name}: $csv")
                     // if there are no bodies in the view, we will return a value of "0"
                     if (csv.isNotEmpty()) csv.split(",").map { it.toInt().toByte() }.toByteArray() else byteArrayOf(0)
                 } catch (e: Exception) {

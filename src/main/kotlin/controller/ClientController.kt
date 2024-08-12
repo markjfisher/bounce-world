@@ -29,6 +29,6 @@ open class ClientController(private val world: World) {
         )
         val gameClient = world.createClient(gameClientInfo)
         println("Created client: $gameClient")
-        return HttpResponse.created("Created client, id: ${gameClient.id}")
+        return HttpResponse.created(gameClient.id)
     }
 }
