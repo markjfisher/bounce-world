@@ -7,5 +7,5 @@ height = 80
 scalingFactor = 4
 shouldAutoStart = true
 initialSpeed = 2.5
-stepDelayMillis = 500
-heartbeatTimeoutMillis = 30000
+stepDelayMillis = 2000
+heartbeatTimeoutMillis = 3000000
