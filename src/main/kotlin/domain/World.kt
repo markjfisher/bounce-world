@@ -62,11 +62,12 @@ open class World(
 
     private suspend fun checkClientsStillConnected() {
         while (!stopped) {
-            val clientIds = clientChannels.keys.toList() // stops the concurrent update error as we're not modifying this list, just the clientChannels
+            // creating a list to iterate over instead of directly on the keys stops the concurrent update error as we're not modifying this list, just the clientChannels
+            val clientIds = clients.keys.toList() // use the clients directly rather than channels, as they may not have sent any data yet, so aren't in the channels list, but we do have them in the initial heartbeats
             clientIds.forEach { clientId ->
-                val sinceHeartbeat = System.currentTimeMillis() - clientHeartbeats[clientId]!!
+                val sinceHeartbeat = System.currentTimeMillis() - (clientHeartbeats[clientId] ?: 0)
                 if (sinceHeartbeat > config.heartbeatTimeoutMillis) {
-                    println("No heartbeat from client ${clients[clientId]!!.name} for $sinceHeartbeat ms, killing it.")
+                    println("No heartbeat from client ${clients[clientId]?.name ?: "UNKNOWN"} for $sinceHeartbeat ms, unregistering client.")
                     unregisterClient(clientId)
                 }
             }
@@ -141,6 +142,7 @@ open class World(
         )
         addClient(client)
         client.updateWorldBounds(config.width, config.height)
+        clientHeartbeats[client.id] = System.currentTimeMillis()
         return client
     }
 
