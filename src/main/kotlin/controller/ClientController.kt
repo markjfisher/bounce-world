@@ -5,6 +5,7 @@ import domain.ScreenSize
 import domain.World
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType.APPLICATION_FORM_URLENCODED
+import io.micronaut.http.MediaType.APPLICATION_OCTET_STREAM
 import io.micronaut.http.MediaType.TEXT_PLAIN
 import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
@@ -16,8 +17,8 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 @ExecuteOn(TaskExecutors.BLOCKING)
 open class ClientController(private val world: World) {
     // Allow simple comma separated fields so the client doesn't have to write JSON for the sake of it
-    @Post(produces = [TEXT_PLAIN], consumes = [TEXT_PLAIN, APPLICATION_FORM_URLENCODED])
-    open fun registerClient(@Body gameClientInfoString: String): HttpResponse<String> {
+    @Post(produces = [APPLICATION_OCTET_STREAM], consumes = [TEXT_PLAIN, APPLICATION_FORM_URLENCODED])
+    open fun registerClient(@Body gameClientInfoString: String): HttpResponse<Any> {
         val parts = gameClientInfoString.split(",")
         if (parts.size != 4) {
             return HttpResponse.badRequest("Incorrect data format")
@@ -29,6 +30,6 @@ open class ClientController(private val world: World) {
         )
         val gameClient = world.createClient(gameClientInfo)
         println("Created client: $gameClient")
-        return HttpResponse.created(gameClient.id)
+        return HttpResponse.created(byteArrayOf(gameClient.id.toByte()))
     }
 }

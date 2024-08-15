@@ -16,8 +16,6 @@ object ShapeCreator {
         return strippedString.map { c ->
             // convert to neutral char codes, each platform can convert back to its own char
             when(c) {
-//                '/' -> 6
-//                '\\' -> 7
                 '┌' -> 'r'.code
                 '┐' -> ')'.code
                 '└' -> 'L'.code
@@ -27,11 +25,8 @@ object ShapeCreator {
                 '┬' -> 'T'.code
                 '┴' -> '2'.code
                 '│' -> '|'.code
-//                '|' -> 2
                 '─' -> '-'.code
-//                '-' -> 18
                 '┼' -> '+'.code
-//                '+' -> 19
                 '▌' -> 'a'.code
                 '▐' -> 'b'.code
                 '▄' -> 'c'.code
@@ -69,16 +64,6 @@ object ShapeCreator {
     fun createShapes(): List<Shape> {
         val shapes = mutableListOf<Shape>()
         shapes.addAll(listOf(
-            createShape(4.8f, fromString(
-                    """
-                    | ┬┬  
-                    |└┤├┼┤
-                    | ┼  ┼
-                    |┌┤ ├┤
-                    | ┼┴┴ 
-                    """.trimMargin()
-                )
-            ),
             createShape(4.7f, fromString(
                     """
                     | \/  
@@ -109,13 +94,33 @@ object ShapeCreator {
                     """.trimMargin()
                 )
             ),
-            createShape(4.4f, fromString(
+            createShape(4.6f, fromString(
                     """
-                    |  ┬  
-                    | ┌┼┐ 
-                    |├┼ ┼┤
-                    | └┼┘ 
-                    |  ┴  
+                    |┌┐   
+                    |│└──┐
+                    |└─┐ │
+                    | ┌┘┌┘
+                    | └─┘ 
+                    """.trimMargin()
+                )
+            ),
+            createShape(4.6f, fromString(
+                    """
+                    | ┌┐  
+                    |┌┘└┐ 
+                    |└┐ └┐
+                    |┌┘ ┌┘
+                    |└──┘ 
+                    """.trimMargin()
+                )
+            ),
+            createShape(4.6f, fromString(
+                    """
+                    |┌───┐
+                    |│┌─┐│
+                    |││X││
+                    |│└─┘│
+                    |└───┘
                     """.trimMargin()
                 )
             ),
@@ -132,14 +137,6 @@ object ShapeCreator {
                     | # 
                     |#O#
                     | # 
-                    """.trimMargin()
-                )
-            ),
-            createShape(3.7f, fromString(
-                    """
-                    | ─ 
-                    |│X│
-                    | ─ 
                     """.trimMargin()
                 )
             ),
@@ -192,13 +189,6 @@ object ShapeCreator {
             createShape(3.4f, fromString(
                     """
                     |▟▙
-                    |▜▛
-                    """.trimMargin()
-                )
-            ),
-            createShape(3.3f, fromString(
-                    """
-                    |▗▖
                     |▜▛
                     """.trimMargin()
                 )

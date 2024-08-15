@@ -20,7 +20,7 @@ internal class WorldTest {
         assertThat(world.getClient(c2.id)?.name).isEqualTo("Client 2")
         assertThat(world.getClient(c2.id)?.position).isEqualTo(Point(1,0))
 
-        assertThat(world.getClient("foo")).isNull()
+        assertThat(world.getClient(69)).isNull()
 
         assertThat(world.at(Point(0,0))?.id).isEqualTo(c1.id)
         assertThat(world.at(Point(1,0))?.id).isEqualTo(c2.id)

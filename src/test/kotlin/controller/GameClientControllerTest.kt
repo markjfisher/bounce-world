@@ -44,11 +44,11 @@ class GameClientControllerTest {
 
         val request = HttpRequest.POST("/client", "Test Client,1,1920,1080")
         request.contentType(MediaType.TEXT_PLAIN_TYPE)
-        val response = client.toBlocking().exchange(request, String::class.java)
+        val response = client.toBlocking().exchange(request, ByteArray::class.java)
 
         assertThat(response.status).isEqualTo(HttpStatus.CREATED)
-        val body = response.body()
-        assertThat(body).startsWith("Created client, id: ")
+        val body = response.body().first()
+        assertThat(body).isEqualTo(0.toByte())
 
         verify(exactly = 1) { world.addClient(match {
             it.name == gameClientInfo.name && it.screenSize == gameClientInfo.screenSize

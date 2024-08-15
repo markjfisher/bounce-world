@@ -8,7 +8,7 @@ import io.micronaut.serde.annotation.Serdeable
 data class ScreenSize(var width: Int, var height: Int)
 
 data class GameClient(
-    val id: String,
+    val id: Int,
     val name: String,
     val version: Int = 1,
     var position: Point = Point(0, 0),

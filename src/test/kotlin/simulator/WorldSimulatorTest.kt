@@ -331,8 +331,8 @@ class WorldSimulatorTest {
     @Test
     fun `create visible shapes by client for 2 clients and single wrapping in horizontal direction`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
-            GameClient(id = "2", name = "gc2", position = Point(1, 0))
+            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
+            GameClient(id = 2, name = "gc2", position = Point(1, 0))
         ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
@@ -343,10 +343,10 @@ class WorldSimulatorTest {
         worldSimulator.addBodies(listOf(bodyA))
 
         val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient["1"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[1]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(1, 10)),      // body position without reflection
         )
-        assertThat(visibleShapesByClient["2"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(101, 10)),     // body wrapped on the left in client 2
         )
     }
@@ -354,8 +354,8 @@ class WorldSimulatorTest {
     @Test
     fun `create visible shapes by client for 2 clients and single wrapping with wrapping in vertical direction`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
-            GameClient(id = "2", name = "gc2", position = Point(0, 1))
+            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
+            GameClient(id = 2, name = "gc2", position = Point(0, 1))
         ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
@@ -366,10 +366,10 @@ class WorldSimulatorTest {
         worldSimulator.addBodies(listOf(bodyA))
 
         val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient["1"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[1]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(10, 1)),
         )
-        assertThat(visibleShapesByClient["2"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(10, 101)),
         )
     }
@@ -377,10 +377,10 @@ class WorldSimulatorTest {
     @Test
     fun `create visible shapes by client for 4 clients in all 4 directions from client 1 position`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
-            GameClient(id = "2", name = "gc2", position = Point(1, 0)),
-            GameClient(id = "3", name = "gc3", position = Point(1, 1)),
-            GameClient(id = "4", name = "gc4", position = Point(0, 1)),
+            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
+            GameClient(id = 2, name = "gc2", position = Point(1, 0)),
+            GameClient(id = 3, name = "gc3", position = Point(1, 1)),
+            GameClient(id = 4, name = "gc4", position = Point(0, 1)),
         ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
@@ -391,16 +391,16 @@ class WorldSimulatorTest {
         worldSimulator.addBodies(listOf(bodyA))
 
         val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient["1"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[1]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(1, 1)),
         )
-        assertThat(visibleShapesByClient["2"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(101, 1)),
         )
-        assertThat(visibleShapesByClient["3"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[3]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(101, 101)),
         )
-        assertThat(visibleShapesByClient["4"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[4]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(1, 101)),
         )
     }
@@ -408,10 +408,10 @@ class WorldSimulatorTest {
     @Test
     fun `create visible shapes by client for 4 clients in all 4 directions from client 3 position`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
-            GameClient(id = "2", name = "gc2", position = Point(1, 0)),
-            GameClient(id = "3", name = "gc3", position = Point(1, 1)),
-            GameClient(id = "4", name = "gc4", position = Point(0, 1)),
+            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
+            GameClient(id = 2, name = "gc2", position = Point(1, 0)),
+            GameClient(id = 3, name = "gc3", position = Point(1, 1)),
+            GameClient(id = 4, name = "gc4", position = Point(0, 1)),
         ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
@@ -422,16 +422,16 @@ class WorldSimulatorTest {
         worldSimulator.addBodies(listOf(bodyA))
 
         val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient["1"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[1]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(51, 51)),
         )
-        assertThat(visibleShapesByClient["2"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(51, 51)),
         )
-        assertThat(visibleShapesByClient["3"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[3]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(51, 51)),
         )
-        assertThat(visibleShapesByClient["4"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[4]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(51, 51)),
         )
     }
@@ -439,10 +439,10 @@ class WorldSimulatorTest {
     @Test
     fun `create visible shapes by client for 4 clients where only contained in client 2`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
-            GameClient(id = "2", name = "gc2", position = Point(1, 0)),
-            GameClient(id = "3", name = "gc3", position = Point(1, 1)),
-            GameClient(id = "4", name = "gc4", position = Point(0, 1)),
+            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
+            GameClient(id = 2, name = "gc2", position = Point(1, 0)),
+            GameClient(id = 3, name = "gc3", position = Point(1, 1)),
+            GameClient(id = 4, name = "gc4", position = Point(0, 1)),
         ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
@@ -453,21 +453,21 @@ class WorldSimulatorTest {
         worldSimulator.addBodies(listOf(bodyA))
 
         val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient["1"]).isEmpty()
-        assertThat(visibleShapesByClient["2"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[1]).isEmpty()
+        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
             VisibleShape(0, Point(61, 11)),
         )
-        assertThat(visibleShapesByClient["3"]).isEmpty()
-        assertThat(visibleShapesByClient["4"]).isEmpty()
+        assertThat(visibleShapesByClient[3]).isEmpty()
+        assertThat(visibleShapesByClient[4]).isEmpty()
     }
 
     @Test
     fun `create visible shapes by client for 4 clients with multiple bodies from previous tests`() {
         val clients = listOf(
-            GameClient(id = "1", name = "gc1", position = Point(0, 0)),
-            GameClient(id = "2", name = "gc2", position = Point(1, 0)),
-            GameClient(id = "3", name = "gc3", position = Point(1, 1)),
-            GameClient(id = "4", name = "gc4", position = Point(0, 1)),
+            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
+            GameClient(id = 2, name = "gc2", position = Point(1, 0)),
+            GameClient(id = 3, name = "gc3", position = Point(1, 1)),
+            GameClient(id = 4, name = "gc4", position = Point(0, 1)),
         ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val shapes = mutableMapOf(
@@ -480,20 +480,20 @@ class WorldSimulatorTest {
         worldSimulator.addBodies(listOf(bodyA, bodyB, bodyC))
 
         val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient["1"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[1]).containsExactlyInAnyOrder(
             VisibleShape(shapeId=0, position=Point(x=1, y=1)),
             VisibleShape(shapeId=0, position=Point(x=51, y=51)),
         )
-        assertThat(visibleShapesByClient["2"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
             VisibleShape(shapeId=0, position=Point(x=101, y=1)),
             VisibleShape(shapeId=0, position=Point(x=51, y=51)),
             VisibleShape(shapeId=0, position=Point(x=61, y=11)),
         )
-        assertThat(visibleShapesByClient["3"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[3]).containsExactlyInAnyOrder(
             VisibleShape(shapeId=0, position=Point(x=101, y=101)),
             VisibleShape(shapeId=0, position=Point(x=51, y=51)),
         )
-        assertThat(visibleShapesByClient["4"]).containsExactlyInAnyOrder(
+        assertThat(visibleShapesByClient[4]).containsExactlyInAnyOrder(
             VisibleShape(shapeId=0, position=Point(x=1, y=101)),
             VisibleShape(shapeId=0, position=Point(x=51, y=51)),
         )

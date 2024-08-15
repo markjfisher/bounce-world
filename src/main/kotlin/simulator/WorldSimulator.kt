@@ -267,18 +267,18 @@ data class WorldSimulator(
 
     // find every VisibleShape for every client
     @Suppress("LocalVariableName")
-    fun findVisibleShapesByClient(clients: List<GameClient>): Map<String, MutableSet<VisibleShape>> {
+    fun findVisibleShapesByClient(clients: List<GameClient>): Map<Int, MutableSet<VisibleShape>> {
 
-        fun clientIdThatOwns(p: Point): String {
+        fun clientIdThatOwns(p: Point): Int {
             return clients.firstOrNull { c ->
                 p.within(c.worldBounds)
-            }?.id ?: ""
+            }?.id ?: -1
         }
 
         if (clients.isEmpty()) return emptyMap()
 
         // initialise the returned map
-        val visibleShapesByClient = mutableMapOf<String, MutableSet<VisibleShape>>()
+        val visibleShapesByClient = mutableMapOf<Int, MutableSet<VisibleShape>>()
         clients.forEach { client ->
             visibleShapesByClient[client.id] = mutableSetOf()
         }
