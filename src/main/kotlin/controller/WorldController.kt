@@ -12,31 +12,15 @@ import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
-import io.reactivex.Flowable
 import jakarta.validation.Valid
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.consumeAsFlow
-import kotlinx.coroutines.rx2.asFlowable
-import java.util.Date
 import kotlin.math.roundToInt
 
-@Controller("/") // bounce world, keep strings short for the 8 bit memory
+@Controller("/")
 open class WorldController(
     private val world: World,
     private val config: WorldConfiguration
 ) {
-    private val channelsContext = CoroutineScope(Dispatchers.Default).coroutineContext
-
-//    @Get("w0/{clientId}", produces = [MediaType.APPLICATION_OCTET_STREAM])
-//    fun getWorldDataOld(clientId: Int): HttpResponse<Any> {
-//        val client = world.getClient(clientId) ?: return HttpResponse.notFound()
-//
-//        val channel = world.registerClientChannel(clientId)
-//        val flowable: Flowable<ByteArray> = channel.consumeAsFlow().asFlowable(channelsContext)
-//        println("creating data connection for ${client.name} ($clientId)")
-//        return HttpResponse.ok(flowable)
-//    }
+//    private val channelsContext = CoroutineScope(Dispatchers.Default).coroutineContext
 
     @Get("w/{clientId}", produces = [MediaType.APPLICATION_OCTET_STREAM])
     fun getWorldData(clientId: Int): HttpResponse<ByteArray> {
@@ -45,7 +29,7 @@ open class WorldController(
         val data = try {
             val csv = asCSV(clientId)
             // println("sending ${client.name}: $csv")
-            // if there are no bodies in the view, we will return a value of "0"
+            // if there are no bodies in the view, we will return a value of 0 (as byte)
             if (csv.isNotEmpty()) csv.split(",").map { it.toInt().toByte() }.toByteArray() else byteArrayOf(0)
         } catch (e: Exception) {
             println("ERROR processing client ${clientId}: ${e.message}, sending 0")
@@ -55,23 +39,13 @@ open class WorldController(
         return HttpResponse.ok(byteArrayOf(stepNumber) + data)
     }
 
-//    @Get("hb/{clientId}")
-//    fun heartbeat(clientId: Int): HttpResponse<String> {
-//        val client = world.getClient(clientId)
-//        if (client != null) {
-//            println("${Date()}: heartbeat from ${client.name} ($clientId)")
-//            world.clientHeartbeats[clientId] = System.currentTimeMillis()
-//        }
-//        return HttpResponse.ok()
-//    }
-
     @Post("config/delay", produces = [TEXT_PLAIN], consumes = [APPLICATION_JSON])
     open fun setConfigDelay(@Valid @Body delayInfo: DelayInfo): HttpResponse<String> {
         world.setDelay(delayInfo.delay)
         return HttpResponse.ok("configured delay to ${delayInfo.delay} milliseconds")
     }
 
-
+    // keep it as generating a string so we can print it if needed
     private fun asCSV(clientId: Int): String {
         val visibleShapes = world.currentClientVisibleShapes[clientId]
         if (!visibleShapes.isNullOrEmpty()) {

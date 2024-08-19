@@ -14,8 +14,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.joml.Vector2f
 import simulator.WorldSimulator
-import java.util.UUID
-import kotlin.math.roundToInt
 import kotlin.random.Random
 
 @Singleton
@@ -53,9 +51,10 @@ open class World(
     }
 
     init {
+//        val newBodies = createBodies(0, 0, 0, listOf(5, 3))
+//        val newBodies = createBodies(0, 0, 0, listOf(5, 3, 3, 2, 2, 1, 1))
 //        val newBodies = createBodies(0, 0, 0, listOf(5, 3, 3, 2, 2, 2, 1, 1, 1, 1))
-        val newBodies = createBodies(0, 0, 0, listOf(5, 5, 5, 5, 3, 3, 3, 3, 3, 2, 2, 2))
-//        val newBodies = createBodies(0,0, 0, listOf(5, 5))
+        val newBodies = createBodies(0, 0, 0, listOf(5, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1))
 //        val newBodies = createBodies(0,0, 0, List(30) { 1 } + List(10) { 2 } + List(5) { 3 } + List(2) { 5 })
         simulator.addBodies(newBodies)
     }

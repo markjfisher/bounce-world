@@ -15,16 +15,19 @@ import io.micronaut.scheduling.annotation.ExecuteOn
 open class ShapesController(private val world: World) {
 
     @Get("data", produces = [TEXT_PLAIN])
-    open fun getShapeData(): String {
-        // a simple parsable string using comma separators for client to convert to Shapes data.
-        return world.shapes.joinToString(",") { s -> "${s.id},${s.sideLength},${s.codedString()}" }
-    }
+    open fun getShapeData(): ByteArray = world.shapes.fold(mutableListOf<Byte>()) { acc, s ->
+        acc.apply {
+            add(s.id.toByte())
+            add(s.sideLength.toByte())
+            addAll(s.codedString().toByteArray().toList())
+        }
+    }.toByteArray()
 
     @Get("count", produces = [APPLICATION_OCTET_STREAM])
     open fun getCount(): HttpResponse<ByteArray> {
         // allow the client to pre-calculate things by knowing number of shapes ahead of reading data
         // return as a byte so the client doesn't need to convert ascii number to an int
-        println("returning count as ${world.shapes.count()}")
+//        println("returning count as ${world.shapes.count()}")
         return HttpResponse.ok(byteArrayOf(world.shapes.count().toByte()))
     }
 

@@ -1,6 +1,7 @@
 package simulator
 
 import domain.Body
+import domain.CollisionEvent
 import domain.GameClient
 import domain.VisibleShape
 import geometry.Point
@@ -13,10 +14,12 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
+@Suppress("DuplicatedCode")
 data class WorldSimulator(
     var width: Int,
     var height: Int,
-    val scalingFactor: Int
+    val scalingFactor: Int,
+    val enableWrapping: Boolean = true,
 ) {
     val bodies: MutableList<Body> = mutableListOf()
     var currentStep: Int = 0
@@ -125,7 +128,7 @@ data class WorldSimulator(
         }
     }
 
-    fun step(isWrapping: Boolean = true) {
+    fun step() {
         bodies.forEach { body ->
             body.intendedPosition.set(body.position).add(body.velocity)
         }
@@ -150,7 +153,7 @@ data class WorldSimulator(
         } while (collisionsDetected && currentIteration < maxIterations)
 
         bodies.forEach { body ->
-            body.position.set(if (isWrapping) boundVector(body.intendedPosition) else body.intendedPosition)
+            body.position.set(if (enableWrapping) boundVector(body.intendedPosition) else body.intendedPosition)
         }
         // bound the step number to a byte value
         if (currentStep++ > 255) currentStep = 0
@@ -265,6 +268,70 @@ data class WorldSimulator(
         b.intendedPosition.set(finalPositionB)
     }
 
+    fun calculateInitialPotentialCollisions(bodies: List<Body>): List<CollisionEvent> {
+        val potentialCollisions = mutableListOf<CollisionEvent>()
+
+        // Calculate potential body-to-body collisions
+        for (i in bodies.indices) {
+            for (j in i + 1 until bodies.size) {
+                val body1 = bodies[i]
+                val body2 = bodies[j]
+
+                val time = calculateCollisionTime(body1, body2)
+                if (time != null && time >= 0) {
+                    potentialCollisions.add(CollisionEvent(time, body1, body2))
+                }
+            }
+        }
+
+        // Calculate potential body-to-wall collisions
+        bodies.forEach { body ->
+            calculateWallCollisionTimes(body).forEach { time ->
+                potentialCollisions.add(CollisionEvent(time, body))
+            }
+        }
+
+        return potentialCollisions
+    }
+
+    private fun calculateWallCollisionTimes(body: Body): List<Float> {
+        val times = mutableListOf<Float>()
+
+        // Calculate time to collide with the left wall (x = 0)
+        if (body.velocity.x < 0) { // Moving towards the left wall
+            val timeToLeftWall = (body.radius - body.position.x) / body.velocity.x
+            if (timeToLeftWall >= 0f && timeToLeftWall < 1f) {
+                times.add(timeToLeftWall)
+            }
+        }
+
+        // Calculate time to collide with the right wall (x = width)
+        if (body.velocity.x > 0) { // Moving towards the right wall
+            val timeToRightWall = (width - body.radius - body.position.x) / body.velocity.x
+            if (timeToRightWall >= 0f && timeToRightWall < 1f) {
+                times.add(timeToRightWall)
+            }
+        }
+
+        // Calculate time to collide with the top wall (y = 0)
+        if (body.velocity.y < 0) { // Moving towards the top wall
+            val timeToTopWall = (body.radius - body.position.y) / body.velocity.y
+            if (timeToTopWall >= 0f && timeToTopWall < 1f) {
+                times.add(timeToTopWall)
+            }
+        }
+
+        // Calculate time to collide with the bottom wall (y = height)
+        if (body.velocity.y > 0) { // Moving towards the bottom wall
+            val timeToBottomWall = (height - body.radius - body.position.y) / body.velocity.y
+            if (timeToBottomWall >= 0f && timeToBottomWall < 1f) {
+                times.add(timeToBottomWall)
+            }
+        }
+
+        return times
+    }
+
     // find every VisibleShape for every client
     @Suppress("LocalVariableName")
     fun findVisibleShapesByClient(clients: List<GameClient>): Map<Int, MutableSet<VisibleShape>> {
@@ -304,7 +371,7 @@ data class WorldSimulator(
             val centre3 = cSW + if (bodyWidth % 2 == 0) Point(nd2_1, -nd2) else Point(n_1d2, -n_1d2)
             val centre4 = cSE + if (bodyWidth % 2 == 0) Point(-nd2, -nd2) else Point(-n_1d2, -n_1d2)
 
-            // add the visibleshape to the client's list. dupes will be removed, and this also caters for both wrapping and no wrapping
+            // add the visible shape to the client's list. dupes will be removed, and this also caters for both wrapping and no wrapping
             visibleShapesByClient[clientIdThatOwns(cNW)]?.add(VisibleShape(body.shapeId, centre1))
             visibleShapesByClient[clientIdThatOwns(cNE)]?.add(VisibleShape(body.shapeId, centre2))
             visibleShapesByClient[clientIdThatOwns(cSW)]?.add(VisibleShape(body.shapeId, centre3))

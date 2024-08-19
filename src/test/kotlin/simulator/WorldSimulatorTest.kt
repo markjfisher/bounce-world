@@ -19,135 +19,135 @@ class WorldSimulatorTest {
 
     @Test
     fun `bodies on a collision course should collide and change velocities`() {
-        val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0.5f, 0f), shape = shapes[0]!!)
-        val bodyB = Body.from(position = Vector2f(4f, 0f), velocity = Vector2f(-0.5f, 0f), shape = shapes[0]!!)
+        val bodyA = Body.from(position = Vector2f(2f, 2f), velocity = Vector2f(0.5f, 0f), shape = shapes[0]!!)
+        val bodyB = Body.from(position = Vector2f(6f, 2f), velocity = Vector2f(-0.5f, 0f), shape = shapes[0]!!)
         val worldSimulator = WorldSimulator(20, 20, 1).apply { addBodies(listOf(bodyA, bodyB)) }
 
-        worldSimulator.step(false)
-        assertThat(bodyA.position.x).isEqualTo(0.5f)
-        assertThat(bodyB.position.x).isEqualTo(3.5f)
+        worldSimulator.step()
+        assertThat(bodyA.position.x).isEqualTo(2.5f)
+        assertThat(bodyB.position.x).isEqualTo(5.5f)
 
-        worldSimulator.step(false)
-        assertThat(bodyA.position.x).isEqualTo(1.0f)
-        assertThat(bodyB.position.x).isEqualTo(3.0f)
+        worldSimulator.step()
+        assertThat(bodyA.position.x).isEqualTo(3.0f)
+        assertThat(bodyB.position.x).isEqualTo(5.0f)
 
         // 1 more step makes them collide, they are touching from the last step, so all movement will be backwards from where they came
-        worldSimulator.step(false)
+        worldSimulator.step()
         assertThat(bodyA.velocity.x).isEqualTo(-0.5f)
         assertThat(bodyB.velocity.x).isEqualTo(0.5f)
-        assertThat(bodyA.position.x).isEqualTo(0.5f)
-        assertThat(bodyB.position.x).isEqualTo(3.5f)
+        assertThat(bodyA.position.x).isEqualTo(2.5f)
+        assertThat(bodyB.position.x).isEqualTo(5.5f)
     }
 
     @Test
     fun `bodies at non direct collision change direction according to angle of reflection`() {
         // These are at perfect 45 degree angles to each other, and both start 2 steps away from perfect touching at start of step
-        val bodyA = Body.from(position = Vector2f(-2f, -2f), velocity = Vector2f(1f, 1f), shape = shapes[0]!!)
-        val bodyB = Body.from(position = Vector2f(4f, -2f), velocity = Vector2f(-1f, 1f), shape = shapes[0]!!)
+        val bodyA = Body.from(position = Vector2f(3f, 3f), velocity = Vector2f(1f, 1f), shape = shapes[0]!!)
+        val bodyB = Body.from(position = Vector2f(9f, 3f), velocity = Vector2f(-1f, 1f), shape = shapes[0]!!)
         val worldSimulator = WorldSimulator(20, 20, 1).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         // leading up to collision
-        worldSimulator.step(false)
-        assertThat(bodyA.position).isEqualTo(Vector2f(-1f, -1f))
+        worldSimulator.step()
+        assertThat(bodyA.position).isEqualTo(Vector2f(4f, 4f))
         assertThat(bodyA.velocity).isEqualTo(Vector2f(1f, 1f))
-        assertThat(bodyB.position).isEqualTo(Vector2f(3f, -1f))
+        assertThat(bodyB.position).isEqualTo(Vector2f(8f, 4f))
         assertThat(bodyB.velocity).isEqualTo(Vector2f(-1f, 1f))
 
         // this moves them to touching, but right at the end of the step, so no change in velocity yet
-        worldSimulator.step(false)
-        assertThat(bodyA.position).isEqualTo(Vector2f(0f, 0f))
+        worldSimulator.step()
+        assertThat(bodyA.position).isEqualTo(Vector2f(5f, 5f))
         assertThat(bodyA.velocity).isEqualTo(Vector2f(1f, 1f))
-        assertThat(bodyB.position).isEqualTo(Vector2f(2f, 0f))
+        assertThat(bodyB.position).isEqualTo(Vector2f(7f, 5f))
         assertThat(bodyB.velocity).isEqualTo(Vector2f(-1f, 1f))
 
         // now collide, they are touching, and this step moves them away from each other with perfect 90-degree angle change
-        worldSimulator.step(false)
-        assertThat(bodyA.position).isEqualTo(Vector2f(-1f, 1f))
+        worldSimulator.step()
+        assertThat(bodyA.position).isEqualTo(Vector2f(4f, 6f))
         assertThat(bodyA.velocity).isEqualTo(Vector2f(-1f, 1f))
-        assertThat(bodyB.position).isEqualTo(Vector2f(3f, 1f))
+        assertThat(bodyB.position).isEqualTo(Vector2f(8f, 6f))
         assertThat(bodyB.velocity).isEqualTo(Vector2f(1f, 1f))
     }
 
     @Test
     fun `bodies at non direct collision change direction according to angle of reflection but different masses`() {
         // These are at perfect 45 degree angles to each other, and both start 2 steps away from perfect touching at start of step
-        val bodyA = Body.from(position = Vector2f(-2f, -2f), velocity = Vector2f(1f, 1f), shape = shapes[0]!!)
-        val bodyB = Body.from(position = Vector2f(4f, -2f), velocity = Vector2f(-1f, 1f), shape = shapes[1]!!)
+        val bodyA = Body.from(position = Vector2f(3f, 3f), velocity = Vector2f(1f, 1f), shape = shapes[0]!!)
+        val bodyB = Body.from(position = Vector2f(9f, 3f), velocity = Vector2f(-1f, 1f), shape = shapes[1]!!)
         val worldSimulator = WorldSimulator(20, 20, 1).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         // leading up to collision
-        worldSimulator.step(false)
-        assertThat(bodyA.position).isEqualTo(Vector2f(-1f, -1f))
+        worldSimulator.step()
+        assertThat(bodyA.position).isEqualTo(Vector2f(4f, 4f))
         assertThat(bodyA.velocity).isEqualTo(Vector2f(1f, 1f))
-        assertThat(bodyB.position).isEqualTo(Vector2f(3f, -1f))
+        assertThat(bodyB.position).isEqualTo(Vector2f(8f, 4f))
         assertThat(bodyB.velocity).isEqualTo(Vector2f(-1f, 1f))
 
         // this moves them to touching, but right at the end of the step, so no change in velocity yet
-        worldSimulator.step(false)
-        assertThat(bodyA.position).isEqualTo(Vector2f(0f, 0f))
+        worldSimulator.step()
+        assertThat(bodyA.position).isEqualTo(Vector2f(5f, 5f))
         assertThat(bodyA.velocity).isEqualTo(Vector2f(1f, 1f))
-        assertThat(bodyB.position).isEqualTo(Vector2f(2f, 0f))
+        assertThat(bodyB.position).isEqualTo(Vector2f(7f, 5f))
         assertThat(bodyB.velocity).isEqualTo(Vector2f(-1f, 1f))
 
         // now collide, they are touching, and this step moves them away from each other relative to their masses
         // A has lower mass than B so its x velocity is pushed harder
-        worldSimulator.step(false)
-        assertThat(bodyA.position.x).isCloseTo(-1.66667f, Offset.offset(0.00002f))
-        assertThat(bodyA.position.y).isEqualTo(1f)
+        worldSimulator.step()
+        assertThat(bodyA.position.x).isCloseTo(3.33333f, Offset.offset(0.00002f))
+        assertThat(bodyA.position.y).isEqualTo(6f)
         assertThat(bodyA.velocity.x).isCloseTo(-1.66667f, Offset.offset(0.00002f))
         assertThat(bodyA.velocity.y).isEqualTo(1f)
-        assertThat(bodyB.position.x).isCloseTo(2.33333f, Offset.offset(0.00002f))
-        assertThat(bodyB.position.y).isEqualTo(1f)
+        assertThat(bodyB.position.x).isCloseTo(7.33333f, Offset.offset(0.00002f))
+        assertThat(bodyB.position.y).isEqualTo(6f)
         assertThat(bodyB.velocity.x).isCloseTo(0.33333f, Offset.offset(0.00002f))
         assertThat(bodyB.velocity.y).isEqualTo(1f)
     }
 
     @Test
     fun `bodies with different mass colliding`() {
-        val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0.75f, 0f), shape = shapes[2]!!)
-        val bodyB = Body.from(position = Vector2f(4f, 0f), velocity = Vector2f(-0.25f, 0f), shape = shapes[1]!!)
+        val bodyA = Body.from(position = Vector2f(5f, 5f), velocity = Vector2f(0.75f, 0f), shape = shapes[2]!!)
+        val bodyB = Body.from(position = Vector2f(9f, 5f), velocity = Vector2f(-0.25f, 0f), shape = shapes[1]!!)
         val worldSimulator = WorldSimulator(20, 20, 1).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
-        worldSimulator.step(false)
-        assertThat(bodyA.position.x).isEqualTo(0.75f)
-        assertThat(bodyB.position.x).isEqualTo(3.75f)
+        worldSimulator.step()
+        assertThat(bodyA.position.x).isEqualTo(5.75f)
+        assertThat(bodyB.position.x).isEqualTo(8.75f)
 
-        worldSimulator.step(false)
-        assertThat(bodyA.position.x).isEqualTo(1.5f)
-        assertThat(bodyB.position.x).isEqualTo(3.5f)
+        worldSimulator.step()
+        assertThat(bodyA.position.x).isEqualTo(6.5f)
+        assertThat(bodyB.position.x).isEqualTo(8.5f)
 
         // 1 more step makes them collide, they are touching from the last step, so all movement will be backwards from where they came
-        worldSimulator.step(false)
+        worldSimulator.step()
         assertThat(bodyA.velocity.x).isEqualTo(-0.85f)
         assertThat(bodyB.velocity.x).isEqualTo(0.15f)
-        assertThat(bodyA.position.x).isEqualTo(0.65f)
-        assertThat(bodyB.position.x).isEqualTo(3.65f)
+        assertThat(bodyA.position.x).isEqualTo(5.65f)
+        assertThat(bodyB.position.x).isEqualTo(8.65f)
     }
 
     @Test
     fun `bodies moving at high speed will still collide during the step`() {
-        val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(5f, 0f), shape = shapes[0]!!)
-        val bodyB = Body.from(position = Vector2f(3f, 0f), velocity = Vector2f(-5f, 0f), shape = shapes[0]!!)
+        val bodyA = Body.from(position = Vector2f(8f, 8f), velocity = Vector2f(5f, 0f), shape = shapes[0]!!)
+        val bodyB = Body.from(position = Vector2f(11f, 8f), velocity = Vector2f(-5f, 0f), shape = shapes[0]!!)
         val worldSimulator = WorldSimulator(20, 20, 1).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         // collision after 0.1s (of the 1s step), perfect reflection, so av -> -5,0, bv -> 5,0, so both move for 0.9s in new direction, i.e. 4.5 units in new dir
-        // thus ap = 0.5 - 4.5 = (-4,0), bp = 2.5 + 4.5 = (7,0)
-        worldSimulator.step(false)
-        assertThat(bodyA.position).isEqualTo(Vector2f(-4f, 0f))
+        // thus ap = 8.5 - 4.5 = (4,8), bp = 10.5 + 4.5 = (15,8)
+        worldSimulator.step()
+        assertThat(bodyA.position).isEqualTo(Vector2f(4f, 8f))
         assertThat(bodyA.velocity).isEqualTo(Vector2f(-5f, 0f))
 
-        assertThat(bodyB.position).isEqualTo(Vector2f(7f, 0f))
+        assertThat(bodyB.position).isEqualTo(Vector2f(15f, 8f))
         assertThat(bodyB.velocity).isEqualTo(Vector2f(5f, 0f))
     }
 
     @Test
     fun `bodies not on a collision course should not change velocities`() {
         // Setup WorldSimulator with two bodies not on a collision course
-        val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(1f, 0f), shape = shapes[0]!!)
-        val bodyB = Body.from(position = Vector2f(5f, 5f), velocity = Vector2f(-1f, 0f), shape = shapes[0]!!)
+        val bodyA = Body.from(position = Vector2f(2f, 2f), velocity = Vector2f(1f, 0f), shape = shapes[0]!!)
+        val bodyB = Body.from(position = Vector2f(7f, 7f), velocity = Vector2f(-1f, 0f), shape = shapes[0]!!)
         val worldSimulator = WorldSimulator(10, 10, 1).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
-        worldSimulator.step(false)
+        worldSimulator.step()
 
         assertThat(bodyA.velocity.x).isEqualTo(1f)
         assertThat(bodyB.velocity.x).isEqualTo(-1f)
@@ -156,7 +156,7 @@ class WorldSimulatorTest {
     @Test
     fun `wrapping body that crosses to extreme right of world`() {
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(5.6f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(10, 2, 1).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(10, 2, 1, true).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
         assertThat(bodyA.position.x).isCloseTo(5.6f, Offset.offset(0.01f))
         worldSimulator.step()
@@ -166,7 +166,7 @@ class WorldSimulatorTest {
     @Test
     fun `wrapping body that crosses to extreme left of world`() {
         val bodyA = Body.from(position = Vector2f(3f, 0f), velocity = Vector2f(-5f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(10, 2, 1).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(10, 2, 1, true).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
         assertThat(bodyA.position.x).isCloseTo(8f, Offset.offset(0.01f))
     }
@@ -174,7 +174,7 @@ class WorldSimulatorTest {
     @Test
     fun `wrapping body that crosses to extreme bottom of world`() {
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 5.6f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(2, 10, 1).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(2, 10, 1, true).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
         assertThat(bodyA.position.y).isCloseTo(5.6f, Offset.offset(0.01f))
         worldSimulator.step()
@@ -184,7 +184,7 @@ class WorldSimulatorTest {
     @Test
     fun `wrapping body that crosses to extreme top of world`() {
         val bodyA = Body.from(position = Vector2f(0f, 3f), velocity = Vector2f(0f, -5f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(2, 10, 1).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(2, 10, 1, true).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
         assertThat(bodyA.position.y).isCloseTo(8f, Offset.offset(0.01f))
     }
@@ -192,24 +192,24 @@ class WorldSimulatorTest {
     @Test
     fun `scaled world simulator works as non scaled version but with larger values`() {
         // Positions and velocities work same, just the radius is larger than the shape indicates, so collisions happen sooner as the body is scaled up to world sizes
-        val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(2f, 0f), shape = shapes[0]!!)
-        val bodyB = Body.from(position = Vector2f(16f, 0f), velocity = Vector2f(-2f, 0f), shape = shapes[0]!!)
+        val bodyA = Body.from(position = Vector2f(10f, 10f), velocity = Vector2f(2f, 0f), shape = shapes[0]!!)
+        val bodyB = Body.from(position = Vector2f(26f, 10f), velocity = Vector2f(-2f, 0f), shape = shapes[0]!!)
         val worldSimulator = WorldSimulator(80, 80, 4).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
-        worldSimulator.step(false)
-        assertThat(bodyA.position.x).isEqualTo(2.0f)
-        assertThat(bodyB.position.x).isEqualTo(14.0f)
+        worldSimulator.step()
+        assertThat(bodyA.position.x).isEqualTo(12.0f)
+        assertThat(bodyB.position.x).isEqualTo(24.0f)
 
-        worldSimulator.step(false)
-        assertThat(bodyA.position.x).isEqualTo(4.0f)
-        assertThat(bodyB.position.x).isEqualTo(12.0f)
+        worldSimulator.step()
+        assertThat(bodyA.position.x).isEqualTo(14.0f)
+        assertThat(bodyB.position.x).isEqualTo(22.0f)
 
         // 1 more step makes them collide, they are touching from the last step, so all movement will be backwards from where they came
-        worldSimulator.step(false)
+        worldSimulator.step()
         assertThat(bodyA.velocity.x).isEqualTo(-2.0f)
         assertThat(bodyB.velocity.x).isEqualTo(2.0f)
-        assertThat(bodyA.position.x).isEqualTo(2.0f)
-        assertThat(bodyB.position.x).isEqualTo(14.0f)
+        assertThat(bodyA.position.x).isEqualTo(12.0f)
+        assertThat(bodyB.position.x).isEqualTo(24.0f)
     }
 
     @Test
@@ -220,7 +220,7 @@ class WorldSimulatorTest {
 
         // 1 x 1 shape
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(80, 80, 1).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(80, 80, 1, true).apply { addBodies(mutableListOf(bodyA)) }
         assertThat(worldSimulator.bodyCorners(bodyA)).containsExactlyInAnyOrder(Point(0,0), Point(0,0), Point(0,0), Point(0,0))
     }
 
@@ -231,7 +231,7 @@ class WorldSimulatorTest {
         )
 
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(80, 80, 1).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(80, 80, 1, true).apply { addBodies(mutableListOf(bodyA)) }
         assertThat(worldSimulator.bodyCorners(bodyA)).containsExactlyInAnyOrder(Point(0,0), Point(1,1), Point(1, 0), Point(0, 1))
     }
 
@@ -242,7 +242,7 @@ class WorldSimulatorTest {
         )
 
         val bodyA = Body.from(position = Vector2f(9f, 9f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(10, 10, 1).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(10, 10, 1, true).apply { addBodies(mutableListOf(bodyA)) }
         assertThat(worldSimulator.bodyCorners(bodyA)).containsExactlyInAnyOrder(Point(9,9), Point(0,9), Point(9, 0), Point(0, 0))
     }
 
@@ -253,7 +253,7 @@ class WorldSimulatorTest {
         )
 
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(10, 10, 1).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(10, 10, 1, true).apply { addBodies(mutableListOf(bodyA)) }
         assertThat(worldSimulator.bodyCorners(bodyA)).containsExactlyInAnyOrder(Point(9,9), Point(9, 1), Point(1, 9), Point(1,1))
     }
 
@@ -264,7 +264,7 @@ class WorldSimulatorTest {
             1 to Shape(2, 1.0f, 2, emptyList()),
             2 to Shape(2, 1.0f, 1, emptyList()),
         )
-        val worldSimulator = WorldSimulator(5, 5, 1)
+        val worldSimulator = WorldSimulator(5, 5, 1, true)
         // fill it with 1 body of width 5,5
         val bodyA = Body.from(position = Vector2f(2.5f, 2.5f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
         worldSimulator.addBodies(listOf(bodyA))
@@ -287,7 +287,7 @@ class WorldSimulatorTest {
         val shapes = mutableMapOf(
             0 to Shape(2, 1.0f, 5, emptyList())
         )
-        val worldSimulator = WorldSimulator(160, 80, 4)
+        val worldSimulator = WorldSimulator(160, 80, 4, true)
         val bodyA = Body.from(position = Vector2f(31.375097f, 3.468848f), velocity = Vector2f(-0.54833025f, -0.12327973f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(12.075428f, 77.72633f), velocity = Vector2f(0.05472869f, 0.033775542f), shape = shapes[0]!!)
         worldSimulator.addBodies(listOf(bodyA, bodyB))
@@ -338,7 +338,7 @@ class WorldSimulatorTest {
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
         )
-        val worldSimulator = WorldSimulator(100, 50, 1)
+        val worldSimulator = WorldSimulator(100, 50, 1, true)
         val bodyA = Body.from(position = Vector2f(1f, 10f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
         worldSimulator.addBodies(listOf(bodyA))
 
@@ -361,7 +361,7 @@ class WorldSimulatorTest {
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
         )
-        val worldSimulator = WorldSimulator(50, 100, 1)
+        val worldSimulator = WorldSimulator(50, 100, 1, true)
         val bodyA = Body.from(position = Vector2f(10f, 1f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
         worldSimulator.addBodies(listOf(bodyA))
 
@@ -386,7 +386,7 @@ class WorldSimulatorTest {
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
         )
-        val worldSimulator = WorldSimulator(100, 100, 1)
+        val worldSimulator = WorldSimulator(100, 100, 1, true)
         val bodyA = Body.from(position = Vector2f(1f, 1f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
         worldSimulator.addBodies(listOf(bodyA))
 
@@ -417,7 +417,7 @@ class WorldSimulatorTest {
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
         )
-        val worldSimulator = WorldSimulator(100, 100, 1)
+        val worldSimulator = WorldSimulator(100, 100, 1, true)
         val bodyA = Body.from(position = Vector2f(51f, 51f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
         worldSimulator.addBodies(listOf(bodyA))
 
@@ -448,7 +448,7 @@ class WorldSimulatorTest {
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
         )
-        val worldSimulator = WorldSimulator(100, 100, 1)
+        val worldSimulator = WorldSimulator(100, 100, 1, true)
         val bodyA = Body.from(position = Vector2f(61f, 11f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
         worldSimulator.addBodies(listOf(bodyA))
 
@@ -473,7 +473,7 @@ class WorldSimulatorTest {
         val shapes = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
         )
-        val worldSimulator = WorldSimulator(100, 100, 1)
+        val worldSimulator = WorldSimulator(100, 100, 1, true)
         val bodyA = Body.from(position = Vector2f(1f, 1f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(51f, 51f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
         val bodyC = Body.from(position = Vector2f(61f, 11f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
