@@ -23,6 +23,8 @@ data class WorldSimulator(
 ) {
     val bodies: MutableList<Body> = mutableListOf()
     var currentStep: Int = 0
+    // the ids of bodies that collided this step, so we can indicate to the client their screen had a collision for any effects they want to provide
+    val collisions: MutableSet<Int> = mutableSetOf()
 
     private fun boundPoint(p: Point): Point {
         val wrappedX = if (p.x < 0) {
@@ -129,6 +131,7 @@ data class WorldSimulator(
     }
 
     fun step() {
+        collisions.clear()
         bodies.forEach { body ->
             body.intendedPosition.set(body.position).add(body.velocity)
         }
@@ -146,6 +149,8 @@ data class WorldSimulator(
                     if (collisionTime != null) {
                         resolveCollision(a, b, collisionTime)
                         collisionsDetected = true
+                        collisions.add(a.id)
+                        collisions.add(b.id)
                     }
                 }
             }
@@ -372,10 +377,10 @@ data class WorldSimulator(
             val centre4 = cSE + if (bodyWidth % 2 == 0) Point(-nd2, -nd2) else Point(-n_1d2, -n_1d2)
 
             // add the visible shape to the client's list. dupes will be removed, and this also caters for both wrapping and no wrapping
-            visibleShapesByClient[clientIdThatOwns(cNW)]?.add(VisibleShape(body.shapeId, centre1))
-            visibleShapesByClient[clientIdThatOwns(cNE)]?.add(VisibleShape(body.shapeId, centre2))
-            visibleShapesByClient[clientIdThatOwns(cSW)]?.add(VisibleShape(body.shapeId, centre3))
-            visibleShapesByClient[clientIdThatOwns(cSE)]?.add(VisibleShape(body.shapeId, centre4))
+            visibleShapesByClient[clientIdThatOwns(cNW)]?.add(VisibleShape(body.shapeId, centre1, body.id))
+            visibleShapesByClient[clientIdThatOwns(cNE)]?.add(VisibleShape(body.shapeId, centre2, body.id))
+            visibleShapesByClient[clientIdThatOwns(cSW)]?.add(VisibleShape(body.shapeId, centre3, body.id))
+            visibleShapesByClient[clientIdThatOwns(cSE)]?.add(VisibleShape(body.shapeId, centre4, body.id))
 
         }
         return visibleShapesByClient

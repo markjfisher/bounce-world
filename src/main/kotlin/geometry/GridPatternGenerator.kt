@@ -1,13 +1,12 @@
 package geometry
 
-class GridPatternGenerator {
+class GridPatternGenerator: LocationGenerator {
     private var currentPoint = Point(0, 0)
     private var direction = Direction.SOUTH
     private var currentWidth = 2
     private var haveFilled = 0
 
-
-    fun generate(): Sequence<Point> = sequence {
+    override fun generate(): Sequence<Point> = sequence {
         yield(currentPoint) // Yield the first point
 
         while (true) {

@@ -3,13 +3,14 @@ package domain
 import config.WorldConfiguration
 import data.ShapeCreator
 import geometry.GridPatternGenerator
+import geometry.LocationGenerator
 import geometry.Point
+import geometry.RightGenerator
 import geometry.bounds
 import jakarta.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.joml.Vector2f
@@ -26,13 +27,13 @@ open class World(
     // the data about clients
     private val clients = mutableMapOf<Int, GameClient>()
 
-    // the client streams
-    private val clientChannels = mutableMapOf<Int, Channel<ByteArray>>()
-
     // last heartbeat received
     val clientHeartbeats = mutableMapOf<Int, Long>()
 
-    // which positions in the spiral pattern are currently taken
+    // status events the client needs to be told about
+    private val statusEvents = mutableMapOf<Int, MutableSet<StatusEvent>>()
+
+    // which positions in the location pattern are currently taken
     private val occupiedScreens = mutableMapOf<Point, GameClient>()
 
     // the body shapes the clients will be told about
@@ -61,7 +62,7 @@ open class World(
 
     private suspend fun checkClientsStillConnected() {
         while (!stopped) {
-            // creating a list to iterate over instead of directly on the keys stops the concurrent update error as we're not modifying this list, just the clientChannels
+            // creating a list to iterate over instead of directly on the keys stops the concurrent update error as we're not modifying this list
             val clientIds = clients.keys.toList() // use the clients directly rather than channels, as they may not have sent any data yet, so aren't in the channels list, but we do have them in the initial heartbeats
             clientIds.forEach { clientId ->
                 val sinceHeartbeat = System.currentTimeMillis() - (clientHeartbeats[clientId] ?: 0)
@@ -78,37 +79,25 @@ open class World(
     private suspend fun runSimulation() {
         isStarted = true
         while (!stopped) {
+            // TODO should we remove all collision events that haven't been read by clients, other event types will stick around until client has read them, but collisions should not be sticky
             simulator.step()
             currentClientVisibleShapes.clear()
             currentClientVisibleShapes.putAll(simulator.findVisibleShapesByClient(clients.values.toList()))
-
-//            clientChannels.forEach { (clientId, channel) ->
-//                val data = try {
-//                    val csv = asCSV(clientId)
-//                    println("sending ${clients[clientId]!!.name}: $csv")
-//                    // if there are no bodies in the view, we will return a value of "0"
-//                    if (csv.isNotEmpty()) csv.split(",").map { it.toInt().toByte() }.toByteArray() else byteArrayOf(0)
-//                } catch (e: Exception) {
-//                    println("ERROR processing client ${clientId}: ${e.message}, sending 0")
-//                    byteArrayOf(0)
-//                }
-//                try {
-//                    if (!channel.isClosedForSend) {
-//                        val stepNumber = simulator.currentStep.toByte()
-//                        channel.send(byteArrayOf(stepNumber) + data)
-//                    }
-//                } catch (e: ClosedSendChannelException) {
-//                    println("channel closed for client $clientId, removing it.")
-//                    unregisterClient(clientId)
-//                }
-//            }
+            // find all the clients with the collisions this step so we can add a collision event
+            // we have body1 body2 in collisions, and those ids are in the visibleShapes of a client
+            clients.keys.forEach { clientId ->
+                val bodyIdsForCurrentClient = currentClientVisibleShapes[clientId]?.map { it.bodyId }?.toSet() ?: setOf()
+                if (bodyIdsForCurrentClient.intersect(simulator.collisions).isNotEmpty()) {
+                    // this client has a body in its view that had a collision this step
+                    addEvent(clientId, StatusEvent.COLLISION)
+                }
+            }
 
             delay(config.stepDelayMillis)
         }
     }
 
     private fun unregisterClient(clientId: Int) {
-        clientChannels.remove(clientId)?.close()
         removeClient(clientId)
     }
 
@@ -145,13 +134,6 @@ open class World(
         return client
     }
 
-    fun registerClientChannel(clientId: Int): Channel<ByteArray> {
-        val channel = Channel<ByteArray>(Channel.CONFLATED)
-        clientChannels[clientId] = channel
-        clientHeartbeats[clientId] = System.currentTimeMillis()
-        return channel
-    }
-
     fun at(point: Point): GameClient? = occupiedScreens[point]
     fun getClient(id: Int): GameClient? = clients[id]
 
@@ -180,11 +162,17 @@ open class World(
     }
 
     private fun findNextUnoccupiedScreen(): Point {
-        // walk the sequence of grid points until we find one not in occupiedPoints.
+        // walk the sequence of next location points until we find one not in occupiedPoints.
         // This will allow clients to be removed from the world, and replaced by new joiners
-        val spiralPoints = GridPatternGenerator().generate().iterator()
-        while (spiralPoints.hasNext()) {
-            val point = spiralPoints.next()
+        val pointGenerator: LocationGenerator = when(config.locationPattern) {
+            "grid" -> GridPatternGenerator()
+            "right" -> RightGenerator()
+            else -> throw Error("Unknown location pattern ${config.locationPattern}")
+        }
+
+        val pointIterator = pointGenerator.generate().iterator()
+        while (pointIterator.hasNext()) {
+            val point = pointIterator.next()
             if (!occupiedScreens.containsKey(point)) {
                 return point
             }
@@ -195,6 +183,7 @@ open class World(
     fun removeClient(id: Int) {
         val client = getClient(id) ?: return
         clients.remove(client.id)
+        statusEvents.remove(client.id)
         val entriesForClient = occupiedScreens.filterValues { c -> c.id == id }
         if (entriesForClient.isNotEmpty()) {
             occupiedScreens.remove(entriesForClient.keys.first())
@@ -206,37 +195,36 @@ open class World(
         return occupiedScreens.keys.bounds().second + Point(1, 1)
     }
 
+    fun addEventToAllClients(statusEvent: StatusEvent) {
+        clients.keys.forEach { id ->
+            val clientEvents = statusEvents[id] ?: mutableSetOf()
+            clientEvents.add(statusEvent)
+            statusEvents[id] = clientEvents
+        }
+    }
+
+    private fun addEvent(clientId: Int, statusEvent: StatusEvent) {
+        val clientEvents = statusEvents[clientId] ?: mutableSetOf()
+        clientEvents.add(statusEvent)
+        statusEvents[clientId] = clientEvents
+    }
+
+    fun calculateStatus(clientId: Int): Byte {
+        // if there are no events, status is 0
+        val events = statusEvents[clientId] ?: return 0
+
+        // remove the statuses from our map, as they are only sent once to the client
+        statusEvents.remove(clientId)
+
+        // add all the status values together to form the byte.
+        // Each status value is a power of 2 (i.e. an individual bit) to make it easy for the client to determine values to react to
+        return events.fold(0) { ac, e -> ac + e.value }.toByte()
+    }
+
     companion object {
         // screens of 40x20 and 32x16 have good mappings down from these sizes
         // The world size will be its boundary * these values.
         const val SCREEN_WIDTH = 160
         const val SCREEN_HEIGHT = 80
     }
-
-//    private fun asCSV(clientId: Int): String {
-//        val visibleShapes = currentClientVisibleShapes[clientId]
-//        if (!visibleShapes.isNullOrEmpty()) {
-////            println("client $clientId visible shapes ---------------")
-//            val gameClient = getClient(clientId)!!
-//            val clientData = visibleShapes.joinToString(",") { vs ->
-//                // vs is in world coordinates, remove the client's top left corner position to get it relative to the client's real dimensions
-//                val adjustedToClientViewPosition = vs.position - gameClient.worldBounds.first
-//
-//                // now scale down to the client's screen size
-//                val scaling = 1f * gameClient.screenSize.width / config.width
-//                val scaledToClientViewPosition = Point(
-//                    (adjustedToClientViewPosition.x * scaling).roundToInt(),
-//                    (adjustedToClientViewPosition.y * scaling).roundToInt()
-//                )
-////                println("scaled from $vs to $scaledToClientViewPosition")
-//
-//                // now convert to a comma delimited string
-//                "${vs.shapeId},${scaledToClientViewPosition.x},${scaledToClientViewPosition.y}"
-//            }
-//            // prepend with the count of shapes we need to read from the string
-//            return "${visibleShapes.size},$clientData"
-//        } else {
-//            return ""
-//        }
-//    }
 }

@@ -36,7 +36,8 @@ open class WorldController(
             byteArrayOf(0)
         }
         val stepNumber = world.simulator.currentStep.toByte()
-        return HttpResponse.ok(byteArrayOf(stepNumber) + data)
+        val appStatus = world.calculateStatus(clientId)
+        return HttpResponse.ok(byteArrayOf(stepNumber, appStatus) + data)
     }
 
     @Post("config/delay", produces = [TEXT_PLAIN], consumes = [APPLICATION_JSON])

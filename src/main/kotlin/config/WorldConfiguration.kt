@@ -13,4 +13,5 @@ class WorldConfiguration {
     var initialSpeed: Float = 1.5f
     var stepDelayMillis: Long = 1000
     var heartbeatTimeoutMillis: Long = 10000
+    var locationPattern: String = "grid"
 }

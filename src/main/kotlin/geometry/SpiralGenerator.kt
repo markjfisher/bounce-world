@@ -1,13 +1,13 @@
 package geometry
 
-class SpiralGenerator {
+class SpiralGenerator: LocationGenerator {
     private var direction = Direction.EAST
     private var currentPoint = Point(0, 0)
     private var steps = 1
     private var stepCounter = 0
     private var directionChangeCounter = 0
 
-    fun generate(): Sequence<Point> = sequence {
+    override fun generate(): Sequence<Point> = sequence {
         yield(currentPoint) // Yield the initial point
 
         while (true) {

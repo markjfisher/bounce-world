@@ -21,7 +21,7 @@ class WorldSimulatorTest {
     fun `bodies on a collision course should collide and change velocities`() {
         val bodyA = Body.from(position = Vector2f(2f, 2f), velocity = Vector2f(0.5f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(6f, 2f), velocity = Vector2f(-0.5f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(20, 20, 1).apply { addBodies(listOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(20, 20, 1, true).apply { addBodies(listOf(bodyA, bodyB)) }
 
         worldSimulator.step()
         assertThat(bodyA.position.x).isEqualTo(2.5f)
@@ -44,7 +44,7 @@ class WorldSimulatorTest {
         // These are at perfect 45 degree angles to each other, and both start 2 steps away from perfect touching at start of step
         val bodyA = Body.from(position = Vector2f(3f, 3f), velocity = Vector2f(1f, 1f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(9f, 3f), velocity = Vector2f(-1f, 1f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(20, 20, 1).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(20, 20, 1, true).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         // leading up to collision
         worldSimulator.step()
@@ -73,7 +73,7 @@ class WorldSimulatorTest {
         // These are at perfect 45 degree angles to each other, and both start 2 steps away from perfect touching at start of step
         val bodyA = Body.from(position = Vector2f(3f, 3f), velocity = Vector2f(1f, 1f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(9f, 3f), velocity = Vector2f(-1f, 1f), shape = shapes[1]!!)
-        val worldSimulator = WorldSimulator(20, 20, 1).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(20, 20, 1, true).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         // leading up to collision
         worldSimulator.step()
@@ -106,7 +106,7 @@ class WorldSimulatorTest {
     fun `bodies with different mass colliding`() {
         val bodyA = Body.from(position = Vector2f(5f, 5f), velocity = Vector2f(0.75f, 0f), shape = shapes[2]!!)
         val bodyB = Body.from(position = Vector2f(9f, 5f), velocity = Vector2f(-0.25f, 0f), shape = shapes[1]!!)
-        val worldSimulator = WorldSimulator(20, 20, 1).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(20, 20, 1, true).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         worldSimulator.step()
         assertThat(bodyA.position.x).isEqualTo(5.75f)
@@ -128,7 +128,7 @@ class WorldSimulatorTest {
     fun `bodies moving at high speed will still collide during the step`() {
         val bodyA = Body.from(position = Vector2f(8f, 8f), velocity = Vector2f(5f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(11f, 8f), velocity = Vector2f(-5f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(20, 20, 1).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(20, 20, 1, true).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         // collision after 0.1s (of the 1s step), perfect reflection, so av -> -5,0, bv -> 5,0, so both move for 0.9s in new direction, i.e. 4.5 units in new dir
         // thus ap = 8.5 - 4.5 = (4,8), bp = 10.5 + 4.5 = (15,8)
@@ -145,7 +145,7 @@ class WorldSimulatorTest {
         // Setup WorldSimulator with two bodies not on a collision course
         val bodyA = Body.from(position = Vector2f(2f, 2f), velocity = Vector2f(1f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(7f, 7f), velocity = Vector2f(-1f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(10, 10, 1).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(10, 10, 1, true).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         worldSimulator.step()
 
