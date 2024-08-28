@@ -1,13 +1,16 @@
 package simulator
 
+import config.WorldConfiguration
 import domain.Body
 import domain.CollisionEvent
 import domain.GameClient
 import domain.VisibleShape
 import geometry.Point
 import geometry.SpiralGenerator
+import jakarta.inject.Singleton
 import maths.QuadraticSolver
 import org.joml.Vector2f
+import org.joml.times
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.pow
@@ -15,16 +18,20 @@ import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 @Suppress("DuplicatedCode")
+@Singleton
 data class WorldSimulator(
-    var width: Int,
-    var height: Int,
-    val scalingFactor: Int,
-    val enableWrapping: Boolean = true,
+    private val config: WorldConfiguration
 ) {
+    var width = config.width
+    var height = config.height
+    var scalingFactor = config.scalingFactor
+    var enableWrapping = config.enableWrapping
+
     val bodies: MutableList<Body> = mutableListOf()
     var currentStep: Int = 0
     // the ids of bodies that collided this step, so we can indicate to the client their screen had a collision for any effects they want to provide
     val collisions: MutableSet<Int> = mutableSetOf()
+    val stepTime = 1f / config.updatesPerSecond
 
     private fun boundPoint(p: Point): Point {
         val wrappedX = if (p.x < 0) {
@@ -133,7 +140,9 @@ data class WorldSimulator(
     fun step() {
         collisions.clear()
         bodies.forEach { body ->
-            body.intendedPosition.set(body.position).add(body.velocity)
+            // distance = speed * time
+            val delta = Vector2f(body.velocity).mul(stepTime)
+            body.intendedPosition.set(body.position).add(delta)
         }
 
         var collisionsDetected: Boolean
@@ -220,8 +229,8 @@ data class WorldSimulator(
 
         val quadraticSolver = QuadraticSolver(qa, qb, qc)
         val roots = quadraticSolver.solveRealRoots()
-        // look for intercept time in range 0 to 1 second
-        val validRoots = roots.filter { it >= 0.0f && it < 1.0f }
+        // look for intercept time in range 0 to stepTime second
+        val validRoots = roots.filter { it >= 0.0f && it < stepTime }
         // println("a: $a, b: $b, validRoots: $validRoots")
         return validRoots
     }
@@ -231,8 +240,8 @@ data class WorldSimulator(
     }
 
     private fun resolveCollision(a: Body, b: Body, collisionTime: Float) {
-        val acp = Vector2f(a.position).add(Vector2f(a.velocity).mul(collisionTime))
-        val bcp = Vector2f(b.position).add(Vector2f(b.velocity).mul(collisionTime))
+        val acp = Vector2f(a.position).add(Vector2f(a.velocity).mul(stepTime).mul(collisionTime))
+        val bcp = Vector2f(b.position).add(Vector2f(b.velocity).mul(stepTime).mul(collisionTime))
         val collisionNormal = Vector2f(bcp).sub(acp).normalize()
 
         val relativeVelocity = Vector2f(b.velocity).sub(a.velocity)
@@ -259,11 +268,11 @@ data class WorldSimulator(
         a.velocity.add(Vector2f(impulse).mul(1 / a.mass).negate())
         b.velocity.add(Vector2f(impulse).mul(1 / b.mass))
 
-        // time in a step is 1s by design, work out how much time it would be travelling from the CP with its new velocity
-        val timeRemaining = 1.0f - collisionTime
+        // work out how much time it would be travelling from the CP with its new velocity in the time remaining
+        val timeRemaining = stepTime - collisionTime
 
-        val distanceAAfterCollision = Vector2f(a.velocity).mul(timeRemaining)
-        val distanceBAfterCollision = Vector2f(b.velocity).mul(timeRemaining)
+        val distanceAAfterCollision = Vector2f(a.velocity).mul(stepTime).mul(timeRemaining)
+        val distanceBAfterCollision = Vector2f(b.velocity).mul(stepTime).mul(timeRemaining)
 
         val finalPositionA = Vector2f(acp).add(distanceAAfterCollision)
         val finalPositionB = Vector2f(bcp).add(distanceBAfterCollision)
@@ -305,7 +314,7 @@ data class WorldSimulator(
         // Calculate time to collide with the left wall (x = 0)
         if (body.velocity.x < 0) { // Moving towards the left wall
             val timeToLeftWall = (body.radius - body.position.x) / body.velocity.x
-            if (timeToLeftWall >= 0f && timeToLeftWall < 1f) {
+            if (timeToLeftWall >= 0f && timeToLeftWall < stepTime) {
                 times.add(timeToLeftWall)
             }
         }
@@ -313,7 +322,7 @@ data class WorldSimulator(
         // Calculate time to collide with the right wall (x = width)
         if (body.velocity.x > 0) { // Moving towards the right wall
             val timeToRightWall = (width - body.radius - body.position.x) / body.velocity.x
-            if (timeToRightWall >= 0f && timeToRightWall < 1f) {
+            if (timeToRightWall >= 0f && timeToRightWall < stepTime) {
                 times.add(timeToRightWall)
             }
         }
@@ -321,7 +330,7 @@ data class WorldSimulator(
         // Calculate time to collide with the top wall (y = 0)
         if (body.velocity.y < 0) { // Moving towards the top wall
             val timeToTopWall = (body.radius - body.position.y) / body.velocity.y
-            if (timeToTopWall >= 0f && timeToTopWall < 1f) {
+            if (timeToTopWall >= 0f && timeToTopWall < stepTime) {
                 times.add(timeToTopWall)
             }
         }
@@ -329,7 +338,7 @@ data class WorldSimulator(
         // Calculate time to collide with the bottom wall (y = height)
         if (body.velocity.y > 0) { // Moving towards the bottom wall
             val timeToBottomWall = (height - body.radius - body.position.y) / body.velocity.y
-            if (timeToBottomWall >= 0f && timeToBottomWall < 1f) {
+            if (timeToBottomWall >= 0f && timeToBottomWall < stepTime) {
                 times.add(timeToBottomWall)
             }
         }

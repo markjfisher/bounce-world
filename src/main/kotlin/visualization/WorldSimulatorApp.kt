@@ -9,6 +9,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import simulator.WorldSimulator
 import tornadofx.App
 import tornadofx.View
 import tornadofx.borderpane
@@ -21,7 +22,8 @@ class WorldSimulatorApp: App(WorldView::class)
 
 class WorldView : View("World Simulator") {
     private val worldConfig = WorldConfiguration().apply { shouldAutoStart = false }
-    private val world = World(worldConfig)
+    private val simulator = WorldSimulator(worldConfig)
+    private val world = World(worldConfig, simulator)
     private val f = 1200.0 / worldConfig.width
     private val canvas = Canvas(1200.0, 600.0)
     private val colours = mutableMapOf<Int, Color>()

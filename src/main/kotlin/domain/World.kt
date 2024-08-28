@@ -9,7 +9,6 @@ import geometry.RightGenerator
 import geometry.bounds
 import jakarta.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -19,7 +18,8 @@ import kotlin.random.Random
 
 @Singleton
 open class World(
-    private val config: WorldConfiguration
+    private val config: WorldConfiguration,
+    val simulator: WorldSimulator,
 ) {
     private val simulationScope = CoroutineScope(Dispatchers.Default)
     private val heartbeatScope = CoroutineScope(Dispatchers.IO)
@@ -40,23 +40,16 @@ open class World(
     val shapes = ShapeCreator.createShapes()
 
     private var isStarted = false
+    var isFrozen = false
     private var stopped = false
     private var nextClientId = 0
+    private val stepTime = 1f / config.updatesPerSecond
 
     val currentClientVisibleShapes = mutableMapOf<Int, MutableSet<VisibleShape>>()
 
-    val simulator = WorldSimulator(width = config.width, height = config.height, scalingFactor = config.scalingFactor)
-
-    fun setDelay(delay: Long) {
-        config.stepDelayMillis = delay
-    }
-
     init {
 //        val newBodies = createBodies(0, 0, 0, listOf(5, 3))
-//        val newBodies = createBodies(0, 0, 0, listOf(5, 3, 3, 2, 2, 1, 1))
-//        val newBodies = createBodies(0, 0, 0, listOf(5, 3, 3, 2, 2, 2, 1, 1, 1, 1))
-        val newBodies = createBodies(0, 0, 0, listOf(5, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1))
-//        val newBodies = createBodies(0,0, 0, List(30) { 1 } + List(10) { 2 } + List(5) { 3 } + List(2) { 5 })
+        val newBodies = createBodies(0,0, 0, List(5) { 2 } + List(3) { 3 } + List(1) { 5 })
         simulator.addBodies(newBodies)
     }
 
@@ -75,25 +68,35 @@ open class World(
         }
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     private suspend fun runSimulation() {
+        var started = 0L
         isStarted = true
         while (!stopped) {
-            // TODO should we remove all collision events that haven't been read by clients, other event types will stick around until client has read them, but collisions should not be sticky
-            simulator.step()
-            currentClientVisibleShapes.clear()
-            currentClientVisibleShapes.putAll(simulator.findVisibleShapesByClient(clients.values.toList()))
-            // find all the clients with the collisions this step so we can add a collision event
-            // we have body1 body2 in collisions, and those ids are in the visibleShapes of a client
-            clients.keys.forEach { clientId ->
-                val bodyIdsForCurrentClient = currentClientVisibleShapes[clientId]?.map { it.bodyId }?.toSet() ?: setOf()
-                if (bodyIdsForCurrentClient.intersect(simulator.collisions).isNotEmpty()) {
-                    // this client has a body in its view that had a collision this step
-                    addEvent(clientId, StatusEvent.COLLISION)
+            started = System.currentTimeMillis()
+            if (!isFrozen) {
+                // TODO: should we remove all collision events that haven't been read by clients, other event types will stick around until client has read them, but collisions should not be sticky
+                simulator.step()
+                currentClientVisibleShapes.clear()
+                currentClientVisibleShapes.putAll(simulator.findVisibleShapesByClient(clients.values.toList()))
+                // find all the clients with the collisions this step so we can add a collision event
+                // we have body1 body2 in collisions, and those ids are in the visibleShapes of a client
+                clients.keys.forEach { clientId ->
+                    val bodyIdsForCurrentClient = currentClientVisibleShapes[clientId]?.map { it.bodyId }?.toSet() ?: setOf()
+                    if (bodyIdsForCurrentClient.intersect(simulator.collisions).isNotEmpty()) {
+                        // this client has a body in its view that had a collision this step
+                        addEvent(clientId, StatusEvent.COLLISION)
+                    }
                 }
+            } else {
+                addEventToAllClients(StatusEvent.FROZEN_TOGGLE)
             }
 
-            delay(config.stepDelayMillis)
+            val timeTaken = (System.currentTimeMillis() - started) / 1000f
+            if (timeTaken < stepTime) {
+                val d = (stepTime - timeTaken) * 1000f
+                delay(d.toLong())
+            }
+
         }
     }
 
@@ -183,6 +186,7 @@ open class World(
     fun removeClient(id: Int) {
         val client = getClient(id) ?: return
         clients.remove(client.id)
+        clientHeartbeats.remove(client.id)
         statusEvents.remove(client.id)
         val entriesForClient = occupiedScreens.filterValues { c -> c.id == id }
         if (entriesForClient.isNotEmpty()) {
@@ -203,6 +207,13 @@ open class World(
         }
     }
 
+    fun removeEventFromAllClients(statusEvent: StatusEvent) {
+        clients.keys.forEach { id ->
+            val clientEvents = statusEvents[id] ?: mutableSetOf()
+            clientEvents.remove(statusEvent)
+        }
+    }
+
     private fun addEvent(clientId: Int, statusEvent: StatusEvent) {
         val clientEvents = statusEvents[clientId] ?: mutableSetOf()
         clientEvents.add(statusEvent)
@@ -219,6 +230,15 @@ open class World(
         // add all the status values together to form the byte.
         // Each status value is a power of 2 (i.e. an individual bit) to make it easy for the client to determine values to react to
         return events.fold(0) { ac, e -> ac + e.value }.toByte()
+    }
+
+    fun toggleFrozen() {
+        isFrozen = !isFrozen
+        if (isFrozen) {
+            addEventToAllClients(StatusEvent.FROZEN_TOGGLE)
+        } else {
+            removeEventFromAllClients(StatusEvent.FROZEN_TOGGLE)
+        }
     }
 
     companion object {

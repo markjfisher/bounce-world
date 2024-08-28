@@ -1,18 +1,14 @@
 package controller
 
 import config.WorldConfiguration
-import domain.DelayInfo
 import domain.World
 import geometry.Point
+import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
-import io.micronaut.http.MediaType.APPLICATION_JSON
-import io.micronaut.http.MediaType.TEXT_PLAIN
-import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Post
-import jakarta.validation.Valid
+import io.micronaut.http.annotation.QueryValue
 import kotlin.math.roundToInt
 
 @Controller("/")
@@ -20,10 +16,11 @@ open class WorldController(
     private val world: World,
     private val config: WorldConfiguration
 ) {
-//    private val channelsContext = CoroutineScope(Dispatchers.Default).coroutineContext
 
-    @Get("w/{clientId}", produces = [MediaType.APPLICATION_OCTET_STREAM])
-    fun getWorldData(clientId: Int): HttpResponse<ByteArray> {
+    // s is "step" though it isn't used yet
+    @OptIn(ExperimentalStdlibApi::class)
+    @Get("w/{clientId}{?s}", produces = [MediaType.APPLICATION_OCTET_STREAM])
+    fun getWorldData(clientId: Int, @QueryValue @Nullable s: Int?): HttpResponse<ByteArray> {
         // val client = world.getClient(clientId) ?: return HttpResponse.notFound()
         world.clientHeartbeats[clientId] = System.currentTimeMillis()
         val data = try {
@@ -37,13 +34,8 @@ open class WorldController(
         }
         val stepNumber = world.simulator.currentStep.toByte()
         val appStatus = world.calculateStatus(clientId)
+        println("client: $clientId, status: ${appStatus.toHexString()}")
         return HttpResponse.ok(byteArrayOf(stepNumber, appStatus) + data)
-    }
-
-    @Post("config/delay", produces = [TEXT_PLAIN], consumes = [APPLICATION_JSON])
-    open fun setConfigDelay(@Valid @Body delayInfo: DelayInfo): HttpResponse<String> {
-        world.setDelay(delayInfo.delay)
-        return HttpResponse.ok("configured delay to ${delayInfo.delay} milliseconds")
     }
 
     // keep it as generating a string so we can print it if needed
@@ -56,13 +48,12 @@ open class WorldController(
                 // vs is in world coordinates, remove the client's top left corner position to get it relative to the client's real dimensions
                 val adjustedToClientViewPosition = vs.position - gameClient.worldBounds.first
 
-                // now scale down to the client's screen size
+                // now scale down to the client's screen size, we need the width of the minor window view
                 val scaling = 1f * gameClient.screenSize.width / config.width
                 val scaledToClientViewPosition = Point(
                     (adjustedToClientViewPosition.x * scaling).roundToInt(),
                     (adjustedToClientViewPosition.y * scaling).roundToInt()
                 )
-//                println("scaled from $vs to $scaledToClientViewPosition")
 
                 // now convert to a comma delimited string
                 "${vs.shapeId},${scaledToClientViewPosition.x},${scaledToClientViewPosition.y}"
@@ -74,4 +65,40 @@ open class WorldController(
         }
     }
 
+    private fun addWord(array: MutableList<Byte>, v: Int) {
+        val vL = v and 255
+        val vH = (v / 256) and 255
+        array.add(vL.toByte())
+        array.add(vH.toByte())
+    }
+
+    private fun addBool(array: MutableList<Byte>, v: Boolean) {
+        val asInt = if (v) 1 else 0
+        array.add(asInt.toByte())
+    }
+
+    @Get("ws", produces = [MediaType.APPLICATION_OCTET_STREAM])
+    fun getWorldState(): HttpResponse<ByteArray> {
+        val data = mutableListOf<Byte>()
+        addWord(data, world.simulator.width)
+        addWord(data, world.simulator.height)
+        addWord(data, world.simulator.bodies.count())
+        val bodiesByCount = world.simulator.bodies.groupingBy { (it.radius * 2).toInt() }.eachCount()
+        data.add(bodiesByCount.getOrDefault(1, 0).toByte())
+        data.add(bodiesByCount.getOrDefault(2, 0).toByte())
+        data.add(bodiesByCount.getOrDefault(3, 0).toByte())
+        data.add(bodiesByCount.getOrDefault(4, 0).toByte())
+        data.add(bodiesByCount.getOrDefault(5, 0).toByte())
+        data.add(world.clientHeartbeats.count().toByte())
+        addBool(data, world.isFrozen)
+        addBool(data, world.simulator.enableWrapping)
+        return HttpResponse.ok(data.toByteArray())
+    }
+
+    @Get("freeze", produces = [MediaType.APPLICATION_OCTET_STREAM])
+    fun toggleFreeze(): HttpResponse<ByteArray> {
+        world.toggleFrozen();
+        println("toggled frozen to ${world.isFrozen}")
+        return HttpResponse.ok(byteArrayOf(if (world.isFrozen) 1 else 0))
+    }
 }

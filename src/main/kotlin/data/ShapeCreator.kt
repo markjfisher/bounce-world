@@ -73,7 +73,7 @@ object ShapeCreator {
     fun createShapes(): List<Shape> {
         val shapes = mutableListOf<Shape>()
         shapes.addAll(listOf(
-            createShape(4.6f, fromString(
+            createShape(5.8f, fromString(
                 """
                     |  ┌┐ 
                     |┌─┘└┐
@@ -83,16 +83,16 @@ object ShapeCreator {
                     """.trimMargin()
                 )
             ),
-            createShape(4.6f, fromString(
-                """
-                    | ┌┐  
-                    |┌┘└┐ 
-                    |└┐ └┐
-                    |┌┘ ┌┘
-                    |└──┘ 
-                    """.trimMargin()
-                )
-            ),
+//            createShape(4.6f, fromString(
+//                """
+//                    | ┌┐
+//                    |┌┘└┐
+//                    |└┐ └┐
+//                    |┌┘ ┌┘
+//                    |└──┘
+//                    """.trimMargin()
+//                )
+//            ),
             createShape(4.0f, fromString(
                 """
                     | ┌┐ 
@@ -102,15 +102,15 @@ object ShapeCreator {
                     """.trimMargin()
                 )
             ),
-            createShape(4.0f, fromString(
-                """
-                    |  ┌┐
-                    |┌─┘│
-                    |│┌─┘
-                    |└┘  
-                    """.trimMargin()
-                )
-            ),
+//            createShape(4.0f, fromString(
+//                """
+//                    |  ┌┐
+//                    |┌─┘│
+//                    |│┌─┘
+//                    |└┘
+//                    """.trimMargin()
+//                )
+//            ),
             createShape(4.1f, fromString(
                 """
                     | \/ 
@@ -120,19 +120,19 @@ object ShapeCreator {
                     """.trimMargin()
             )
             ),
-            createShape(3.8f, fromString(
+            createShape(3.6f, fromString(
                     """
                     | * 
-                    |*X*
+                    |***
                     | * 
                     """.trimMargin()
                 )
             ),
-            createShape(3.8f, fromString(
+            createShape(3.6f, fromString(
                     """
+                    |# #
                     | # 
-                    |#O#
-                    | # 
+                    |# #
                     """.trimMargin()
                 )
             ),
@@ -152,7 +152,7 @@ object ShapeCreator {
 //                    """.trimMargin()
 //                )
 //            ),
-            createShape(3.7f, fromString(
+            createShape(3.4f, fromString(
                     """
                     | ┌┐
                     |┌┼┘
@@ -160,7 +160,7 @@ object ShapeCreator {
                     """.trimMargin()
                 )
             ),
-            createShape(3.7f, fromString(
+            createShape(3.4f, fromString(
                     """
                     |┌┐ 
                     |└┼┐
@@ -168,47 +168,104 @@ object ShapeCreator {
                     """.trimMargin()
                 )
             ),
-            createShape(3.3f, fromString(
+            createShape(3.0f, fromString(
                     """
                     |/\
                     |\/
                     """.trimMargin()
                 )
             ),
-//            createShape(3.4f, fromString(
-//                    """
-//                    |▟▙
-//                    |▜▛
-//                    """.trimMargin()
-//                )
-//            ),
+            createShape(3.0f, fromString(
+                    """
+                    |&X
+                    |X&
+                    """.trimMargin()
+                )
+            ),
+            createShape(3.0f, fromString(
+                    """
+                    |WM
+                    |MW
+                    """.trimMargin()
+                )
+            ),
+            createShape(3.0f, fromString(
+                    """
+                    |##
+                    |##
+                    """.trimMargin()
+                )
+            ),
+            createShape(3.2f, fromString(
+                    """
+                    |▟▙
+                    |▜▛
+                    """.trimMargin()
+                )
+            ),
 //            createShape(2.2f, fromString(
 //                    """
 //                    |┼
 //                    """.trimMargin()
 //                )
 //            ),
-            createShape(2.2f, fromString(
+            createShape(2.0f, fromString(
                     """
                     |*
                     """.trimMargin()
                 )
             ),
-            createShape(2.2f, fromString(
+            createShape(2.0f, fromString(
                     """
                     |O
                     """.trimMargin()
                 )
             ),
-            createShape(2.2f, fromString(
+            createShape(2.0f, fromString(
                     """
                     |#
                     """.trimMargin()
                 )
             ),
-            createShape(2.2f, fromString(
+            createShape(2.0f, fromString(
                     """
                     |X
+                    """.trimMargin()
+                )
+            ),
+            createShape(2.0f, fromString(
+                    """
+                    |@
+                    """.trimMargin()
+                )
+            ),
+            createShape(2.0f, fromString(
+                    """
+                    |Y
+                    """.trimMargin()
+                )
+            ),
+            createShape(2.0f, fromString(
+                    """
+                    |V
+                    """.trimMargin()
+                )
+            ),
+            createShape(2.0f, fromString(
+                    """
+                    |"
+                    """.trimMargin()
+                )
+            ),
+            createShape(2.0f, fromString(
+                    """
+                    |A
+                    """.trimMargin()
+                )
+            ),
+            createShape(2.0f, fromString(
+                    """
+                    |^
                     """.trimMargin()
                 )
             ),
