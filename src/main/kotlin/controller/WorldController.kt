@@ -32,9 +32,9 @@ open class WorldController(
             println("ERROR processing client ${clientId}: ${e.message}, sending 0")
             byteArrayOf(0)
         }
-        val stepNumber = world.simulator.currentStep.toByte()
+        val stepNumber = world.simulator.currentStep().toByte()
         val appStatus = world.calculateStatus(clientId)
-        println("client: $clientId, status: ${appStatus.toHexString()}")
+//        println("client: $clientId, status: ${appStatus.toHexString()}")
         return HttpResponse.ok(byteArrayOf(stepNumber, appStatus) + data)
     }
 
@@ -80,10 +80,10 @@ open class WorldController(
     @Get("ws", produces = [MediaType.APPLICATION_OCTET_STREAM])
     fun getWorldState(): HttpResponse<ByteArray> {
         val data = mutableListOf<Byte>()
-        addWord(data, world.simulator.width)
-        addWord(data, world.simulator.height)
-        addWord(data, world.simulator.bodies.count())
-        val bodiesByCount = world.simulator.bodies.groupingBy { (it.radius * 2).toInt() }.eachCount()
+        addWord(data, world.simulator.width())
+        addWord(data, world.simulator.height())
+        addWord(data, world.simulator.bodies().count())
+        val bodiesByCount = world.simulator.bodies().groupingBy { (it.radius * 2).toInt() }.eachCount()
         data.add(bodiesByCount.getOrDefault(1, 0).toByte())
         data.add(bodiesByCount.getOrDefault(2, 0).toByte())
         data.add(bodiesByCount.getOrDefault(3, 0).toByte())
@@ -91,7 +91,7 @@ open class WorldController(
         data.add(bodiesByCount.getOrDefault(5, 0).toByte())
         data.add(world.clientHeartbeats.count().toByte())
         addBool(data, world.isFrozen)
-        addBool(data, world.simulator.enableWrapping)
+        addBool(data, world.simulator.isWrapping())
         return HttpResponse.ok(data.toByteArray())
     }
 

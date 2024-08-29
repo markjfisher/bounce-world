@@ -3,92 +3,59 @@ package simulator
 import config.WorldConfiguration
 import domain.Body
 import domain.CollisionEvent
-import domain.GameClient
-import domain.VisibleShape
-import geometry.Point
 import geometry.SpiralGenerator
 import jakarta.inject.Singleton
 import maths.QuadraticSolver
 import org.joml.Vector2f
-import org.joml.times
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.pow
-import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
 @Suppress("DuplicatedCode")
 @Singleton
 data class WorldSimulator(
     private val config: WorldConfiguration
-) {
-    var width = config.width
-    var height = config.height
-    var scalingFactor = config.scalingFactor
-    var enableWrapping = config.enableWrapping
-
+): BodySimulator {
+    private var worldWidth = config.width
+    private var worldHeight = config.height
+    private var scalingFactor = config.scalingFactor
+    private var isWrapping = config.enableWrapping
     val bodies: MutableList<Body> = mutableListOf()
-    var currentStep: Int = 0
-    // the ids of bodies that collided this step, so we can indicate to the client their screen had a collision for any effects they want to provide
-    val collisions: MutableSet<Int> = mutableSetOf()
-    val stepTime = 1f / config.updatesPerSecond
+    private var currentStep: Int = 0
 
-    private fun boundPoint(p: Point): Point {
-        val wrappedX = if (p.x < 0) {
-            (p.x % width + width) % width
-        } else {
-            p.x % width
-        }
-        val wrappedY = if (p.y < 0) {
-            (p.y % height + height) % height
-        } else {
-            p.y % height
-        }
-        return Point(wrappedX, wrappedY)
-    }
+    // the ids of bodies that collided this step, so we can indicate to the client their screen had a collision for any effects they want to provide
+    private val collisions: MutableSet<Int> = mutableSetOf()
+
+    // UPS timings
+    private val stepTime = 1f / config.updatesPerSecond
+
+    override fun setWidth(width: Int) { this.worldWidth = width }
+    override fun setHeight(height: Int) { this.worldHeight = height }
+    override fun height() = this.worldHeight
+    override fun width() = this.worldWidth
+    override fun collisions() = this.collisions
+    override fun bodies() = this.bodies
+    override fun currentStep() = currentStep
+    override fun isWrapping() = isWrapping
 
     private fun boundVector(v: Vector2f): Vector2f {
         // Wrap the position to the world dimensions
         val wrappedX = if (v.x < 0) {
-            (v.x % width + width) % width
+            (v.x % worldWidth + worldWidth) % worldWidth
         } else {
-            v.x % width
+            v.x % worldWidth
         }
         val wrappedY = if (v.y < 0) {
-            (v.y % height + height) % height
+            (v.y % worldHeight + worldHeight) % worldHeight
         } else {
-            v.y % height
+            v.y % worldHeight
         }
 
         return Vector2f(wrappedX, wrappedY)
     }
 
     // find the world coordinates of the 4 corner points a body covers, with scaling of the world
-    fun bodyCorners(b: Body): List<Point> {
-        val centre = Point(b.position.x.roundToInt(), b.position.y.roundToInt())
-        val n = (b.radius * 2).roundToInt()
-        // calculate the offsets to the centre point for grid positions this body covers
-        val offsets = when {
-            // even width needs offset of -[(n/2 -1),(n/2 -1)], +[n/2, n/2]
-            n.mod(2) == 0 -> Pair(
-                Point(n / 2 - 1, n / 2 - 1),
-                Point(n / 2, n / 2)
-            )
-            // odd width needs offset of +/- [(n-1)/2]
-            else -> Pair(
-                Point((n - 1) / 2, (n - 1) / 2),
-                Point((n - 1) / 2, (n - 1) / 2)
-            )
-        }
-        // find the extreme points from centre with these offsets
-        val topLeft = centre - offsets.first * scalingFactor
-        val bottomRight = centre + offsets.second * scalingFactor
-        val topRight = Point(bottomRight.x, topLeft.y)
-        val bottomLeft = Point(topLeft.x, bottomRight.y)
-
-        return listOf(topLeft, topRight, bottomLeft, bottomRight).map { p -> boundPoint(p) }
-    }
-
     private fun moveBody(b: Body): Body? {
         if (!isOverlapping(b)) return b
 
@@ -102,7 +69,7 @@ data class WorldSimulator(
         spiralPoints.next() // skip the first point, it's 0,0 which won't generate a change
 
         // ensure we don't accidentally loop forever by checking we don't do more than every point in the grid.
-        while (testedPoints < width * height) {
+        while (testedPoints < worldWidth * worldHeight) {
             val offset = spiralPoints.next()
             val testPosition = boundVector(Vector2f(bodyPos).add(offset.x.toFloat(), offset.y.toFloat()))
             // change the body's position by the spiral offset, which circles the original point
@@ -125,19 +92,19 @@ data class WorldSimulator(
         isOverlapping(otherBody, b)
     }
 
-    fun addBodies(newBodies: List<Body>) {
+    override fun addBodies(bodies: List<Body>) {
         // attempt to add the newBodies to the simulator, adjusting them to fit into empty spaces closest to their intended locations
-        newBodies.forEach { b ->
+        bodies.forEach { b ->
             val movedBody = moveBody(b)
             if (movedBody == null) {
                 println("ERROR: could not fit body $b onto grid, skipping to next.")
             } else {
-                bodies.add(movedBody)
+                this.bodies.add(movedBody)
             }
         }
     }
 
-    fun step() {
+    override fun step() {
         collisions.clear()
         bodies.forEach { body ->
             // distance = speed * time
@@ -167,7 +134,7 @@ data class WorldSimulator(
         } while (collisionsDetected && currentIteration < maxIterations)
 
         bodies.forEach { body ->
-            body.position.set(if (enableWrapping) boundVector(body.intendedPosition) else body.intendedPosition)
+            body.position.set(if (isWrapping) boundVector(body.intendedPosition) else body.intendedPosition)
         }
         // bound the step number to a byte value
         if (currentStep++ > 255) currentStep = 0
@@ -180,15 +147,15 @@ data class WorldSimulator(
     }
 
     fun calculateDistance(a: Body, b: Body): Float {
-        val xDistance = calculateWrappedDistance(a.position.x, b.position.x, width.toFloat())
-        val yDistance = calculateWrappedDistance(a.position.y, b.position.y, height.toFloat())
+        val xDistance = calculateWrappedDistance(a.position.x, b.position.x, worldWidth.toFloat())
+        val yDistance = calculateWrappedDistance(a.position.y, b.position.y, worldHeight.toFloat())
         val distance = sqrt(xDistance.pow(2) + yDistance.pow(2))
         return distance
     }
 
     fun findClosestWrappedPosition(a: Vector2f, b: Vector2f): Vector2f {
-        val w = width.toFloat()
-        val h = height.toFloat()
+        val w = worldWidth.toFloat()
+        val h = worldHeight.toFloat()
         // Define the shifts for the 8 surrounding positions plus the original (0,0) position
         val shifts = listOf(
             Pair(0f, 0f), // Original
@@ -321,7 +288,7 @@ data class WorldSimulator(
 
         // Calculate time to collide with the right wall (x = width)
         if (body.velocity.x > 0) { // Moving towards the right wall
-            val timeToRightWall = (width - body.radius - body.position.x) / body.velocity.x
+            val timeToRightWall = (worldWidth - body.radius - body.position.x) / body.velocity.x
             if (timeToRightWall >= 0f && timeToRightWall < stepTime) {
                 times.add(timeToRightWall)
             }
@@ -337,62 +304,13 @@ data class WorldSimulator(
 
         // Calculate time to collide with the bottom wall (y = height)
         if (body.velocity.y > 0) { // Moving towards the bottom wall
-            val timeToBottomWall = (height - body.radius - body.position.y) / body.velocity.y
+            val timeToBottomWall = (worldHeight - body.radius - body.position.y) / body.velocity.y
             if (timeToBottomWall >= 0f && timeToBottomWall < stepTime) {
                 times.add(timeToBottomWall)
             }
         }
 
         return times
-    }
-
-    // find every VisibleShape for every client
-    @Suppress("LocalVariableName")
-    fun findVisibleShapesByClient(clients: List<GameClient>): Map<Int, MutableSet<VisibleShape>> {
-
-        fun clientIdThatOwns(p: Point): Int {
-            return clients.firstOrNull { c ->
-                p.within(c.worldBounds)
-            }?.id ?: -1
-        }
-
-        if (clients.isEmpty()) return emptyMap()
-
-        // initialise the returned map
-        val visibleShapesByClient = mutableMapOf<Int, MutableSet<VisibleShape>>()
-        clients.forEach { client ->
-            visibleShapesByClient[client.id] = mutableSetOf()
-        }
-
-        bodies.forEach { body ->
-            val bodyWidth = (body.radius * 2).roundToInt()
-
-            val corners = bodyCorners(body)
-            // We can use each corner in turn, work out its "centre point" relative to a grid that would cover from that corner, and see if the new centre matches the body centre.
-            // Add that to a set of visible points for the shape and "new centre", which will remove duplicates where the corners were in the same non-wrapped position
-            // We won't bother optimizing for 1x1 shape, it will just fall out in the wash, 4 calculations on the same point isn't that much
-            val cNW = corners[0]
-            val cNE = corners[1]
-            val cSW = corners[2]
-            val cSE = corners[3]
-
-            val nd2_1 = (bodyWidth / 2 - 1) * scalingFactor
-            val nd2 = (bodyWidth / 2) * scalingFactor
-            val n_1d2 = ((bodyWidth - 1) / 2) * scalingFactor
-
-            val centre1 = cNW + if (bodyWidth % 2 == 0) Point(nd2_1, nd2_1) else Point(n_1d2, n_1d2)
-            val centre2 = cNE + if (bodyWidth % 2 == 0) Point(-nd2, nd2_1) else Point(-n_1d2, n_1d2)
-            val centre3 = cSW + if (bodyWidth % 2 == 0) Point(nd2_1, -nd2) else Point(n_1d2, -n_1d2)
-            val centre4 = cSE + if (bodyWidth % 2 == 0) Point(-nd2, -nd2) else Point(-n_1d2, -n_1d2)
-
-            // add the visible shape to the client's list. dupes will be removed, and this also caters for both wrapping and no wrapping
-            visibleShapesByClient[clientIdThatOwns(cNW)]?.add(VisibleShape(body.shapeId, centre1, body.id))
-            visibleShapesByClient[clientIdThatOwns(cNE)]?.add(VisibleShape(body.shapeId, centre2, body.id))
-            visibleShapesByClient[clientIdThatOwns(cSW)]?.add(VisibleShape(body.shapeId, centre3, body.id))
-            visibleShapesByClient[clientIdThatOwns(cSE)]?.add(VisibleShape(body.shapeId, centre4, body.id))
-
-        }
-        return visibleShapesByClient
     }
 
 }

@@ -83,16 +83,16 @@ object ShapeCreator {
                     """.trimMargin()
                 )
             ),
-//            createShape(4.6f, fromString(
-//                """
-//                    | ┌┐
-//                    |┌┘└┐
-//                    |└┐ └┐
-//                    |┌┘ ┌┘
-//                    |└──┘
-//                    """.trimMargin()
-//                )
-//            ),
+            createShape(4.6f, fromString(
+                """
+                    | ┌┐  
+                    |┌┘└┐ 
+                    |└┐ └┐
+                    | │ ┌┘
+                    | └─┘ 
+                    """.trimMargin()
+                )
+            ),
             createShape(4.0f, fromString(
                 """
                     | ┌┐ 
@@ -102,15 +102,15 @@ object ShapeCreator {
                     """.trimMargin()
                 )
             ),
-//            createShape(4.0f, fromString(
-//                """
-//                    |  ┌┐
-//                    |┌─┘│
-//                    |│┌─┘
-//                    |└┘
-//                    """.trimMargin()
-//                )
-//            ),
+            createShape(4.0f, fromString(
+                """
+                    | ┌┐ 
+                    |┌┘└┐
+                    |│┌┐│
+                    |└┘└┘
+                    """.trimMargin()
+                )
+            ),
             createShape(4.1f, fromString(
                 """
                     | \/ 
@@ -128,11 +128,11 @@ object ShapeCreator {
                     """.trimMargin()
                 )
             ),
-            createShape(3.6f, fromString(
+            createShape(3.4f, fromString(
                     """
-                    |# #
-                    | # 
-                    |# #
+                    | . 
+                    |. .
+                    | . 
                     """.trimMargin()
                 )
             ),
@@ -175,17 +175,17 @@ object ShapeCreator {
                     """.trimMargin()
                 )
             ),
+//            createShape(3.0f, fromString(
+//                    """
+//                    |&X
+//                    |X&
+//                    """.trimMargin()
+//                )
+//            ),
             createShape(3.0f, fromString(
                     """
-                    |&X
-                    |X&
-                    """.trimMargin()
-                )
-            ),
-            createShape(3.0f, fromString(
-                    """
-                    |WM
-                    |MW
+                    |WW
+                    |MM
                     """.trimMargin()
                 )
             ),
@@ -196,13 +196,13 @@ object ShapeCreator {
                     """.trimMargin()
                 )
             ),
-            createShape(3.2f, fromString(
-                    """
-                    |▟▙
-                    |▜▛
-                    """.trimMargin()
-                )
-            ),
+//            createShape(3.2f, fromString(
+//                    """
+//                    |▟▙
+//                    |▜▛
+//                    """.trimMargin()
+//                )
+//            ),
 //            createShape(2.2f, fromString(
 //                    """
 //                    |┼
@@ -241,25 +241,7 @@ object ShapeCreator {
             ),
             createShape(2.0f, fromString(
                     """
-                    |Y
-                    """.trimMargin()
-                )
-            ),
-            createShape(2.0f, fromString(
-                    """
                     |V
-                    """.trimMargin()
-                )
-            ),
-            createShape(2.0f, fromString(
-                    """
-                    |"
-                    """.trimMargin()
-                )
-            ),
-            createShape(2.0f, fromString(
-                    """
-                    |A
                     """.trimMargin()
                 )
             ),

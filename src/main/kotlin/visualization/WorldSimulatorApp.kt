@@ -31,7 +31,7 @@ class WorldView : View("World Simulator") {
     private val simulationScope = CoroutineScope(Dispatchers.Default)
 
     init {
-        colours.putAll(world.simulator.bodies.associate {
+        colours.putAll(world.simulator.bodies().associate {
             it.id to Color.color(
                 Random.nextDouble(),
                 Random.nextDouble(),
@@ -51,9 +51,9 @@ class WorldView : View("World Simulator") {
         val gc = canvas.graphicsContext2D
         with(gc) {
             clearRect(0.0, 0.0, canvas.width, canvas.height) // Clear the canvas
-            world.simulator.bodies.forEach { body ->
+            world.simulator.bodies().forEach { body ->
                 val radius = body.radius * 4f // scaled to world size
-                val positions = calculateWrappedPositions(body.position.x.toDouble(), body.position.y.toDouble(), radius.toDouble(), world.simulator.width.toDouble(), world.simulator.height.toDouble())
+                val positions = calculateWrappedPositions(body.position.x.toDouble(), body.position.y.toDouble(), radius.toDouble(), world.simulator.width().toDouble(), world.simulator.height().toDouble())
 
                 // Draw the circle representing the body at potentially wrapped positions
                 fill = colours[body.id]!!

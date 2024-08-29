@@ -13,13 +13,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.joml.Vector2f
-import simulator.WorldSimulator
+import simulator.BodySimulator
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 @Singleton
 open class World(
     private val config: WorldConfiguration,
-    val simulator: WorldSimulator,
+    val simulator: BodySimulator,
 ) {
     private val simulationScope = CoroutineScope(Dispatchers.Default)
     private val heartbeatScope = CoroutineScope(Dispatchers.IO)
@@ -47,12 +48,6 @@ open class World(
 
     val currentClientVisibleShapes = mutableMapOf<Int, MutableSet<VisibleShape>>()
 
-    init {
-//        val newBodies = createBodies(0, 0, 0, listOf(5, 3))
-        val newBodies = createBodies(0,0, 0, List(5) { 2 } + List(3) { 3 } + List(1) { 5 })
-        simulator.addBodies(newBodies)
-    }
-
     private suspend fun checkClientsStillConnected() {
         while (!stopped) {
             // creating a list to iterate over instead of directly on the keys stops the concurrent update error as we're not modifying this list
@@ -69,20 +64,25 @@ open class World(
     }
 
     private suspend fun runSimulation() {
-        var started = 0L
+        var started: Long
         isStarted = true
+        if (simulator.bodies().isEmpty()) {
+            val newBodies = createBodies(0,0, 0, List(5) { 2 } + List(3) { 3 } + List(1) { 5 })
+            simulator.addBodies(newBodies)
+        }
+
         while (!stopped) {
             started = System.currentTimeMillis()
             if (!isFrozen) {
                 // TODO: should we remove all collision events that haven't been read by clients, other event types will stick around until client has read them, but collisions should not be sticky
                 simulator.step()
                 currentClientVisibleShapes.clear()
-                currentClientVisibleShapes.putAll(simulator.findVisibleShapesByClient(clients.values.toList()))
+                currentClientVisibleShapes.putAll(findVisibleShapesByClient())
                 // find all the clients with the collisions this step so we can add a collision event
                 // we have body1 body2 in collisions, and those ids are in the visibleShapes of a client
                 clients.keys.forEach { clientId ->
                     val bodyIdsForCurrentClient = currentClientVisibleShapes[clientId]?.map { it.bodyId }?.toSet() ?: setOf()
-                    if (bodyIdsForCurrentClient.intersect(simulator.collisions).isNotEmpty()) {
+                    if (bodyIdsForCurrentClient.intersect(simulator.collisions()).isNotEmpty()) {
                         // this client has a body in its view that had a collision this step
                         addEvent(clientId, StatusEvent.COLLISION)
                     }
@@ -111,8 +111,8 @@ open class World(
         occupiedScreens[nextPoint] = gameClient
 
         // adjust the simulator's dimensions
-        simulator.width = worldBoundary().x * config.width
-        simulator.height = worldBoundary().y * config.height
+        simulator.setWidth(worldBoundary().x * config.width)
+        simulator.setHeight(worldBoundary().y * config.height)
 
         if (!isStarted && config.shouldAutoStart) {
             simulationScope.launch {
@@ -240,6 +240,56 @@ open class World(
             removeEventFromAllClients(StatusEvent.FROZEN_TOGGLE)
         }
     }
+
+    // find every VisibleShape for every client
+    @Suppress("LocalVariableName")
+    fun findVisibleShapesByClient(): Map<Int, MutableSet<VisibleShape>> {
+        val gameClients = clients.values.toList()
+        fun clientIdThatOwns(p: Point): Int {
+            return gameClients.firstOrNull { c ->
+                p.within(c.worldBounds)
+            }?.id ?: -1
+        }
+
+        if (gameClients.isEmpty()) return emptyMap()
+
+        // initialise the returned map
+        val visibleShapesByClient = mutableMapOf<Int, MutableSet<VisibleShape>>()
+        gameClients.forEach { client ->
+            visibleShapesByClient[client.id] = mutableSetOf()
+        }
+
+        simulator.bodies().forEach { body ->
+            val bodyWidth = (body.radius * 2).roundToInt()
+
+            val corners = body.bodyCorners(config.scalingFactor, simulator.width(), simulator.height())
+            // We can use each corner in turn, work out its "centre point" relative to a grid that would cover from that corner, and see if the new centre matches the body centre.
+            // Add that to a set of visible points for the shape and "new centre", which will remove duplicates where the corners were in the same non-wrapped position
+            // We won't bother optimizing for 1x1 shape, it will just fall out in the wash, 4 calculations on the same point isn't that much
+            val cNW = corners[0]
+            val cNE = corners[1]
+            val cSW = corners[2]
+            val cSE = corners[3]
+
+            val nd2_1 = (bodyWidth / 2 - 1) * config.scalingFactor
+            val nd2 = (bodyWidth / 2) * config.scalingFactor
+            val n_1d2 = ((bodyWidth - 1) / 2) * config.scalingFactor
+
+            val centre1 = cNW + if (bodyWidth % 2 == 0) Point(nd2_1, nd2_1) else Point(n_1d2, n_1d2)
+            val centre2 = cNE + if (bodyWidth % 2 == 0) Point(-nd2, nd2_1) else Point(-n_1d2, n_1d2)
+            val centre3 = cSW + if (bodyWidth % 2 == 0) Point(nd2_1, -nd2) else Point(n_1d2, -n_1d2)
+            val centre4 = cSE + if (bodyWidth % 2 == 0) Point(-nd2, -nd2) else Point(-n_1d2, -n_1d2)
+
+            // add the visible shape to the client's list. dupes will be removed, and this also caters for both wrapping and no wrapping
+            visibleShapesByClient[clientIdThatOwns(cNW)]?.add(VisibleShape(body.shapeId, centre1, body.id))
+            visibleShapesByClient[clientIdThatOwns(cNE)]?.add(VisibleShape(body.shapeId, centre2, body.id))
+            visibleShapesByClient[clientIdThatOwns(cSW)]?.add(VisibleShape(body.shapeId, centre3, body.id))
+            visibleShapesByClient[clientIdThatOwns(cSE)]?.add(VisibleShape(body.shapeId, centre4, body.id))
+
+        }
+        return visibleShapesByClient
+    }
+
 
     companion object {
         // screens of 40x20 and 32x16 have good mappings down from these sizes

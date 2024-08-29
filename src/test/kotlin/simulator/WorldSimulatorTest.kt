@@ -1,10 +1,8 @@
 package simulator
 
+import config.WorldConfiguration
 import domain.Body
-import domain.GameClient
 import domain.Shape
-import domain.VisibleShape
-import geometry.Point
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.data.Offset
 import org.joml.Vector2f
@@ -17,11 +15,18 @@ class WorldSimulatorTest {
         Shape(2, 0.5f, 2, emptyList()),
     ).associateBy { it.id }
 
+    private val config = WorldConfiguration().also {
+        it.width = 20
+        it.height = 20
+        it.scalingFactor = 1
+        it.updatesPerSecond = 1
+    }
+
     @Test
     fun `bodies on a collision course should collide and change velocities`() {
         val bodyA = Body.from(position = Vector2f(2f, 2f), velocity = Vector2f(0.5f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(6f, 2f), velocity = Vector2f(-0.5f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(20, 20, 1, true).apply { addBodies(listOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(config).apply { addBodies(listOf(bodyA, bodyB)) }
 
         worldSimulator.step()
         assertThat(bodyA.position.x).isEqualTo(2.5f)
@@ -44,7 +49,7 @@ class WorldSimulatorTest {
         // These are at perfect 45 degree angles to each other, and both start 2 steps away from perfect touching at start of step
         val bodyA = Body.from(position = Vector2f(3f, 3f), velocity = Vector2f(1f, 1f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(9f, 3f), velocity = Vector2f(-1f, 1f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(20, 20, 1, true).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(config).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         // leading up to collision
         worldSimulator.step()
@@ -73,7 +78,7 @@ class WorldSimulatorTest {
         // These are at perfect 45 degree angles to each other, and both start 2 steps away from perfect touching at start of step
         val bodyA = Body.from(position = Vector2f(3f, 3f), velocity = Vector2f(1f, 1f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(9f, 3f), velocity = Vector2f(-1f, 1f), shape = shapes[1]!!)
-        val worldSimulator = WorldSimulator(20, 20, 1, true).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(config).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         // leading up to collision
         worldSimulator.step()
@@ -106,7 +111,7 @@ class WorldSimulatorTest {
     fun `bodies with different mass colliding`() {
         val bodyA = Body.from(position = Vector2f(5f, 5f), velocity = Vector2f(0.75f, 0f), shape = shapes[2]!!)
         val bodyB = Body.from(position = Vector2f(9f, 5f), velocity = Vector2f(-0.25f, 0f), shape = shapes[1]!!)
-        val worldSimulator = WorldSimulator(20, 20, 1, true).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(config).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         worldSimulator.step()
         assertThat(bodyA.position.x).isEqualTo(5.75f)
@@ -128,7 +133,7 @@ class WorldSimulatorTest {
     fun `bodies moving at high speed will still collide during the step`() {
         val bodyA = Body.from(position = Vector2f(8f, 8f), velocity = Vector2f(5f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(11f, 8f), velocity = Vector2f(-5f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(20, 20, 1, true).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(config).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         // collision after 0.1s (of the 1s step), perfect reflection, so av -> -5,0, bv -> 5,0, so both move for 0.9s in new direction, i.e. 4.5 units in new dir
         // thus ap = 8.5 - 4.5 = (4,8), bp = 10.5 + 4.5 = (15,8)
@@ -145,7 +150,7 @@ class WorldSimulatorTest {
         // Setup WorldSimulator with two bodies not on a collision course
         val bodyA = Body.from(position = Vector2f(2f, 2f), velocity = Vector2f(1f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(7f, 7f), velocity = Vector2f(-1f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(10, 10, 1, true).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(config).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         worldSimulator.step()
 
@@ -156,7 +161,7 @@ class WorldSimulatorTest {
     @Test
     fun `wrapping body that crosses to extreme right of world`() {
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(5.6f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(10, 2, 1, true).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(config.also { it.width = 10; it.height = 2 }).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
         assertThat(bodyA.position.x).isCloseTo(5.6f, Offset.offset(0.01f))
         worldSimulator.step()
@@ -166,7 +171,7 @@ class WorldSimulatorTest {
     @Test
     fun `wrapping body that crosses to extreme left of world`() {
         val bodyA = Body.from(position = Vector2f(3f, 0f), velocity = Vector2f(-5f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(10, 2, 1, true).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(config.also { it.width = 10; it.height = 2 }).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
         assertThat(bodyA.position.x).isCloseTo(8f, Offset.offset(0.01f))
     }
@@ -174,7 +179,7 @@ class WorldSimulatorTest {
     @Test
     fun `wrapping body that crosses to extreme bottom of world`() {
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 5.6f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(2, 10, 1, true).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(config.also { it.width = 2; it.height = 10 }).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
         assertThat(bodyA.position.y).isCloseTo(5.6f, Offset.offset(0.01f))
         worldSimulator.step()
@@ -184,7 +189,7 @@ class WorldSimulatorTest {
     @Test
     fun `wrapping body that crosses to extreme top of world`() {
         val bodyA = Body.from(position = Vector2f(0f, 3f), velocity = Vector2f(0f, -5f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(2, 10, 1, true).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WorldSimulator(config.also { it.width = 2; it.height = 10 }).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
         assertThat(bodyA.position.y).isCloseTo(8f, Offset.offset(0.01f))
     }
@@ -194,7 +199,7 @@ class WorldSimulatorTest {
         // Positions and velocities work same, just the radius is larger than the shape indicates, so collisions happen sooner as the body is scaled up to world sizes
         val bodyA = Body.from(position = Vector2f(10f, 10f), velocity = Vector2f(2f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(26f, 10f), velocity = Vector2f(-2f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(80, 80, 4).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WorldSimulator(config.also { it.width = 80; it.height = 80; it.scalingFactor = 4 }).apply { addBodies(mutableListOf(bodyA, bodyB)) }
 
         worldSimulator.step()
         assertThat(bodyA.position.x).isEqualTo(12.0f)
@@ -213,58 +218,13 @@ class WorldSimulatorTest {
     }
 
     @Test
-    fun `corners of 1x1 body is just the point itself four times`() {
-        val shapes = mutableMapOf(
-            0 to Shape(0, 1.0f, 1, emptyList()),
-        )
-
-        // 1 x 1 shape
-        val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(80, 80, 1, true).apply { addBodies(mutableListOf(bodyA)) }
-        assertThat(worldSimulator.bodyCorners(bodyA)).containsExactlyInAnyOrder(Point(0,0), Point(0,0), Point(0,0), Point(0,0))
-    }
-
-    @Test
-    fun `corners of 2x2 body do not wrap on the left as upper left corner contains centre point`() {
-        val shapes = mutableMapOf(
-            0 to Shape(1, 1.0f, 2, emptyList()),
-        )
-
-        val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(80, 80, 1, true).apply { addBodies(mutableListOf(bodyA)) }
-        assertThat(worldSimulator.bodyCorners(bodyA)).containsExactlyInAnyOrder(Point(0,0), Point(1,1), Point(1, 0), Point(0, 1))
-    }
-
-    @Test
-    fun `corners of 2x2 body wrap on the right and down when in bottom right corner`() {
-        val shapes = mutableMapOf(
-            0 to Shape(1, 1.0f, 2, emptyList()),
-        )
-
-        val bodyA = Body.from(position = Vector2f(9f, 9f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(10, 10, 1, true).apply { addBodies(mutableListOf(bodyA)) }
-        assertThat(worldSimulator.bodyCorners(bodyA)).containsExactlyInAnyOrder(Point(9,9), Point(0,9), Point(9, 0), Point(0, 0))
-    }
-
-    @Test
-    fun `corners of 3x3 body wrap from 0,0 to 4 corners`() {
-        val shapes = mutableMapOf(
-            0 to Shape(2, 1.0f, 3, emptyList()),
-        )
-
-        val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WorldSimulator(10, 10, 1, true).apply { addBodies(mutableListOf(bodyA)) }
-        assertThat(worldSimulator.bodyCorners(bodyA)).containsExactlyInAnyOrder(Point(9,9), Point(9, 1), Point(1, 9), Point(1,1))
-    }
-
-    @Test
     fun `cannot add to grid if it does not have enough space`() {
         val shapes = mutableMapOf(
             0 to Shape(2, 1.0f, 5, emptyList()),
             1 to Shape(2, 1.0f, 2, emptyList()),
             2 to Shape(2, 1.0f, 1, emptyList()),
         )
-        val worldSimulator = WorldSimulator(5, 5, 1, true)
+        val worldSimulator = WorldSimulator(config.also { it.width = 5; it.height = 5 })
         // fill it with 1 body of width 5,5
         val bodyA = Body.from(position = Vector2f(2.5f, 2.5f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
         worldSimulator.addBodies(listOf(bodyA))
@@ -287,7 +247,7 @@ class WorldSimulatorTest {
         val shapes = mutableMapOf(
             0 to Shape(2, 1.0f, 5, emptyList())
         )
-        val worldSimulator = WorldSimulator(160, 80, 4, true)
+        val worldSimulator = WorldSimulator(config.also { it.width = 160; it.height = 80; it.scalingFactor = 4 })
         val bodyA = Body.from(position = Vector2f(31.375097f, 3.468848f), velocity = Vector2f(-0.54833025f, -0.12327973f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(12.075428f, 77.72633f), velocity = Vector2f(0.05472869f, 0.033775542f), shape = shapes[0]!!)
         worldSimulator.addBodies(listOf(bodyA, bodyB))
@@ -326,177 +286,6 @@ class WorldSimulatorTest {
         collisionTimes = worldSimulator.calculateCollisionTimes(bodyA, bodyB)
         assertThat(collisionTimes).hasSize(0)
 
-    }
-
-    @Test
-    fun `create visible shapes by client for 2 clients and single wrapping in horizontal direction`() {
-        val clients = listOf(
-            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
-            GameClient(id = 2, name = "gc2", position = Point(1, 0))
-        ).map { it.apply { it.updateWorldBounds(50, 50) } }
-
-        val shapes = mutableMapOf(
-            0 to Shape(0, 1.0f, 5, emptyList()),
-        )
-        val worldSimulator = WorldSimulator(100, 50, 1, true)
-        val bodyA = Body.from(position = Vector2f(1f, 10f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        worldSimulator.addBodies(listOf(bodyA))
-
-        val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient[1]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(1, 10)),      // body position without reflection
-        )
-        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(101, 10)),     // body wrapped on the left in client 2
-        )
-    }
-
-    @Test
-    fun `create visible shapes by client for 2 clients and single wrapping with wrapping in vertical direction`() {
-        val clients = listOf(
-            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
-            GameClient(id = 2, name = "gc2", position = Point(0, 1))
-        ).map { it.apply { it.updateWorldBounds(50, 50) } }
-
-        val shapes = mutableMapOf(
-            0 to Shape(0, 1.0f, 5, emptyList()),
-        )
-        val worldSimulator = WorldSimulator(50, 100, 1, true)
-        val bodyA = Body.from(position = Vector2f(10f, 1f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        worldSimulator.addBodies(listOf(bodyA))
-
-        val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient[1]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(10, 1)),
-        )
-        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(10, 101)),
-        )
-    }
-
-    @Test
-    fun `create visible shapes by client for 4 clients in all 4 directions from client 1 position`() {
-        val clients = listOf(
-            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
-            GameClient(id = 2, name = "gc2", position = Point(1, 0)),
-            GameClient(id = 3, name = "gc3", position = Point(1, 1)),
-            GameClient(id = 4, name = "gc4", position = Point(0, 1)),
-        ).map { it.apply { it.updateWorldBounds(50, 50) } }
-
-        val shapes = mutableMapOf(
-            0 to Shape(0, 1.0f, 5, emptyList()),
-        )
-        val worldSimulator = WorldSimulator(100, 100, 1, true)
-        val bodyA = Body.from(position = Vector2f(1f, 1f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        worldSimulator.addBodies(listOf(bodyA))
-
-        val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient[1]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(1, 1)),
-        )
-        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(101, 1)),
-        )
-        assertThat(visibleShapesByClient[3]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(101, 101)),
-        )
-        assertThat(visibleShapesByClient[4]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(1, 101)),
-        )
-    }
-
-    @Test
-    fun `create visible shapes by client for 4 clients in all 4 directions from client 3 position`() {
-        val clients = listOf(
-            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
-            GameClient(id = 2, name = "gc2", position = Point(1, 0)),
-            GameClient(id = 3, name = "gc3", position = Point(1, 1)),
-            GameClient(id = 4, name = "gc4", position = Point(0, 1)),
-        ).map { it.apply { it.updateWorldBounds(50, 50) } }
-
-        val shapes = mutableMapOf(
-            0 to Shape(0, 1.0f, 5, emptyList()),
-        )
-        val worldSimulator = WorldSimulator(100, 100, 1, true)
-        val bodyA = Body.from(position = Vector2f(51f, 51f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        worldSimulator.addBodies(listOf(bodyA))
-
-        val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient[1]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(51, 51)),
-        )
-        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(51, 51)),
-        )
-        assertThat(visibleShapesByClient[3]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(51, 51)),
-        )
-        assertThat(visibleShapesByClient[4]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(51, 51)),
-        )
-    }
-
-    @Test
-    fun `create visible shapes by client for 4 clients where only contained in client 2`() {
-        val clients = listOf(
-            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
-            GameClient(id = 2, name = "gc2", position = Point(1, 0)),
-            GameClient(id = 3, name = "gc3", position = Point(1, 1)),
-            GameClient(id = 4, name = "gc4", position = Point(0, 1)),
-        ).map { it.apply { it.updateWorldBounds(50, 50) } }
-
-        val shapes = mutableMapOf(
-            0 to Shape(0, 1.0f, 5, emptyList()),
-        )
-        val worldSimulator = WorldSimulator(100, 100, 1, true)
-        val bodyA = Body.from(position = Vector2f(61f, 11f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        worldSimulator.addBodies(listOf(bodyA))
-
-        val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient[1]).isEmpty()
-        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
-            VisibleShape(0, Point(61, 11)),
-        )
-        assertThat(visibleShapesByClient[3]).isEmpty()
-        assertThat(visibleShapesByClient[4]).isEmpty()
-    }
-
-    @Test
-    fun `create visible shapes by client for 4 clients with multiple bodies from previous tests`() {
-        val clients = listOf(
-            GameClient(id = 1, name = "gc1", position = Point(0, 0)),
-            GameClient(id = 2, name = "gc2", position = Point(1, 0)),
-            GameClient(id = 3, name = "gc3", position = Point(1, 1)),
-            GameClient(id = 4, name = "gc4", position = Point(0, 1)),
-        ).map { it.apply { it.updateWorldBounds(50, 50) } }
-
-        val shapes = mutableMapOf(
-            0 to Shape(0, 1.0f, 5, emptyList()),
-        )
-        val worldSimulator = WorldSimulator(100, 100, 1, true)
-        val bodyA = Body.from(position = Vector2f(1f, 1f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        val bodyB = Body.from(position = Vector2f(51f, 51f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        val bodyC = Body.from(position = Vector2f(61f, 11f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        worldSimulator.addBodies(listOf(bodyA, bodyB, bodyC))
-
-        val visibleShapesByClient = worldSimulator.findVisibleShapesByClient(clients)
-        assertThat(visibleShapesByClient[1]).containsExactlyInAnyOrder(
-            VisibleShape(shapeId=0, position=Point(x=1, y=1)),
-            VisibleShape(shapeId=0, position=Point(x=51, y=51)),
-        )
-        assertThat(visibleShapesByClient[2]).containsExactlyInAnyOrder(
-            VisibleShape(shapeId=0, position=Point(x=101, y=1)),
-            VisibleShape(shapeId=0, position=Point(x=51, y=51)),
-            VisibleShape(shapeId=0, position=Point(x=61, y=11)),
-        )
-        assertThat(visibleShapesByClient[3]).containsExactlyInAnyOrder(
-            VisibleShape(shapeId=0, position=Point(x=101, y=101)),
-            VisibleShape(shapeId=0, position=Point(x=51, y=51)),
-        )
-        assertThat(visibleShapesByClient[4]).containsExactlyInAnyOrder(
-            VisibleShape(shapeId=0, position=Point(x=1, y=101)),
-            VisibleShape(shapeId=0, position=Point(x=51, y=51)),
-        )
     }
 
 }
