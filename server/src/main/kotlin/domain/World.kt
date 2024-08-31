@@ -14,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.joml.Vector2f
 import simulator.BodySimulator
+import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -66,15 +67,10 @@ open class World(
     private suspend fun runSimulation() {
         var started: Long
         isStarted = true
-        if (simulator.bodies().isEmpty()) {
-            val newBodies = createBodies(0,0, 0, List(5) { 2 } + List(3) { 3 } + List(1) { 5 })
-            simulator.addBodies(newBodies)
-        }
 
         while (!stopped) {
             started = System.currentTimeMillis()
             if (!isFrozen) {
-                // TODO: should we remove all collision events that haven't been read by clients, other event types will stick around until client has read them, but collisions should not be sticky
                 simulator.step()
                 currentClientVisibleShapes.clear()
                 currentClientVisibleShapes.putAll(findVisibleShapesByClient())
@@ -88,7 +84,7 @@ open class World(
                     }
                 }
             } else {
-                addEventToAllClients(StatusEvent.FROZEN_TOGGLE)
+                addEventToAllClients(StatusEvent.FROZEN)
             }
 
             val timeTaken = (System.currentTimeMillis() - started) / 1000f
@@ -134,6 +130,7 @@ open class World(
         addClient(client)
         client.updateWorldBounds(config.width, config.height)
         clientHeartbeats[client.id] = System.currentTimeMillis()
+        addEventToAllClients(StatusEvent.CLIENT_CHANGE)
         return client
     }
 
@@ -142,24 +139,30 @@ open class World(
 
     private fun createRandomBodyWithShape(id: Int, shapeId: Int, offsetX: Int, offsetY: Int): Body {
         val shape = shapes.first { it.id == shapeId }
+        // Create a position that's within a screen's boundaries, but will be inside the particular client's boundary that created it.
+        // This doesn't use the whole world width/height, just a single screen, and caters for the radius of the shape by reducing the possible x/y coordinates it start at to be within a screen's size
+        val pos = Vector2f(
+            Random.nextFloat() * (config.width.toFloat() - shape.sideLength - 5f) + offsetX + shape.sideLength / 2f + 2,
+            Random.nextFloat() * (config.height.toFloat() - shape.sideLength - 5f) + offsetY + shape.sideLength / 2f + 2
+        )
+        var vx = Random.nextFloat() * 2f - 1f
+        val vy = Random.nextFloat() * 2f - 1f
+        if (abs(vx) < 0.000001f && abs(vy) < 0.000001f) {
+            // ensure it's impossible to get a zero vector for velocity
+            vx = 0.1f
+        }
         return Body.from(
             id = id,
             // position is a random location: [(offsetX to offsetX + screenWidth), (offsetY to offsetY + screenHeight)]
-            position = Vector2f(
-                Random.nextFloat() * config.width + offsetX,
-                Random.nextFloat() * config.height + offsetY
-            ),
+            position = pos,
             // everything starts with speed "initialSpeed" pixels/sec in some random direction
-            velocity = Vector2f(
-                Random.nextFloat() * 2f - 1f,
-                Random.nextFloat() * 2f - 1f
-            ).normalize().mul(config.initialSpeed),
+            velocity = Vector2f(vx, vy).normalize().mul(config.initialSpeed),
             shape = shape
         )
     }
 
     // generates new bodies within a screen, adding the offsets given to position, the world simulator will fit them as close as it can to their position
-    private fun createBodies(startId: Int, offsetX: Int, offsetY: Int, sizes: List<Int>): List<Body> = sizes.mapIndexed { i, size ->
+    fun createBodies(startId: Int, offsetX: Int, offsetY: Int, sizes: List<Int>): List<Body> = sizes.mapIndexed { i, size ->
         // find a random shape with the given size and create a body from it
         createRandomBodyWithShape(startId + i, shapes.groupBy { it.sideLength }[size]!!.random().id, offsetX, offsetY)
     }
@@ -192,6 +195,7 @@ open class World(
         if (entriesForClient.isNotEmpty()) {
             occupiedScreens.remove(entriesForClient.keys.first())
         }
+        addEventToAllClients(StatusEvent.CLIENT_CHANGE)
     }
 
     fun worldBoundary(): Point {
@@ -235,9 +239,9 @@ open class World(
     fun toggleFrozen() {
         isFrozen = !isFrozen
         if (isFrozen) {
-            addEventToAllClients(StatusEvent.FROZEN_TOGGLE)
+            addEventToAllClients(StatusEvent.FROZEN)
         } else {
-            removeEventFromAllClients(StatusEvent.FROZEN_TOGGLE)
+            removeEventFromAllClients(StatusEvent.FROZEN)
         }
     }
 
@@ -290,6 +294,24 @@ open class World(
         return visibleShapesByClient
     }
 
+    fun addBody(size: Int) {
+        val bodies = createBodies(simulator.bodies().count(), 0, 0, listOf(size))
+        simulator.addBodies(bodies)
+        addEventToAllClients(StatusEvent.OBJECT_CHANGE)
+    }
+
+    fun resetWorld() {
+        simulator.reset()
+        addEventToAllClients(StatusEvent.OBJECT_CHANGE)
+    }
+
+    fun increaseSpeed() {
+        simulator.bodies().forEach { body -> body.velocity.mul(1.05f) }
+    }
+
+    fun decreaseSpeed() {
+        simulator.bodies().forEach { body -> body.velocity.div(1.05f) }
+    }
 
     companion object {
         // screens of 40x20 and 32x16 have good mappings down from these sizes

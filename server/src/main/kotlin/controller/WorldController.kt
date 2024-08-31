@@ -3,12 +3,11 @@ package controller
 import config.WorldConfiguration
 import domain.World
 import geometry.Point
-import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpResponse
-import io.micronaut.http.MediaType
+import io.micronaut.http.MediaType.APPLICATION_OCTET_STREAM
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.QueryValue
+import io.micronaut.http.annotation.Post
 import kotlin.math.roundToInt
 
 @Controller("/")
@@ -17,15 +16,23 @@ open class WorldController(
     private val config: WorldConfiguration
 ) {
 
-    // s is "step" though it isn't used yet
     @OptIn(ExperimentalStdlibApi::class)
-    @Get("w/{clientId}{?s}", produces = [MediaType.APPLICATION_OCTET_STREAM])
-    fun getWorldData(clientId: Int, @QueryValue @Nullable s: Int?): HttpResponse<ByteArray> {
-        // val client = world.getClient(clientId) ?: return HttpResponse.notFound()
+    private val hexFormat = HexFormat {
+        upperCase = false
+        bytes {
+            bytesPerGroup = 1
+            groupSeparator = " "
+        }
+
+    }
+
+    @OptIn(ExperimentalStdlibApi::class)
+    @Get("w/{clientId}", produces = [APPLICATION_OCTET_STREAM])
+//    fun getWorldData(clientId: Int, @QueryValue @Nullable s: Int?): HttpResponse<ByteArray> {
+    fun getWorldData(clientId: Int): HttpResponse<ByteArray> {
         world.clientHeartbeats[clientId] = System.currentTimeMillis()
         val data = try {
             val csv = asCSV(clientId)
-            // println("sending ${client.name}: $csv")
             // if there are no bodies in the view, we will return a value of 0 (as byte)
             if (csv.isNotEmpty()) csv.split(",").map { it.toInt().toByte() }.toByteArray() else byteArrayOf(0)
         } catch (e: Exception) {
@@ -34,8 +41,9 @@ open class WorldController(
         }
         val stepNumber = world.simulator.currentStep().toByte()
         val appStatus = world.calculateStatus(clientId)
-//        println("client: $clientId, status: ${appStatus.toHexString()}")
-        return HttpResponse.ok(byteArrayOf(stepNumber, appStatus) + data)
+        val clientData = byteArrayOf(stepNumber, appStatus) + data
+        println("client: $clientId, data: ${clientData.toHexString(hexFormat)}")
+        return HttpResponse.ok(clientData)
     }
 
     // keep it as generating a string so we can print it if needed
@@ -77,7 +85,7 @@ open class WorldController(
         array.add(asInt.toByte())
     }
 
-    @Get("ws", produces = [MediaType.APPLICATION_OCTET_STREAM])
+    @Get("ws", produces = [APPLICATION_OCTET_STREAM])
     fun getWorldState(): HttpResponse<ByteArray> {
         val data = mutableListOf<Byte>()
         addWord(data, world.simulator.width())
@@ -95,10 +103,45 @@ open class WorldController(
         return HttpResponse.ok(data.toByteArray())
     }
 
-    @Get("freeze", produces = [MediaType.APPLICATION_OCTET_STREAM])
+    // Technically should be a PUT, but it's much easier to hit the freeze endpoint this way for the client.
+    @Get("freeze", produces = [APPLICATION_OCTET_STREAM])
     fun toggleFreeze(): HttpResponse<ByteArray> {
-        world.toggleFrozen();
+        world.toggleFrozen()
         println("toggled frozen to ${world.isFrozen}")
-        return HttpResponse.ok(byteArrayOf(if (world.isFrozen) 1 else 0))
+        return HttpResponse.ok(byteArrayOf(1))
     }
+
+    @Get("add/{size}", produces = [APPLICATION_OCTET_STREAM])
+    open fun addBody(size: Int): HttpResponse<ByteArray> {
+        // we get a single byte for the size of shape we want to add
+        println("asked to add body of size $size")
+        if (size in 1..5) {
+            println("Adding body size: $size")
+            world.addBody(size)
+        }
+        return HttpResponse.ok(byteArrayOf(1))
+    }
+
+    @Get("reset", produces = [APPLICATION_OCTET_STREAM])
+    fun resetWorld(): HttpResponse<ByteArray> {
+        world.resetWorld()
+        println("world reset!")
+        return HttpResponse.ok(byteArrayOf(1))
+    }
+
+    @Get("inc", produces = [APPLICATION_OCTET_STREAM])
+    fun increaseSpeed(): HttpResponse<ByteArray> {
+        world.increaseSpeed()
+        println("increasing speed")
+        return HttpResponse.ok(byteArrayOf(1))
+    }
+
+    @Get("dec", produces = [APPLICATION_OCTET_STREAM])
+    fun decreaseSpeed(): HttpResponse<ByteArray> {
+        world.decreaseSpeed()
+        println("decreasing speed")
+        return HttpResponse.ok(byteArrayOf(1))
+    }
+
+
 }

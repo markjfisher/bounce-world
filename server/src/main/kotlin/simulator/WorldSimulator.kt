@@ -39,6 +39,10 @@ data class WorldSimulator(
     override fun currentStep() = currentStep
     override fun isWrapping() = isWrapping
 
+    override fun reset() {
+        bodies.clear()
+    }
+
     private fun boundVector(v: Vector2f): Vector2f {
         // Wrap the position to the world dimensions
         val wrappedX = if (v.x < 0) {

@@ -31,6 +31,8 @@ class WorldView : View("World Simulator") {
     private val simulationScope = CoroutineScope(Dispatchers.Default)
 
     init {
+        val newBodies = world.createBodies(0,0, 0, List(4) { 5 } + List(10) { 3 } + List(8) { 1 })
+        world.simulator.addBodies(newBodies)
         colours.putAll(world.simulator.bodies().associate {
             it.id to Color.color(
                 Random.nextDouble(),
