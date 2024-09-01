@@ -4,14 +4,13 @@ import config.WorldConfiguration
 import geometry.Point
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
-import org.joml.Vector2f
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import simulator.BodySimulator
-import simulator.WorldSimulator
 
 internal class WorldTest {
     private val simulator: BodySimulator = mockk(relaxed = true)
+    private val boundSimulator: BodySimulator = mockk(relaxed = true)
     private val config: WorldConfiguration = WorldConfiguration().also { it.shouldAutoStart = false }
 
     @BeforeEach
@@ -21,7 +20,7 @@ internal class WorldTest {
 
     @Test
     fun `can add clients`() {
-        val world = World(config, simulator)
+        val world = World(config, simulator, boundSimulator)
         val c1 = world.createClient(GameClientInfo(name = "Client 1"))
         val c2 = world.createClient(GameClientInfo(name = "Client 2"))
 
@@ -44,7 +43,7 @@ internal class WorldTest {
 
     @Test
     fun `should allow removing client and putting new client in vacated position`() {
-        val world = World(config, simulator)
+        val world = World(config, simulator, boundSimulator)
         world.createClient(GameClientInfo(name = "Client 1"))
         val c2 = world.createClient(GameClientInfo(name = "Client 2"))
         world.createClient(GameClientInfo(name = "Client 3"))
@@ -61,7 +60,7 @@ internal class WorldTest {
 
     @Test
     fun `boundary size stretches to maximum rectangle to contain all clients and is 1 based`() {
-        val world = World(config, simulator)
+        val world = World(config, simulator, boundSimulator)
         world.createClient(GameClientInfo(name = "Client 1"))
         assertThat(world.worldBoundary()).isEqualTo(Point(1,1))
         world.createClient(GameClientInfo(name = "Client 2"))
@@ -84,7 +83,7 @@ internal class WorldTest {
 
     @Test
     fun `world boundary size with no clients has size 1,1`() {
-        val world = World(config, simulator)
+        val world = World(config, simulator, boundSimulator)
         assertThat(world.worldBoundary()).isEqualTo(Point(1,1))
     }
 
@@ -98,7 +97,7 @@ internal class WorldTest {
 
         val config = WorldConfiguration().also { it.width = 100; it.height = 50; it.scalingFactor = 1 }
         val simulator = WorldSimulator(config)
-        val world = World(config, simulator)
+        val world = World(config, simulator, boundSimulator)
         clients.forEach { world.addClient(it) }
 
         val shapes = mutableMapOf(
@@ -124,7 +123,7 @@ internal class WorldTest {
         ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val simulator = WorldSimulator(config)
-        val world = World(config, simulator)
+        val world = World(config, simulator, boundSimulator)
         clients.forEach { world.addClient(it) }
 
         val shapes = mutableMapOf(
@@ -152,7 +151,7 @@ internal class WorldTest {
         ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val simulator = WorldSimulator(config)
-        val world = World(config, simulator)
+        val world = World(config, simulator, boundSimulator)
         clients.forEach { world.addClient(it) }
 
         val shapes = mutableMapOf(
@@ -186,7 +185,7 @@ internal class WorldTest {
         ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val simulator = WorldSimulator(config)
-        val world = World(config, simulator)
+        val world = World(config, simulator, boundSimulator)
         clients.forEach { world.addClient(it) }
 
         val shapes = mutableMapOf(
@@ -220,7 +219,7 @@ internal class WorldTest {
         ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val simulator = WorldSimulator(config)
-        val world = World(config, simulator)
+        val world = World(config, simulator, boundSimulator)
         clients.forEach { world.addClient(it) }
 
         val shapes = mutableMapOf(
@@ -248,7 +247,7 @@ internal class WorldTest {
         ).map { it.apply { it.updateWorldBounds(50, 50) } }
 
         val simulator = WorldSimulator(config)
-        val world = World(config, simulator)
+        val world = World(config, simulator, boundSimulator)
         clients.forEach { world.addClient(it) }
 
         val shapes = mutableMapOf(
