@@ -7,8 +7,8 @@ height = 80
 scalingFactor = 4
 updatesPerSecond = 10
 shouldAutoStart = true
-initialSpeed = 6
+initialSpeed = 10
 heartbeatTimeoutMillis = 60000
 # one of "grid", or "right". 'grid' creates NxN locations for clients, 'right' just keeps adding them in a line to the right of previous, e.g. for a desk of computers at a festival.
 locationPattern = "grid"
-enableWrapping = true
+enableWrapping = false

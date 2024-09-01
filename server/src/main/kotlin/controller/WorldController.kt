@@ -7,7 +7,6 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType.APPLICATION_OCTET_STREAM
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
-import io.micronaut.http.annotation.Post
 import kotlin.math.roundToInt
 
 @Controller("/")
@@ -23,7 +22,6 @@ open class WorldController(
             bytesPerGroup = 1
             groupSeparator = " "
         }
-
     }
 
     @OptIn(ExperimentalStdlibApi::class)
@@ -39,10 +37,10 @@ open class WorldController(
             println("ERROR processing client ${clientId}: ${e.message}, sending 0")
             byteArrayOf(0)
         }
-        val stepNumber = world.simulator.currentStep().toByte()
+        val stepNumber = world.currentSimulator.currentStep.toByte()
         val appStatus = world.calculateStatus(clientId)
         val clientData = byteArrayOf(stepNumber, appStatus) + data
-        println("client: $clientId, data: ${clientData.toHexString(hexFormat)}")
+        // println("client: $clientId, data: ${clientData.toHexString(hexFormat)}")
         return HttpResponse.ok(clientData)
     }
 
@@ -88,10 +86,10 @@ open class WorldController(
     @Get("ws", produces = [APPLICATION_OCTET_STREAM])
     fun getWorldState(): HttpResponse<ByteArray> {
         val data = mutableListOf<Byte>()
-        addWord(data, world.simulator.width())
-        addWord(data, world.simulator.height())
-        addWord(data, world.simulator.bodies().count())
-        val bodiesByCount = world.simulator.bodies().groupingBy { (it.radius * 2).toInt() }.eachCount()
+        addWord(data, world.currentSimulator.width)
+        addWord(data, world.currentSimulator.height)
+        addWord(data, world.currentSimulator.bodies.count())
+        val bodiesByCount = world.currentSimulator.bodies.groupingBy { (it.radius * 2).toInt() }.eachCount()
         data.add(bodiesByCount.getOrDefault(1, 0).toByte())
         data.add(bodiesByCount.getOrDefault(2, 0).toByte())
         data.add(bodiesByCount.getOrDefault(3, 0).toByte())
@@ -99,7 +97,7 @@ open class WorldController(
         data.add(bodiesByCount.getOrDefault(5, 0).toByte())
         data.add(world.clientHeartbeats.count().toByte())
         addBool(data, world.isFrozen)
-        addBool(data, world.simulator.isWrapping())
+        addBool(data, world.isWrapping)
         return HttpResponse.ok(data.toByteArray())
     }
 

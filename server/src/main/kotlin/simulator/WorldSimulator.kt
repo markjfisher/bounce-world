@@ -4,6 +4,7 @@ import config.WorldConfiguration
 import domain.Body
 import domain.CollisionEvent
 import geometry.SpiralGenerator
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import maths.QuadraticSolver
 import org.joml.Vector2f
@@ -13,100 +14,12 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 @Suppress("DuplicatedCode")
+@Named("Wrapped")
 @Singleton
 data class WorldSimulator(
     private val config: WorldConfiguration
-): BodySimulator {
-    private var worldWidth = config.width
-    private var worldHeight = config.height
-    private var scalingFactor = config.scalingFactor
-    private var isWrapping = config.enableWrapping
-    val bodies: MutableList<Body> = mutableListOf()
-    private var currentStep: Int = 0
-
-    // the ids of bodies that collided this step, so we can indicate to the client their screen had a collision for any effects they want to provide
-    private val collisions: MutableSet<Int> = mutableSetOf()
-
-    // UPS timings
-    private val stepTime = 1f / config.updatesPerSecond
-
-    override fun setWidth(width: Int) { this.worldWidth = width }
-    override fun setHeight(height: Int) { this.worldHeight = height }
-    override fun height() = this.worldHeight
-    override fun width() = this.worldWidth
-    override fun collisions() = this.collisions
-    override fun bodies() = this.bodies
-    override fun currentStep() = currentStep
-    override fun isWrapping() = isWrapping
-
-    override fun reset() {
-        bodies.clear()
-    }
-
-    private fun boundVector(v: Vector2f): Vector2f {
-        // Wrap the position to the world dimensions
-        val wrappedX = if (v.x < 0) {
-            (v.x % worldWidth + worldWidth) % worldWidth
-        } else {
-            v.x % worldWidth
-        }
-        val wrappedY = if (v.y < 0) {
-            (v.y % worldHeight + worldHeight) % worldHeight
-        } else {
-            v.y % worldHeight
-        }
-
-        return Vector2f(wrappedX, wrappedY)
-    }
-
-    // find the world coordinates of the 4 corner points a body covers, with scaling of the world
-    private fun moveBody(b: Body): Body? {
-        if (!isOverlapping(b)) return b
-
-        var testedPoints = 0
-        val bodyPos = Vector2f(b.position)
-//        val mutB = b.copy(position = Vector2f(b.position), velocity = Vector2f(b.velocity))
-        val mutB = Body(position = Vector2f(b.position), velocity = Vector2f(b.velocity), mass = b.mass, id = b.id, radius = b.radius, shapeId = b.shapeId)
-
-        // spiral out from our current position until we hit a point that does not intersect with anything on the grid
-        val spiralPoints = SpiralGenerator().generate().iterator()
-        spiralPoints.next() // skip the first point, it's 0,0 which won't generate a change
-
-        // ensure we don't accidentally loop forever by checking we don't do more than every point in the grid.
-        while (testedPoints < worldWidth * worldHeight) {
-            val offset = spiralPoints.next()
-            val testPosition = boundVector(Vector2f(bodyPos).add(offset.x.toFloat(), offset.y.toFloat()))
-            // change the body's position by the spiral offset, which circles the original point
-            mutB.position.set(testPosition)
-            if (!isOverlapping(mutB)) {
-                return mutB
-            }
-            testedPoints++
-        }
-        return null
-    }
-
-    private fun isOverlapping(a: Body, b: Body): Boolean {
-        val distanceApart = calculateDistance(a, b)
-        val sumOfRadii = (a.radius + b.radius) * scalingFactor
-        return distanceApart < sumOfRadii
-    }
-
-    private fun isOverlapping(b: Body): Boolean = bodies.any { otherBody ->
-        isOverlapping(otherBody, b)
-    }
-
-    override fun addBodies(bodies: List<Body>) {
-        // attempt to add the newBodies to the simulator, adjusting them to fit into empty spaces closest to their intended locations
-        bodies.forEach { b ->
-            val movedBody = moveBody(b)
-            if (movedBody == null) {
-                println("ERROR: could not fit body $b onto grid, skipping to next.")
-            } else {
-                this.bodies.add(movedBody)
-            }
-        }
-    }
+): BaseBodySimulator(config) {
+    private val isWrapping = true
 
     override fun step() {
         collisions.clear()
@@ -150,16 +63,16 @@ data class WorldSimulator(
         return wrappedDistance
     }
 
-    fun calculateDistance(a: Body, b: Body): Float {
-        val xDistance = calculateWrappedDistance(a.position.x, b.position.x, worldWidth.toFloat())
-        val yDistance = calculateWrappedDistance(a.position.y, b.position.y, worldHeight.toFloat())
+    override fun calculateDistance(a: Body, b: Body): Float {
+        val xDistance = calculateWrappedDistance(a.position.x, b.position.x, width.toFloat())
+        val yDistance = calculateWrappedDistance(a.position.y, b.position.y, height.toFloat())
         val distance = sqrt(xDistance.pow(2) + yDistance.pow(2))
         return distance
     }
 
     fun findClosestWrappedPosition(a: Vector2f, b: Vector2f): Vector2f {
-        val w = worldWidth.toFloat()
-        val h = worldHeight.toFloat()
+        val w = width.toFloat()
+        val h = height.toFloat()
         // Define the shifts for the 8 surrounding positions plus the original (0,0) position
         val shifts = listOf(
             Pair(0f, 0f), // Original
@@ -292,7 +205,7 @@ data class WorldSimulator(
 
         // Calculate time to collide with the right wall (x = width)
         if (body.velocity.x > 0) { // Moving towards the right wall
-            val timeToRightWall = (worldWidth - body.radius - body.position.x) / body.velocity.x
+            val timeToRightWall = (width - body.radius - body.position.x) / body.velocity.x
             if (timeToRightWall >= 0f && timeToRightWall < stepTime) {
                 times.add(timeToRightWall)
             }
@@ -308,7 +221,7 @@ data class WorldSimulator(
 
         // Calculate time to collide with the bottom wall (y = height)
         if (body.velocity.y > 0) { // Moving towards the bottom wall
-            val timeToBottomWall = (worldHeight - body.radius - body.position.y) / body.velocity.y
+            val timeToBottomWall = (height - body.radius - body.position.y) / body.velocity.y
             if (timeToBottomWall >= 0f && timeToBottomWall < stepTime) {
                 times.add(timeToBottomWall)
             }

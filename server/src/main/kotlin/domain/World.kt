@@ -7,6 +7,7 @@ import geometry.LocationGenerator
 import geometry.Point
 import geometry.RightGenerator
 import geometry.bounds
+import jakarta.inject.Named
 import jakarta.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,10 +22,12 @@ import kotlin.random.Random
 @Singleton
 open class World(
     private val config: WorldConfiguration,
-    val simulator: BodySimulator,
+    @Named("Wrapped") val wrappedSimulator: BodySimulator,
+    @Named("Bounded") val boundedSimulator: BodySimulator,
 ) {
     private val simulationScope = CoroutineScope(Dispatchers.Default)
     private val heartbeatScope = CoroutineScope(Dispatchers.IO)
+
 
     // the data about clients
     private val clients = mutableMapOf<Int, GameClient>()
@@ -46,6 +49,12 @@ open class World(
     private var stopped = false
     private var nextClientId = 0
     private val stepTime = 1f / config.updatesPerSecond
+    var isWrapping = config.enableWrapping
+
+    val currentSimulator: BodySimulator
+        get() {
+            return if (isWrapping) wrappedSimulator else boundedSimulator
+        }
 
     val currentClientVisibleShapes = mutableMapOf<Int, MutableSet<VisibleShape>>()
 
@@ -71,14 +80,14 @@ open class World(
         while (!stopped) {
             started = System.currentTimeMillis()
             if (!isFrozen) {
-                simulator.step()
+                currentSimulator.step()
                 currentClientVisibleShapes.clear()
                 currentClientVisibleShapes.putAll(findVisibleShapesByClient())
                 // find all the clients with the collisions this step so we can add a collision event
                 // we have body1 body2 in collisions, and those ids are in the visibleShapes of a client
                 clients.keys.forEach { clientId ->
                     val bodyIdsForCurrentClient = currentClientVisibleShapes[clientId]?.map { it.bodyId }?.toSet() ?: setOf()
-                    if (bodyIdsForCurrentClient.intersect(simulator.collisions()).isNotEmpty()) {
+                    if (bodyIdsForCurrentClient.intersect(currentSimulator.collisions).isNotEmpty()) {
                         // this client has a body in its view that had a collision this step
                         addEvent(clientId, StatusEvent.COLLISION)
                     }
@@ -107,8 +116,8 @@ open class World(
         occupiedScreens[nextPoint] = gameClient
 
         // adjust the simulator's dimensions
-        simulator.setWidth(worldBoundary().x * config.width)
-        simulator.setHeight(worldBoundary().y * config.height)
+        wrappedSimulator.width = worldBoundary().x * config.width
+        wrappedSimulator.height = worldBoundary().y * config.height
 
         if (!isStarted && config.shouldAutoStart) {
             simulationScope.launch {
@@ -247,7 +256,7 @@ open class World(
 
     // find every VisibleShape for every client
     @Suppress("LocalVariableName")
-    fun findVisibleShapesByClient(): Map<Int, MutableSet<VisibleShape>> {
+    private fun findVisibleShapesByClient(): Map<Int, MutableSet<VisibleShape>> {
         val gameClients = clients.values.toList()
         fun clientIdThatOwns(p: Point): Int {
             return gameClients.firstOrNull { c ->
@@ -263,10 +272,10 @@ open class World(
             visibleShapesByClient[client.id] = mutableSetOf()
         }
 
-        simulator.bodies().forEach { body ->
+        currentSimulator.bodies.forEach { body ->
             val bodyWidth = (body.radius * 2).roundToInt()
 
-            val corners = body.bodyCorners(config.scalingFactor, simulator.width(), simulator.height())
+            val corners = body.bodyCorners(config.scalingFactor, currentSimulator.width, currentSimulator.height)
             // We can use each corner in turn, work out its "centre point" relative to a grid that would cover from that corner, and see if the new centre matches the body centre.
             // Add that to a set of visible points for the shape and "new centre", which will remove duplicates where the corners were in the same non-wrapped position
             // We won't bother optimizing for 1x1 shape, it will just fall out in the wash, 4 calculations on the same point isn't that much
@@ -295,22 +304,22 @@ open class World(
     }
 
     fun addBody(size: Int) {
-        val bodies = createBodies(simulator.bodies().count(), 0, 0, listOf(size))
-        simulator.addBodies(bodies)
+        val bodies = createBodies(currentSimulator.bodies.count(), 0, 0, listOf(size))
+        currentSimulator.addBodies(bodies)
         addEventToAllClients(StatusEvent.OBJECT_CHANGE)
     }
 
     fun resetWorld() {
-        simulator.reset()
+        currentSimulator.reset()
         addEventToAllClients(StatusEvent.OBJECT_CHANGE)
     }
 
     fun increaseSpeed() {
-        simulator.bodies().forEach { body -> body.velocity.mul(1.05f) }
+        currentSimulator.bodies.forEach { body -> body.velocity.mul(1.05f) }
     }
 
     fun decreaseSpeed() {
-        simulator.bodies().forEach { body -> body.velocity.div(1.05f) }
+        currentSimulator.bodies.forEach { body -> body.velocity.div(1.05f) }
     }
 
     companion object {

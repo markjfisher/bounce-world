@@ -5,10 +5,10 @@ import domain.World
 import javafx.scene.canvas.Canvas
 import javafx.scene.paint.Color
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import simulator.BoundedWorldSimulator
 import simulator.WorldSimulator
 import tornadofx.App
 import tornadofx.View
@@ -21,9 +21,10 @@ import kotlin.random.Random
 class WorldSimulatorApp: App(WorldView::class)
 
 class WorldView : View("World Simulator") {
-    private val worldConfig = WorldConfiguration().apply { shouldAutoStart = false }
-    private val simulator = WorldSimulator(worldConfig)
-    private val world = World(worldConfig, simulator)
+    private val worldConfig = WorldConfiguration().apply { shouldAutoStart = false; enableWrapping = true }
+    private val worldSimulator = WorldSimulator(worldConfig)
+    private val boundedWorldSimulator = BoundedWorldSimulator(worldConfig)
+    private val world = World(worldConfig, worldSimulator, boundedWorldSimulator)
     private val f = 1200.0 / worldConfig.width
     private val canvas = Canvas(1200.0, 600.0)
     private val colours = mutableMapOf<Int, Color>()
@@ -32,8 +33,9 @@ class WorldView : View("World Simulator") {
 
     init {
         val newBodies = world.createBodies(0,0, 0, List(4) { 5 } + List(10) { 3 } + List(8) { 1 })
-        world.simulator.addBodies(newBodies)
-        colours.putAll(world.simulator.bodies().associate {
+//        val newBodies = world.createBodies(0,0, 0, List(2) { 5 })
+        world.currentSimulator.addBodies(newBodies)
+        colours.putAll(world.currentSimulator.bodies.associate {
             it.id to Color.color(
                 Random.nextDouble(),
                 Random.nextDouble(),
@@ -53,9 +55,9 @@ class WorldView : View("World Simulator") {
         val gc = canvas.graphicsContext2D
         with(gc) {
             clearRect(0.0, 0.0, canvas.width, canvas.height) // Clear the canvas
-            world.simulator.bodies().forEach { body ->
+            world.currentSimulator.bodies.forEach { body ->
                 val radius = body.radius * 4f // scaled to world size
-                val positions = calculateWrappedPositions(body.position.x.toDouble(), body.position.y.toDouble(), radius.toDouble(), world.simulator.width().toDouble(), world.simulator.height().toDouble())
+                val positions = calculateWrappedPositions(body.position.x.toDouble(), body.position.y.toDouble(), radius.toDouble(), world.currentSimulator.width.toDouble(), world.currentSimulator.height.toDouble())
 
                 // Draw the circle representing the body at potentially wrapped positions
                 fill = colours[body.id]!!
@@ -99,12 +101,11 @@ class WorldView : View("World Simulator") {
         return positions
     }
 
-    @OptIn(DelicateCoroutinesApi::class)
     private fun updateWorld() {
         simulationScope.launch {
             while (true) {
                 delay(10)
-                world.simulator.step()
+                world.currentSimulator.step()
 
                 runLater {
                     drawWorld()
