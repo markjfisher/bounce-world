@@ -116,8 +116,8 @@ open class World(
         occupiedScreens[nextPoint] = gameClient
 
         // adjust the simulator's dimensions
-        wrappedSimulator.width = worldBoundary().x * config.width
-        wrappedSimulator.height = worldBoundary().y * config.height
+        currentSimulator.width = worldBoundary().x * config.width
+        currentSimulator.height = worldBoundary().y * config.height
 
         if (!isStarted && config.shouldAutoStart) {
             simulationScope.launch {

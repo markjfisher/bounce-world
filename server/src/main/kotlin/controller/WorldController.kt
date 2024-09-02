@@ -112,7 +112,6 @@ open class WorldController(
     @Get("add/{size}", produces = [APPLICATION_OCTET_STREAM])
     open fun addBody(size: Int): HttpResponse<ByteArray> {
         // we get a single byte for the size of shape we want to add
-        println("asked to add body of size $size")
         if (size in 1..5) {
             println("Adding body size: $size")
             world.addBody(size)
