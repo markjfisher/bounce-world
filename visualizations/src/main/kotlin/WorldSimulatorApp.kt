@@ -21,18 +21,18 @@ import kotlin.random.Random
 class WorldSimulatorApp: App(WorldView::class)
 
 class WorldView : View("World Simulator") {
-    private val worldConfig = WorldConfiguration().apply { shouldAutoStart = false; enableWrapping = true }
+    private val worldConfig = WorldConfiguration().apply { shouldAutoStart = false; enableWrapping = false; width = 1200; height = 600; initialSpeed = 12f }
     private val worldSimulator = WorldSimulator(worldConfig)
     private val boundedWorldSimulator = BoundedWorldSimulator(worldConfig)
     private val world = World(worldConfig, worldSimulator, boundedWorldSimulator)
-    private val f = 1200.0 / worldConfig.width
-    private val canvas = Canvas(1200.0, 600.0)
+    private val f = 2400.0 / worldConfig.width
+    private val canvas = Canvas(2400.0, 1200.0)
     private val colours = mutableMapOf<Int, Color>()
 
     private val simulationScope = CoroutineScope(Dispatchers.Default)
 
     init {
-        val newBodies = world.createBodies(0,0, 0, List(4) { 5 } + List(10) { 3 } + List(8) { 1 })
+        val newBodies = world.createBodies(0,0, 0, List(200) { 5 } + List(300) { 4 } + List(500) { 3 } + List(600) { 1 })
 //        val newBodies = world.createBodies(0,0, 0, List(2) { 5 })
         world.currentSimulator.addBodies(newBodies)
         colours.putAll(world.currentSimulator.bodies.associate {

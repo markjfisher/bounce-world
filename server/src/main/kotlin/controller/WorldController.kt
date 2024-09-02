@@ -1,9 +1,15 @@
 package controller
 
 import config.WorldConfiguration
+import domain.BodyData
+import domain.BodySummary
+import domain.ClientData
+import domain.VectorData
 import domain.World
+import domain.WorldStatus
 import geometry.Point
 import io.micronaut.http.HttpResponse
+import io.micronaut.http.MediaType.APPLICATION_JSON
 import io.micronaut.http.MediaType.APPLICATION_OCTET_STREAM
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
@@ -99,6 +105,21 @@ open class WorldController(
         addBool(data, world.isFrozen)
         addBool(data, world.isWrapping)
         return HttpResponse.ok(data.toByteArray())
+    }
+
+    @Get("status", produces = [APPLICATION_JSON])
+    fun getState(): HttpResponse<WorldStatus> {
+        val bodyGrouping = world.currentSimulator.bodies.groupingBy { (it.radius * 2).toInt() }.eachCount()
+        val worldStatus = WorldStatus(
+            width = world.currentSimulator.width,
+            height = world.currentSimulator.height,
+            frozen = world.isFrozen,
+            wrapping = world.isWrapping,
+            clients = world.clients().map { ClientData(id = it.id, name = it.name, location = it.position) },
+            bodyCounts = bodyGrouping.map { (size, count) -> BodySummary(size, count) },
+            bodies = world.currentSimulator.bodies.map { BodyData(id = it.id, radius = it.radius, mass = it.mass, position = VectorData(it.position.x, it.position.y), velocity = VectorData(it.velocity.x, it.position.y)) },
+        )
+        return HttpResponse.ok(worldStatus)
     }
 
     // Technically should be a PUT, but it's much easier to hit the freeze endpoint this way for the client.

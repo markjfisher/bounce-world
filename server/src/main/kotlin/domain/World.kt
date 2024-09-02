@@ -31,6 +31,7 @@ open class World(
 
     // the data about clients
     private val clients = mutableMapOf<Int, GameClient>()
+    fun clients(): List<GameClient> = clients.values.toList()
 
     // last heartbeat received
     val clientHeartbeats = mutableMapOf<Int, Long>()

@@ -1,6 +1,9 @@
 [micronaut.application]
 name = "bounce-world"
 
+[jackson]
+serializationInclusion = "ALWAYS"
+
 [world]
 width = 160
 height = 80
