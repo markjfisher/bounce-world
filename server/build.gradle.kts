@@ -7,7 +7,7 @@ plugins {
     id("io.micronaut.aot") version "4.4.0"
 }
 
-version = "1.0.5"
+version = "1.0.6"
 group = "bounce.world"
 
 val jomlVersion: String by project

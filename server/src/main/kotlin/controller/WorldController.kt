@@ -11,6 +11,7 @@ import geometry.Point
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType.APPLICATION_JSON
 import io.micronaut.http.MediaType.APPLICATION_OCTET_STREAM
+import io.micronaut.http.MediaType.TEXT_PLAIN
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import kotlin.math.roundToInt
@@ -162,5 +163,9 @@ open class WorldController(
         return HttpResponse.ok(byteArrayOf(1))
     }
 
-
+    @Get("who", produces = [TEXT_PLAIN])
+    fun who(): HttpResponse<String> {
+        val fixedString = world.clients().sortedBy { it.id }.map { it.name }.joinToString(separator = "") { it.padEnd(8, ' ') }
+        return HttpResponse.ok(fixedString)
+    }
 }
