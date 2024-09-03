@@ -21,7 +21,7 @@ import kotlin.random.Random
 class WorldSimulatorApp: App(WorldView::class)
 
 class WorldView : View("World Simulator") {
-    private val worldConfig = WorldConfiguration().apply { shouldAutoStart = false; enableWrapping = false; width = 1200; height = 600; initialSpeed = 12f }
+    private val worldConfig = WorldConfiguration().apply { shouldAutoStart = false; enableWrapping = false; width = 1200; height = 600; initialSpeed = 8f }
     private val worldSimulator = WorldSimulator(worldConfig)
     private val boundedWorldSimulator = BoundedWorldSimulator(worldConfig)
     private val world = World(worldConfig, worldSimulator, boundedWorldSimulator)
@@ -32,7 +32,8 @@ class WorldView : View("World Simulator") {
     private val simulationScope = CoroutineScope(Dispatchers.Default)
 
     init {
-        val newBodies = world.createBodies(0,0, 0, List(200) { 5 } + List(300) { 4 } + List(500) { 3 } + List(600) { 1 })
+//        val newBodies = world.createBodies(0,0, 0, List(50) { 5 } + List(300) { 4 } + List(500) { 3 } + List(600) { 1 })
+        val newBodies = world.createBodies(0,0, 0, List(50) { 5 } + List(300) { 4 } + List(500) { 3 } + List(600) { 1 })
 //        val newBodies = world.createBodies(0,0, 0, List(2) { 5 })
         world.currentSimulator.addBodies(newBodies)
         colours.putAll(world.currentSimulator.bodies.associate {

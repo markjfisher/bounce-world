@@ -1,3 +1,6 @@
+[micronaut.server]
+host = "0.0.0.0"
+
 [micronaut.application]
 name = "bounce-world"
 
@@ -6,7 +9,7 @@ serializationInclusion = "ALWAYS"
 
 [world]
 width = 160
-height = 80
+height = 88
 scalingFactor = 4
 updatesPerSecond = 10
 shouldAutoStart = true

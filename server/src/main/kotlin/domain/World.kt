@@ -324,9 +324,8 @@ open class World(
     }
 
     companion object {
-        // screens of 40x20 and 32x16 have good mappings down from these sizes
         // The world size will be its boundary * these values.
         const val SCREEN_WIDTH = 160
-        const val SCREEN_HEIGHT = 80
+        const val SCREEN_HEIGHT = 88
     }
 }

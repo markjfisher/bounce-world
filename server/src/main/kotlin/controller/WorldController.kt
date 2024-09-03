@@ -61,10 +61,11 @@ open class WorldController(
                 val adjustedToClientViewPosition = vs.position - gameClient.worldBounds.first
 
                 // now scale down to the client's screen size, we need the width of the minor window view
-                val scaling = 1f * gameClient.screenSize.width / config.width
+                val scalingX = 1f * gameClient.screenSize.width / config.width
+                val scalingY = 1f * gameClient.screenSize.height / config.height
                 val scaledToClientViewPosition = Point(
-                    (adjustedToClientViewPosition.x * scaling).roundToInt(),
-                    (adjustedToClientViewPosition.y * scaling).roundToInt()
+                    (adjustedToClientViewPosition.x * scalingX).roundToInt(),
+                    (adjustedToClientViewPosition.y * scalingY).roundToInt()
                 )
 
                 // now convert to a comma delimited string
