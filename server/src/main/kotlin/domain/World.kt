@@ -39,6 +39,9 @@ open class World(
     // status events the client needs to be told about
     private val statusEvents = mutableMapOf<Int, MutableSet<StatusEvent>>()
 
+    // commands the client needs to be told about
+    private val clientCommands = mutableMapOf<Int, MutableList<ClientCommand>>()
+
     // which positions in the location pattern are currently taken
     private val occupiedScreens = mutableMapOf<Point, GameClient>()
 
@@ -213,15 +216,38 @@ open class World(
         return occupiedScreens.keys.bounds().second + Point(1, 1)
     }
 
-    fun addEventToAllClients(statusEvent: StatusEvent) {
-        clients.keys.forEach { id ->
-            val clientEvents = statusEvents[id] ?: mutableSetOf()
-            clientEvents.add(statusEvent)
-            statusEvents[id] = clientEvents
+//    fun broadcastToAllClients(message: String, time: Int) {
+//        // we need send a command to client to fetch the message
+//    }
+//
+
+    fun addCommandToAllClients(cmd: ClientCommand) {
+        clients.keys.forEach { clientId ->
+            addCommandToClient(clientId, cmd)
         }
     }
 
-    fun removeEventFromAllClients(statusEvent: StatusEvent) {
+    private fun removeCommandFromAllClients(cmd: ClientCommand) {
+        clients.keys.forEach { id ->
+            val clientCmds = clientCommands[id] ?: mutableListOf()
+            clientCmds.remove(cmd)
+        }
+    }
+
+    fun addCommandToClient(clientId: Int, cmd: ClientCommand) {
+        val cmds = clientCommands[clientId] ?: mutableListOf()
+        cmds.add(cmd)
+        clientCommands[clientId] = cmds
+        addEvent(clientId, StatusEvent.CLIENT_CMD_EVENT)
+    }
+
+    private fun addEventToAllClients(statusEvent: StatusEvent) {
+        clients.keys.forEach { id ->
+            addEvent(id, statusEvent)
+        }
+    }
+
+    private fun removeEventFromAllClients(statusEvent: StatusEvent) {
         clients.keys.forEach { id ->
             val clientEvents = statusEvents[id] ?: mutableSetOf()
             clientEvents.remove(statusEvent)
@@ -244,6 +270,12 @@ open class World(
         // add all the status values together to form the byte.
         // Each status value is a power of 2 (i.e. an individual bit) to make it easy for the client to determine values to react to
         return events.fold(0) { ac, e -> ac + e.value }.toByte()
+    }
+
+    fun getCommands(clientId: Int): ByteArray {
+        val commands = clientCommands[clientId] ?: return byteArrayOf()
+        clientCommands.remove(clientId)
+        return commands.map { it.event.toByte() }.toByteArray()
     }
 
     fun toggleFrozen() {

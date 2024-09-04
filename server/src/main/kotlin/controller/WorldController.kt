@@ -4,6 +4,7 @@ import config.WorldConfiguration
 import domain.BodyData
 import domain.BodySummary
 import domain.ClientData
+import domain.ClientCommand
 import domain.VectorData
 import domain.World
 import domain.WorldStatus
@@ -168,4 +169,42 @@ open class WorldController(
         val fixedString = world.clients().sortedBy { it.id }.map { it.name }.joinToString(separator = "") { it.padEnd(8, ' ') }
         return HttpResponse.ok(fixedString)
     }
+
+    // This puts commands onto the client's 'queue' to process, typically called from an external application, not the clients
+    // I'm not following the standard VERBS here for mega simplicity for clients
+    @Get("cmd/put/{clientId}/{cmd}", produces = [APPLICATION_OCTET_STREAM])
+    fun clientCommand(clientId: String, cmd: String): HttpResponse<ByteArray> {
+        val clientCommand = ClientCommand.from(cmd) ?: return HttpResponse.notFound(byteArrayOf())
+
+        if (clientId == "ALL") {
+            world.addCommandToAllClients(clientCommand)
+        } else {
+            val id = clientId.toIntOrNull() ?: return HttpResponse.notFound(byteArrayOf())
+            val client = world.getClient(id) ?: return HttpResponse.notFound(byteArrayOf())
+            world.addCommandToClient(client.id, clientCommand)
+        }
+
+        return HttpResponse.ok(byteArrayOf(1))
+    }
+
+    // This fetches the cmd code bytes the client has been instructed to perform
+    @Get("cmd/get/{clientId}", produces = [APPLICATION_OCTET_STREAM])
+    fun fetchCommands(clientId: String): HttpResponse<ByteArray> {
+        val id = clientId.toIntOrNull() ?: return HttpResponse.ok(byteArrayOf())
+        val client = world.getClient(id) ?: return HttpResponse.ok(byteArrayOf())
+        val commandData = world.getCommands(client.id)
+        return HttpResponse.ok(commandData)
+    }
+
+//    @Get("cmd/broadcast/{clientId}/{time}/{message}", produces = [APPLICATION_OCTET_STREAM])
+//    fun broadcastCommand(clientId: String, time: String, message: String): HttpResponse<ByteArray> {
+//        val t = time.toIntOrNull() ?: return HttpResponse.notFound(byteArrayOf())
+//        if (clientId == "ALL") {
+//            world.broadcastToAllClients(message, t)
+//        } else {
+//            val id = clientId.toIntOrNull() ?: return HttpResponse.notFound(byteArrayOf())
+//            world.broadcastToClient(id, message, t)
+//        }
+//        return HttpResponse.ok(byteArrayOf(1))
+//    }
 }
