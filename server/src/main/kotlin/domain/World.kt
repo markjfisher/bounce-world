@@ -42,6 +42,9 @@ open class World(
     // commands the client needs to be told about
     private val clientCommands = mutableMapOf<Int, MutableList<ClientCommand>>()
 
+    // we only keep 1 broadcast message
+    var currentBroadcastMessage: String = ""
+
     // which positions in the location pattern are currently taken
     private val occupiedScreens = mutableMapOf<Point, GameClient>()
 
@@ -216,10 +219,50 @@ open class World(
         return occupiedScreens.keys.bounds().second + Point(1, 1)
     }
 
-//    fun broadcastToAllClients(message: String, time: Int) {
-//        // we need send a command to client to fetch the message
-//    }
-//
+    fun broadcastToAllClients(message: String, delaySeconds: Int) {
+        /*
+           Process:
+           - send clients a CLIENT_CMD_EVENT
+           - they call back and get an "enable_broadcast" cmd
+           - they retrieve the message, and show it
+
+           When we want to turn it off
+           - send clients a CLIENT_CMD_EVENT
+           - they call back and get a "disable_broadcast" cmd
+           - they turn off the message
+
+           For the second phase, ie. turning off, we will need to pause in a background thread for the required "time", and send the second part of the message
+         */
+
+        currentBroadcastMessage = message
+        addCommandToAllClients(ClientCommand.ENABLE_BROADCAST)
+
+        heartbeatScope.launch {
+            disableAllBroadcast(delaySeconds)
+        }
+
+    }
+
+    private suspend fun disableAllBroadcast(seconds: Int) {
+        delay(1000L * seconds)
+        println("sending disabled broadcast to all clients")
+        addCommandToAllClients(ClientCommand.DISABLE_BROADCAST)
+    }
+
+    fun broadcastToClient(clientId: Int, message: String, delaySeconds: Int) {
+        currentBroadcastMessage = message
+        addCommandToClient(clientId, ClientCommand.ENABLE_BROADCAST)
+
+        heartbeatScope.launch {
+            disableClientBroadcast(clientId, delaySeconds)
+        }
+    }
+
+    private suspend fun disableClientBroadcast(clientId: Int, seconds: Int) {
+        delay(1000L * seconds)
+        println("sending disabled broadcast to client $clientId")
+        addCommandToClient(clientId, ClientCommand.DISABLE_BROADCAST)
+    }
 
     fun addCommandToAllClients(cmd: ClientCommand) {
         clients.keys.forEach { clientId ->

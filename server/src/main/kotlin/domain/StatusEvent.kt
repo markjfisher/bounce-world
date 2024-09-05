@@ -5,6 +5,6 @@ enum class StatusEvent(val value: Int) {
     OBJECT_CHANGE(2),
     FROZEN(4),
     CLIENT_CMD_EVENT(8),
-    SPEED_CHANGE(16),
+
     COLLISION(32)
 }

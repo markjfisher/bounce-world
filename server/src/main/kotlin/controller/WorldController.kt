@@ -196,15 +196,22 @@ open class WorldController(
         return HttpResponse.ok(commandData)
     }
 
-//    @Get("cmd/broadcast/{clientId}/{time}/{message}", produces = [APPLICATION_OCTET_STREAM])
-//    fun broadcastCommand(clientId: String, time: String, message: String): HttpResponse<ByteArray> {
-//        val t = time.toIntOrNull() ?: return HttpResponse.notFound(byteArrayOf())
-//        if (clientId == "ALL") {
-//            world.broadcastToAllClients(message, t)
-//        } else {
-//            val id = clientId.toIntOrNull() ?: return HttpResponse.notFound(byteArrayOf())
-//            world.broadcastToClient(id, message, t)
-//        }
-//        return HttpResponse.ok(byteArrayOf(1))
-//    }
+    @Get("cmd/broadcast/{clientId}/{time}/{message}", produces = [APPLICATION_OCTET_STREAM])
+    fun broadcastCommand(clientId: String, time: String, message: String): HttpResponse<ByteArray> {
+        val t = time.toIntOrNull() ?: return HttpResponse.notFound(byteArrayOf())
+        if (clientId == "ALL") {
+            world.broadcastToAllClients(message, t)
+        } else {
+            val id = clientId.toIntOrNull() ?: return HttpResponse.notFound(byteArrayOf())
+            world.broadcastToClient(id, message, t)
+        }
+        return HttpResponse.ok(byteArrayOf(1))
+    }
+
+    // this retrieves the latest broadcast message
+    @Get("msg", produces = [TEXT_PLAIN])
+    fun msg(): HttpResponse<String> {
+        return HttpResponse.ok(world.currentBroadcastMessage)
+    }
+
 }
