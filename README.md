@@ -56,6 +56,38 @@ address if you have several bindings and only want to listen on one of them, e.g
 the local machine with no one outside being able to connect. This is useful for connecting emulators only on
 the local machine.
 
+## CLI interaction
+
+The world service has a REST interface that supports many commands to interact with the application.
+
+### creating a client for testing
+
+This is only useful for testing, as the client will time out after 60s.
+
+- POST `/client`, body: `name,version,x-width,y-width`
+
+```shell
+$ curl -s -X POST http://oscar.home:8080/client -d 'fen2,1,40,22' -o - | xxd -p
+00
+```
+which shows the hexadecimal value of the client id.
+
+### simple list of clients with ids
+
+- GET `/get-clients`
+
+returns a simple array of the clients ids and names as a json object:
+
+```
+❯ curl -s -X GET http://oscar.home:8080/get-clients
+[{"id":0,"name":"fen3"},{"id":1,"name":"fen2"},{"id":2,"name":"fen1"}]
+```
+
+### reordering clients
+
+- GET `/reorder/id1,id2,id3,...`
+
+
 ## building
 
 Use the gradle wrapper script to download gradle and build the libraries

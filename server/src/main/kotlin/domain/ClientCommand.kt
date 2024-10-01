@@ -7,6 +7,8 @@ enum class ClientCommand(val event: Int, val cmd: String) {
     DISABLE_WHO(4, "disableWho"),
     ENABLE_BROADCAST(5, "enableBroadcast"),
     DISABLE_BROADCAST(6, "disableBroadcast"),
+    ENABLE_INFO(7, "enableInfo"),
+    DISABLE_INFO(8, "disableInfo"),
     ;
 
     companion object {

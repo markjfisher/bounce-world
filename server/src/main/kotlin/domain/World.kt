@@ -28,10 +28,13 @@ open class World(
     private val simulationScope = CoroutineScope(Dispatchers.Default)
     private val heartbeatScope = CoroutineScope(Dispatchers.IO)
 
-
     // the data about clients
     private val clients = mutableMapOf<Int, GameClient>()
     fun clients(): List<GameClient> = clients.values.toList()
+    fun setClients(newClients: Map<Int, GameClient>) {
+        clients.clear()
+        clients.putAll(newClients)
+    }
 
     // last heartbeat received
     val clientHeartbeats = mutableMapOf<Int, Long>()
@@ -51,6 +54,9 @@ open class World(
     // the body shapes the clients will be told about
     val shapes = ShapeCreator.createShapes()
 
+    // the current client location pattern
+    private var currentLocationPattern = config.locationPattern
+
     private var isStarted = false
     var isFrozen = false
     private var stopped = false
@@ -64,6 +70,20 @@ open class World(
         }
 
     val currentClientVisibleShapes = mutableMapOf<Int, MutableSet<VisibleShape>>()
+
+    fun rebuild(newIds: List<Int>) {
+        isFrozen = true
+        stopped = true
+        currentSimulator.reset()
+        occupiedScreens.clear()
+        newIds.forEach { id ->
+            // re-add all the clients, their new positions will be calculated as they are re-add and the world shape will regenerate based on the total new clients.
+            val client = clients[id] ?: throw Exception("No client with id $id")
+            addClient(client)
+        }
+
+        addEventToAllClients(StatusEvent.OBJECT_CHANGE)
+    }
 
     private suspend fun checkClientsStillConnected() {
         while (!stopped) {
@@ -186,11 +206,7 @@ open class World(
     private fun findNextUnoccupiedScreen(): Point {
         // walk the sequence of next location points until we find one not in occupiedPoints.
         // This will allow clients to be removed from the world, and replaced by new joiners
-        val pointGenerator: LocationGenerator = when(config.locationPattern) {
-            "grid" -> GridPatternGenerator()
-            "right" -> RightGenerator()
-            else -> throw Error("Unknown location pattern ${config.locationPattern}")
-        }
+        val pointGenerator: LocationGenerator = locationGenerator()
 
         val pointIterator = pointGenerator.generate().iterator()
         while (pointIterator.hasNext()) {
@@ -200,6 +216,12 @@ open class World(
             }
         }
         throw IllegalStateException("Unable to find next unoccupied point.")
+    }
+
+    private fun locationGenerator() = when (currentLocationPattern) {
+        "grid" -> GridPatternGenerator()
+        "right" -> RightGenerator()
+        else -> throw Error("Unknown location pattern ${config.locationPattern}")
     }
 
     fun removeClient(id: Int) {

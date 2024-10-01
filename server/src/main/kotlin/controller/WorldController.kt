@@ -3,8 +3,9 @@ package controller
 import config.WorldConfiguration
 import domain.BodyData
 import domain.BodySummary
-import domain.ClientData
+import domain.ClientBasic
 import domain.ClientCommand
+import domain.ClientData
 import domain.VectorData
 import domain.World
 import domain.WorldStatus
@@ -36,6 +37,9 @@ open class WorldController(
     @Get("w/{clientId}", produces = [APPLICATION_OCTET_STREAM])
 //    fun getWorldData(clientId: Int, @QueryValue @Nullable s: Int?): HttpResponse<ByteArray> {
     fun getWorldData(clientId: Int): HttpResponse<ByteArray> {
+        if (!world.clients().map { it.id }.contains(clientId)) {
+            return HttpResponse.ok(byteArrayOf(0))
+        }
         world.clientHeartbeats[clientId] = System.currentTimeMillis()
         val data = try {
             val csv = asCSV(clientId)
@@ -214,4 +218,26 @@ open class WorldController(
         return HttpResponse.ok(world.currentBroadcastMessage)
     }
 
+    @Get("get-clients", produces = [APPLICATION_JSON])
+    fun getClients(): HttpResponse<List<ClientBasic>> {
+        return HttpResponse.ok(world.clients().map { ClientBasic(it.id, it.name) })
+    }
+
+    @Get("reorder/{clientOrderCS}", produces = [APPLICATION_OCTET_STREAM])
+    fun reorderClients(clientOrderCS: String): HttpResponse<String> {
+        println("reorder, ids: $clientOrderCS")
+        val newClientOrder = clientOrderCS.split(",").map { it.toInt() }
+        val newIds = newClientOrder.toSortedSet()
+
+        val oldClients = world.clients()
+        val oldIds = oldClients.map { it.id }.toSortedSet()
+
+        if (oldIds != newIds) {
+            println("Error: old and new ids do not match, oldIds: $oldIds, newIds: $newIds")
+            return HttpResponse.badRequest("New IDs do not match current client IDs, oldIds: $oldIds, newIds: $newIds")
+        }
+
+        world.rebuild(newClientOrder)
+        return HttpResponse.ok("")
+    }
 }

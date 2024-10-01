@@ -18,7 +18,7 @@ data class BoundedWorldSimulator(
         val quadtree = Quadtree(width, height, 1, 6)
         collisions.clear()
         bodies.forEach { body ->
-            // create a rectangle for the location of the current body
+            // create a rectangle for the location of the current body, make it slightly larger than a box covering the radius of the body
             val bound = Vector2f(body.radius, body.radius).mul(scalingFactor * 1.05f)
             val upperLeft = Vector2f(body.position).sub(bound)
             val lowerRight = Vector2f(body.position).add(bound)
@@ -30,7 +30,6 @@ data class BoundedWorldSimulator(
             val bound = Vector2f(bodyA.radius * 2f * scalingFactor, bodyA.radius * 2f * scalingFactor)
             val upperLeft = Vector2f(bodyA.position).sub(bound)
             val lowerRight = Vector2f(bodyA.position).add(bound)
-            // List<Pair<element Index, Body ID>>
             val qNeighbours = quadtree.queryWithIds(upperLeft.x, upperLeft.y, lowerRight.x, lowerRight.y).filterNot { it.second == bodyA.id }
 
             qNeighbours.forEach { (_, bodyId) ->
@@ -45,7 +44,7 @@ data class BoundedWorldSimulator(
             }
         }
 
-        // fucking engineers
+        // engineers eh? "close enough"
         bodies.forEach { body ->
             update(body)
             edges(body)
