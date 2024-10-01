@@ -9,31 +9,29 @@ import command.CommandProcessor
 import server.TcpServer
 import kotlinx.coroutines.runBlocking
 
-fun main(args: Array<String>) {
+fun main() {
     val env = applicationEngineEnvironment {
         config = ApplicationConfig("application.conf")
         module {
             val worldConfig = WorldConfig(environment.config)
-            configureRouting(worldConfig)
+            val world = WorldFactory.create(worldConfig)
+            configureRouting(world)
+            
+            // Start the TCP server
+            val commandProcessor = CommandProcessor(world)
+            val tcpServer = TcpServer(commandProcessor, worldConfig)
+            launch {
+                tcpServer.start()
+            }
         }
     }
 
-    embeddedServer(Netty, env).start(wait = false)
-
-    val worldConfig = WorldConfig(env.config)
-    val tcpServer = TcpServer(worldConfig)
-    runBlocking {
-        tcpServer.start()
-    }
+    embeddedServer(Netty, env).start(wait = true)
 }
 
-fun Application.module() {
-    val worldConfig = WorldConfig(environment.config)
-    // Use worldConfig here to configure your application
-}
 
-fun Application.configureRouting(worldConfig: WorldConfig) {
-    val commandProcessor = CommandProcessor(worldConfig)
+fun Application.configureRouting(world: World) {
+    val commandProcessor = CommandProcessor(world)
 
     routing {
         get("/add/{size}") {

@@ -1,10 +1,7 @@
 package domain
 
 import geometry.Point
-import io.micronaut.serde.annotation.Serdeable
 
-@Serdeable.Deserializable
-@Serdeable.Serializable
 data class ScreenSize(var width: Int, var height: Int)
 
 data class GameClient(

@@ -8,8 +8,6 @@ import jakarta.inject.Singleton
 import org.joml.Vector2f
 
 @Suppress("DuplicatedCode")
-@Named("Bounded")
-@Singleton
 data class BoundedWorldSimulator(
     private val config: WorldConfiguration,
 ): BaseBodySimulator(config) {

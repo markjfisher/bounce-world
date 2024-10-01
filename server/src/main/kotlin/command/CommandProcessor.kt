@@ -1,8 +1,8 @@
 package command
 
-import config.WorldConfig
+import domain.World
 
-class CommandProcessor(private val worldConfig: WorldConfig) {
+class CommandProcessor(private val world: World) {
     fun process(command: String): ByteArray {
         return when {
             command.startsWith("w/") -> getWorldData(command.substringAfter("w/").toInt())
@@ -33,14 +33,58 @@ class CommandProcessor(private val worldConfig: WorldConfig) {
         }
     }
 
-    private fun getWorldData(clientId: Int): ByteArray { /* ... */ }
-    private fun getWorldState(): ByteArray { /* ... */ }
-    private fun getState(): ByteArray { /* ... */ }
-    private fun toggleFreeze(): ByteArray { /* ... */ }
-    private fun addBody(size: Int): ByteArray { /* ... */ }
-    private fun resetWorld(): ByteArray { /* ... */ }
-    private fun increaseSpeed(): ByteArray { /* ... */ }
-    private fun decreaseSpeed(): ByteArray { /* ... */ }
-    private fun clientCommand(clientId: String, cmd: String): ByteArray { /* ... */ }
-    private fun broadcastCommand(clientId: String, time: String, message: String): ByteArray { /* ... */ }
+    private fun getWorldData(clientId: Int): ByteArray {
+        // Implement using world instance
+        return byteArrayOf() // Placeholder
+    }
+
+    private fun getWorldData(clientId: Int): ByteArray {
+        // Implement using world instance
+        return byteArrayOf() // Placeholder
+    }
+
+    private fun getWorldState(): ByteArray {
+        // Implement using world instance
+        return byteArrayOf() // Placeholder
+    }
+
+    private fun getState(): ByteArray {
+        // Implement using world instance
+        return byteArrayOf() // Placeholder
+    }
+
+    private fun toggleFreeze(): ByteArray {
+        world.toggleFrozen()
+        return byteArrayOf(1) // Success response
+    }
+
+    private fun addBody(size: Int): ByteArray {
+        world.addBody(size)
+        return byteArrayOf(1) // Success response
+    }
+
+    private fun resetWorld(): ByteArray {
+        world.resetWorld()
+        return byteArrayOf(1) // Success response
+    }
+
+    private fun increaseSpeed(): ByteArray {
+        world.increaseSpeed()
+        return byteArrayOf(1) // Success response
+    }
+
+    private fun decreaseSpeed(): ByteArray {
+        world.decreaseSpeed()
+        return byteArrayOf(1) // Success response
+    }
+
+    private fun clientCommand(clientId: String, cmd: String): ByteArray {
+        // Implement using world instance
+        return byteArrayOf() // Placeholder
+    }
+
+    private fun broadcastCommand(clientId: String, time: String, message: String): ByteArray {
+        // Implement using world instance
+        return byteArrayOf() // Placeholder
+    }
 }

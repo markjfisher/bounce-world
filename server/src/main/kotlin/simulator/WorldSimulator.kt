@@ -14,8 +14,6 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 @Suppress("DuplicatedCode")
-@Named("Wrapped")
-@Singleton
 data class WorldSimulator(
     private val config: WorldConfiguration
 ): BaseBodySimulator(config) {

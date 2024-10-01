@@ -2,15 +2,12 @@ package domain
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import geometry.Point
-import io.micronaut.serde.annotation.Serdeable
 
-@Serdeable
 data class VectorData(
     val x: Float,
     val y: Float
 )
 
-@Serdeable
 data class BodyData(
     val id: Int,
     val radius: Float,
@@ -19,20 +16,17 @@ data class BodyData(
     val velocity: VectorData
 )
 
-@Serdeable
 data class BodySummary(
     val size: Int,
     val count: Int
 )
 
-@Serdeable
 data class ClientData(
     val id: Int,
     val name: String,
     val location: Point
 )
 
-@Serdeable
 data class WorldStatus(
     val width: Int,
     val height: Int,

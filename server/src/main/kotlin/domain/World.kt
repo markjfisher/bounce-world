@@ -19,11 +19,10 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
-@Singleton
-open class World(
+class World(
     private val config: WorldConfiguration,
-    @Named("Wrapped") val wrappedSimulator: BodySimulator,
-    @Named("Bounded") val boundedSimulator: BodySimulator,
+    private val wrappedSimulator: BodySimulator,
+    private val boundedSimulator: BodySimulator
 ) {
     private val simulationScope = CoroutineScope(Dispatchers.Default)
     private val heartbeatScope = CoroutineScope(Dispatchers.IO)
@@ -65,9 +64,7 @@ open class World(
     var isWrapping = config.enableWrapping
 
     val currentSimulator: BodySimulator
-        get() {
-            return if (isWrapping) wrappedSimulator else boundedSimulator
-        }
+        get() = if (isWrapping) wrappedSimulator else boundedSimulator
 
     val currentClientVisibleShapes = mutableMapOf<Int, MutableSet<VisibleShape>>()
 
