@@ -1,14 +1,14 @@
 plugins {
-    kotlin("jvm") version "1.9.23"
-    kotlin("plugin.serialization") version "1.9.23"
-    id("io.ktor.plugin") version "2.3.8"
+    kotlin("jvm") version "1.9.24"
+    kotlin("plugin.serialization") version "1.9.24"
+    id("io.ktor.plugin") version "3.0.2"
 }
 
 version = "2.0.0"
 group = "bounce.world"
 
-val ktorVersion = "2.3.8"
-val logbackVersion = "1.4.14"
+val logbackVersion = "1.5.9"
+val jomlVersion: String by project
 
 repositories {
     mavenCentral()
@@ -16,19 +16,19 @@ repositories {
 
 dependencies {
     // Ktor server core
-    implementation("io.ktor:ktor-server-core:$ktorVersion")
-    implementation("io.ktor:ktor-server-netty:$ktorVersion")
+    implementation("io.ktor:ktor-server-core")
+    implementation("io.ktor:ktor-server-netty")
     
     // Ktor features
-    implementation("io.ktor:ktor-server-content-negotiation:$ktorVersion")
-    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation("io.ktor:ktor-server-content-negotiation")
+    implementation("io.ktor:ktor-serialization-kotlinx-json")
     
     // Ktor client (if needed)
-    implementation("io.ktor:ktor-client-core:$ktorVersion")
-    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-core")
+    implementation("io.ktor:ktor-client-cio")
     
     // Ktor websockets (if needed)
-    implementation("io.ktor:ktor-server-websockets:$ktorVersion")
+    implementation("io.ktor:ktor-server-websockets")
     
     // Logging
     implementation("ch.qos.logback:logback-classic:$logbackVersion")
@@ -42,19 +42,16 @@ dependencies {
     implementation("io.reactivex.rxjava2:rxjava")
 
     // Testing
-    testImplementation("io.ktor:ktor-server-test-host:$ktorVersion")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.23")
+    testImplementation("io.ktor:ktor-server-test-host")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.24")
 }
 
 application {
-    mainClass = "ApplicationKt"
+    mainClass = "ApplicationKtorKt"
 }
 
 java {
 //    sourceCompatibility = JavaVersion.toVersion("17")
-}
-
-allOpen {
 }
 
 kotlin {

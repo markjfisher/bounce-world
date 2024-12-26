@@ -2,7 +2,7 @@ package simulator
 
 import domain.Body
 
-interface BodySimulator {
+interface WorldSimulator {
     var width: Int
     var height: Int
     var currentStep: Int

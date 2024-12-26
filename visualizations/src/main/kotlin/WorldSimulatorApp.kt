@@ -1,6 +1,6 @@
 package visualization
 
-import config.WorldConfiguration
+import config.WorldConfig
 import domain.World
 import javafx.scene.canvas.Canvas
 import javafx.scene.paint.Color
@@ -21,7 +21,7 @@ import kotlin.random.Random
 class WorldSimulatorApp: App(WorldView::class)
 
 class WorldView : View("World Simulator") {
-    private val worldConfig = WorldConfiguration().apply { shouldAutoStart = false; enableWrapping = false; width = 1200; height = 600; initialSpeed = 8f }
+    private val worldConfig = WorldConfig().apply { shouldAutoStart = false; enableWrapping = false; width = 1200; height = 600; initialSpeed = 8f }
     private val worldSimulator = WorldSimulator(worldConfig)
     private val boundedWorldSimulator = BoundedWorldSimulator(worldConfig)
     private val world = World(worldConfig, worldSimulator, boundedWorldSimulator)
