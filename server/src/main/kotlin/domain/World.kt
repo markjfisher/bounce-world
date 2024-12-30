@@ -17,7 +17,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
-class World(
+open class World(
     private val config: WorldConfig,
     private val wrappedSimulator: WorldSimulator,
     private val boundedSimulator: WorldSimulator

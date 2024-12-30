@@ -1,43 +1,21 @@
-import config.WorldConfig
+package routing
+
+import bw.CommandProcessorAttributeKey
+import bw.WorldAttributeKey
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.ktor.server.routing.*
 import io.ktor.server.response.*
-import io.ktor.http.*
-import command.CommandProcessor
-import domain.World
-import factory.WorldFactory
-import io.ktor.server.config.ApplicationConfig
-import kotlinx.coroutines.launch
-import server.TcpServer
-import kotlinx.coroutines.runBlocking
+import io.ktor.server.routing.*
 
-fun main() {
-    val env = applicationEngineEnvironment {
-        config = ApplicationConfig("application.conf")
-        module {
-            val worldConfig = WorldConfig(environment.config)
-            val world = WorldFactory.create(worldConfig)
-            configureRouting(world)
-            
-            // Start the TCP server
-            val commandProcessor = CommandProcessor(world)
-            val tcpServer = TcpServer(commandProcessor, worldConfig)
-            launch {
-                tcpServer.start()
-            }
-        }
-    }
-
-    embeddedServer(Netty, env).start(wait = true)
-}
-
-
-fun Application.configureRouting(world: World) {
-    val commandProcessor = CommandProcessor(world)
+fun Application.configureRouting() {
+    val commandProcessor = attributes[CommandProcessorAttributeKey]
+    val world = attributes[WorldAttributeKey]
 
     routing {
+        get("/") {
+            call.respondText("Bounce World 2")
+        }
+
         get("/add/{size}") {
             val size = call.parameters["size"]?.toIntOrNull()
             if (size != null) {
@@ -110,5 +88,4 @@ fun Application.configureRouting(world: World) {
             val response = commandProcessor.process("ws")
             call.respondBytes(response)
         }
-    }
-}
+    }}

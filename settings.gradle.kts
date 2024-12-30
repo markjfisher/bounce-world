@@ -1,4 +1,4 @@
-rootProject.name="bounce-world"
+rootProject.name = "bounce-world"
 
 include(
     "server",

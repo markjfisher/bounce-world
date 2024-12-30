@@ -45,7 +45,9 @@ class CommandProcessor(private val world: World) {
 
     private fun getState(): ByteArray {
         // Implement using world instance
-        return byteArrayOf() // Placeholder
+        println("doing status")
+        val response = "status called".toByteArray(Charsets.UTF_8)
+        return response
     }
 
     private fun toggleFreeze(): ByteArray {

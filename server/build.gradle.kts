@@ -1,65 +1,35 @@
+
 plugins {
-    kotlin("jvm") version "1.9.24"
-    kotlin("plugin.serialization") version "1.9.24"
-    id("io.ktor.plugin") version "3.0.2"
+    id("java")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.ktor)
 }
 
-version = "2.0.0"
 group = "bounce.world"
+version = "2.0.0"
 
-val logbackVersion = "1.5.9"
-val jomlVersion: String by project
+application {
+    mainClass.set("bw.AppKt")
 
-repositories {
-    mavenCentral()
+    val isDevelopment: Boolean = project.ext.has("development")
+    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
 dependencies {
-    // Ktor server core
-    implementation("io.ktor:ktor-server-core")
-    implementation("io.ktor:ktor-server-netty")
-    
-    // Ktor features
-    implementation("io.ktor:ktor-server-content-negotiation")
-    implementation("io.ktor:ktor-serialization-kotlinx-json")
-    
-    // Ktor client (if needed)
-    implementation("io.ktor:ktor-client-core")
-    implementation("io.ktor:ktor-client-cio")
-    
-    // Ktor websockets (if needed)
-    implementation("io.ktor:ktor-server-websockets")
-    
-    // Logging
-    implementation("ch.qos.logback:logback-classic:$logbackVersion")
-    
-    // Kotlin coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.netty)
+    implementation(libs.logback.classic)
+    implementation(libs.ktor.server.config.yaml)
+    implementation(libs.joml.core)
 
-    // Keep your existing dependencies
-    implementation("org.joml:joml:$jomlVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-rx2:1.8.1")
-    implementation("io.reactivex.rxjava2:rxjava")
-
-    // Testing
-    testImplementation("io.ktor:ktor-server-test-host")
-    testImplementation("org.jetbrains.kotlin:kotlin-test:1.9.24")
+    testImplementation(kotlin("test"))
+    testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.kotlin.test.junit)
+//    testImplementation(libs.assertj.core)
+    testImplementation(libs.kotest.ktor.core)
+    testImplementation(libs.mockk.core)
 }
 
-application {
-    mainClass = "ApplicationKtorKt"
-}
-
-java {
-//    sourceCompatibility = JavaVersion.toVersion("17")
-}
-
-kotlin {
-    jvmToolchain(17)
-    sourceSets.all {
-        languageSettings {
-            languageVersion = "2.0"
-        }
-    }
-}
-
+//test {
+//    useJUnitPlatform()
+//}

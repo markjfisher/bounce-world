@@ -1,10 +1,6 @@
-//plugins {
-//    kotlin("jvm") apply true
-//}
-
 tasks {
     getByName<Wrapper>("wrapper") {
-        gradleVersion = "8.10"
+        gradleVersion = "8.12"
         distributionType = Wrapper.DistributionType.ALL
     }
 }

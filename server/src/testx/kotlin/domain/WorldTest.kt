@@ -2,6 +2,7 @@ package domain
 
 import config.WorldConfig
 import geometry.Point
+import io.ktor.server.config.MapApplicationConfig
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -9,9 +10,10 @@ import org.junit.jupiter.api.Test
 import simulator.WorldSimulator
 
 internal class WorldTest {
+
     private val simulator: WorldSimulator = mockk(relaxed = true)
     private val boundSimulator: WorldSimulator = mockk(relaxed = true)
-    private val config: WorldConfig = WorldConfig().also { it.shouldAutoStart = false }
+    private val config: WorldConfig = WorldConfig(MapApplicationConfig()).also { it.shouldAutoStart = false }
 
     @BeforeEach
     fun setUp() {

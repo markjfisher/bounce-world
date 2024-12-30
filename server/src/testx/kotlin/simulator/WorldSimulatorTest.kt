@@ -3,19 +3,17 @@ package simulator
 import config.WorldConfig
 import domain.Body
 import domain.Shape
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.data.Offset
+import io.ktor.server.config.MapApplicationConfig
 import org.joml.Vector2f
-import org.junit.jupiter.api.Test
 
-class WorldSimulatorTest {
+class WorldSimulatorTest : FunSpec ({
     private val shapes = mutableListOf(
         Shape(0, 1f, 2, emptyList()),
         Shape(1, 2f, 2, emptyList()),
         Shape(2, 0.5f, 2, emptyList()),
     ).associateBy { it.id }
 
-    private val config = WorldConfig().also {
+    private val config = WorldConfig(MapApplicationConfig()).also {
         it.width = 20
         it.height = 20
         it.scalingFactor = 1
