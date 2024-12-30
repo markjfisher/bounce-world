@@ -1,14 +1,13 @@
 package geometry
 
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Test
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContainInOrder
 
-internal class SpiralGeneratorTest {
-    @Test
-    fun `can generate spiral points`() {
+class SpiralGeneratorTest : StringSpec({
+    "can generate spiral points" {
         val generator = SpiralGenerator()
         val points = generator.generate().take(16).toList()
-        assertThat(points).containsExactly(
+        points.shouldContainInOrder(
             Point(x=0, y=0),
             Point(x=1, y=0),
             Point(x=1, y=1),
@@ -28,4 +27,4 @@ internal class SpiralGeneratorTest {
         )
     }
 
-}
+})

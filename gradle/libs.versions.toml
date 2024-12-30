@@ -4,9 +4,9 @@ kotlin-version = "2.1.0"
 ktor-version = "3.0.3"
 logback-version = "1.5.14"
 joml-version = "1.10.8"
-assertj-version = "3.27.0"
 mockk-version = "1.13.14"
 kotest-ktor-version = "2.0.0"
+kotest-runner-junit5-version = "5.9.1"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor-version" }
@@ -16,10 +16,10 @@ ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml-jvm", vers
 joml-core = { module = "org.joml:joml", version.ref = "joml-version" }
 
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor-version" }
-kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin-version" }
 kotest-ktor-core = { module = "io.kotest.extensions:kotest-assertions-ktor", version.ref = "kotest-ktor-version" }
+kotest-ktor-assertions = { module = "io.kotest:kotest-assertions-core-jvm", version.ref = "kotest-runner-junit5-version" }
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest-runner-junit5-version" }
 mockk-core = { module = "io.mockk:mockk", version.ref = "mockk-version" }
-assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj-version" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }

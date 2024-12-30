@@ -1,6 +1,5 @@
 
 plugins {
-    id("java")
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.ktor)
 }
@@ -22,14 +21,13 @@ dependencies {
     implementation(libs.ktor.server.config.yaml)
     implementation(libs.joml.core)
 
-    testImplementation(kotlin("test"))
-    testImplementation(libs.ktor.server.test.host)
-    testImplementation(libs.kotlin.test.junit)
-//    testImplementation(libs.assertj.core)
     testImplementation(libs.kotest.ktor.core)
+    testImplementation(libs.kotest.ktor.assertions)
+    testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.kotest.runner.junit5)
     testImplementation(libs.mockk.core)
 }
 
-//test {
-//    useJUnitPlatform()
-//}
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+}
