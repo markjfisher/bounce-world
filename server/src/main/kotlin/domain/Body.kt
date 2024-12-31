@@ -32,12 +32,12 @@ data class Body(
         }
     }
 
-    fun bodyCorners(scalingFactor: Int, width: Int, height: Int): List<Point> {
+    fun bodyCorners(width: Int, height: Int): List<Point> {
         val centre = Point(position.x.roundToInt(), position.y.roundToInt())
         val n = (radius * 2).roundToInt()
         // calculate the offsets to the centre point for grid positions this body covers
         val offsets = when {
-            // even width needs offset of -[(n/2 -1),(n/2 -1)], +[n/2, n/2]
+            // even width needs offset of -[(n/2 - 1), (n/2 - 1)], + [n/2, n/2]
             n.mod(2) == 0 -> Pair(
                 Point(n / 2 - 1, n / 2 - 1),
                 Point(n / 2, n / 2)
@@ -49,8 +49,8 @@ data class Body(
             )
         }
         // find the extreme points from centre with these offsets
-        val topLeft = centre - offsets.first * scalingFactor
-        val bottomRight = centre + offsets.second * scalingFactor
+        val topLeft = centre - offsets.first
+        val bottomRight = centre + offsets.second
         val topRight = Point(bottomRight.x, topLeft.y)
         val bottomLeft = Point(topLeft.x, bottomRight.y)
 

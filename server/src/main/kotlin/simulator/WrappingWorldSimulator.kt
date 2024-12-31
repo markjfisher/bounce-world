@@ -102,8 +102,7 @@ data class WrappingWorldSimulator(
 
         val qa = vx * vx + vy * vy
         val qb = 2 * (px * vx + py * vy)
-        // The shape data is based on a 40x20 screen, not the world size, so shapes have to be scaled up to the world sizes by the scaling factor, e.g. 160x80 means scalingFactor = 4x
-        val radii = scalingFactor * (a.radius + b.radius)
+        val radii = a.radius + b.radius
         val qc = px * px + py * py - radii * radii
 
         val quadraticSolver = QuadraticSolver(qa, qb, qc)

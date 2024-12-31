@@ -58,7 +58,6 @@ fun main() = runBlocking {
 }
 
 fun ApplicationEngine.Configuration.envConfig(env: ApplicationEnvironment) {
-    println("doing envConfig")
     connector {
         host = env.config.property("ktor.deployment.host").getString()
         port = env.config.property("ktor.deployment.port").getString().toInt()

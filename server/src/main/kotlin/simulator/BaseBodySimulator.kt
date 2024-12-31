@@ -12,7 +12,6 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
     override val collisions: MutableSet<Int> = mutableSetOf()
     override val bodies: MutableList<Body> = mutableListOf()
 
-    var scalingFactor = config.scalingFactor
     val stepTime = 1f / config.updatesPerSecond
     override fun reset() { bodies.clear() }
 
@@ -77,7 +76,7 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
 
     private fun isOverlapping(a: Body, b: Body): Boolean {
         val distanceApart = calculateDistance(a, b)
-        val sumOfRadii = (a.radius + b.radius) * scalingFactor
+        val sumOfRadii = (a.radius + b.radius)
         return distanceApart < sumOfRadii
     }
 }

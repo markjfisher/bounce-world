@@ -14,7 +14,7 @@ class BodyTest: StringSpec ({
 
         // 1 x 1 shape
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        bodyA.bodyCorners(1, 80, 80).shouldContainExactlyInAnyOrder(Point(0,0), Point(0,0), Point(0,0), Point(0,0))
+        bodyA.bodyCorners(80, 80).shouldContainExactlyInAnyOrder(Point(0,0), Point(0,0), Point(0,0), Point(0,0))
     }
 
     "corners of 2x2 body do not wrap on the left as upper left corner contains centre point" {
@@ -23,7 +23,7 @@ class BodyTest: StringSpec ({
         )
 
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        bodyA.bodyCorners(1, 80, 80).shouldContainExactlyInAnyOrder(Point(0,0), Point(1,1), Point(1, 0), Point(0, 1))
+        bodyA.bodyCorners(80, 80).shouldContainExactlyInAnyOrder(Point(0,0), Point(1,1), Point(1, 0), Point(0, 1))
     }
 
     "corners of 2x2 body wrap on the right and down when in bottom right corner" {
@@ -32,7 +32,7 @@ class BodyTest: StringSpec ({
         )
 
         val bodyA = Body.from(position = Vector2f(9f, 9f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        bodyA.bodyCorners(1, 10, 10).shouldContainExactlyInAnyOrder(Point(9,9), Point(0,9), Point(9, 0), Point(0, 0))
+        bodyA.bodyCorners(10, 10).shouldContainExactlyInAnyOrder(Point(9,9), Point(0,9), Point(9, 0), Point(0, 0))
     }
 
     "corners of 3x3 body wrap from 0,0 to 4 corners" {
@@ -41,7 +41,7 @@ class BodyTest: StringSpec ({
         )
 
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 0f), shape = shapes[0]!!)
-        bodyA.bodyCorners(1, 10, 10).shouldContainExactlyInAnyOrder(Point(9,9), Point(9, 1), Point(1, 9), Point(1,1))
+        bodyA.bodyCorners(10, 10).shouldContainExactlyInAnyOrder(Point(9,9), Point(9, 1), Point(1, 9), Point(1,1))
     }
 
 })

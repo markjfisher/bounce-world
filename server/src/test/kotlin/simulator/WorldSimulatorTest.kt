@@ -20,7 +20,6 @@ class WorldSimulatorTest : StringSpec({
     val defaultWorldApplicationConfig = MapApplicationConfig(
         "world.width" to "20",
         "world.height" to "20",
-        "world.scalingFactor" to "1",
         "world.updatesPerSecond" to "1",
         "world.shouldAutoStart" to "false",
         "world.initialSpeed" to "1.5",
@@ -200,7 +199,7 @@ class WorldSimulatorTest : StringSpec({
     }
 
     "scaled world simulator works as non scaled version but with larger values" {
-        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 80; it.height = 80; it.scalingFactor = 4 }
+        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 80; it.height = 80 }
         // Positions and velocities work same, just the radius is larger than the shape indicates, so collisions happen sooner as the body is scaled up to world sizes
         val bodyA = Body.from(position = Vector2f(10f, 10f), velocity = Vector2f(2f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(26f, 10f), velocity = Vector2f(-2f, 0f), shape = shapes[0]!!)
@@ -248,7 +247,7 @@ class WorldSimulatorTest : StringSpec({
     }
 
     "can detect collision at boundary" {
-        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 160; it.height = 80; it.scalingFactor = 4 }
+        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 160; it.height = 80 }
         val shapesForBoundaryTest = mutableMapOf(
             0 to Shape(2, 1.0f, 5, emptyList())
         )

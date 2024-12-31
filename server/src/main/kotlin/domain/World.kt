@@ -368,7 +368,7 @@ open class World(
         currentSimulator.bodies.forEach { body ->
             val bodyWidth = (body.radius * 2).roundToInt()
 
-            val corners = body.bodyCorners(config.scalingFactor, currentSimulator.width, currentSimulator.height)
+            val corners = body.bodyCorners(currentSimulator.width, currentSimulator.height)
             // We can use each corner in turn, work out its "centre point" relative to a grid that would cover from that corner, and see if the new centre matches the body centre.
             // Add that to a set of visible points for the shape and "new centre", which will remove duplicates where the corners were in the same non-wrapped position
             // We won't bother optimizing for 1x1 shape, it will just fall out in the wash, 4 calculations on the same point isn't that much
@@ -377,9 +377,9 @@ open class World(
             val cSW = corners[2]
             val cSE = corners[3]
 
-            val nd2_1 = (bodyWidth / 2 - 1) * config.scalingFactor
-            val nd2 = (bodyWidth / 2) * config.scalingFactor
-            val n_1d2 = ((bodyWidth - 1) / 2) * config.scalingFactor
+            val nd2_1 = bodyWidth / 2 - 1
+            val nd2 = bodyWidth / 2
+            val n_1d2 = (bodyWidth - 1) / 2
 
             val centre1 = cNW + if (bodyWidth % 2 == 0) Point(nd2_1, nd2_1) else Point(n_1d2, n_1d2)
             val centre2 = cNE + if (bodyWidth % 2 == 0) Point(-nd2, nd2_1) else Point(-n_1d2, n_1d2)
@@ -417,7 +417,7 @@ open class World(
 
     companion object {
         // The world size will be its boundary * these values.
-        const val SCREEN_WIDTH = 160
-        const val SCREEN_HEIGHT = 88
+        const val SCREEN_WIDTH = 40
+        const val SCREEN_HEIGHT = 22
     }
 }

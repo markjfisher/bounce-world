@@ -97,7 +97,7 @@ internal class WorldTest {
             GameClient(id = 2, name = "gc2", position = Point(1, 0))
         ) // .map { it.apply { it.updateWorldBounds(50, 50) } }
 
-        val config = WorldConfig().also { it.width = 100; it.height = 50; it.scalingFactor = 1 }
+        val config = WorldConfig().also { it.width = 100; it.height = 50 }
         val simulator = WorldSimulator(config)
         val world = World(config, simulator, boundSimulator)
         clients.forEach { world.addClient(it) }

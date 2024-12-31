@@ -15,7 +15,7 @@ data class BoundedWorldSimulator(
         collisions.clear()
         bodies.forEach { body ->
             // create a rectangle for the location of the current body, make it slightly larger than a box covering the radius of the body
-            val bound = Vector2f(body.radius, body.radius).mul(scalingFactor * 1.05f)
+            val bound = Vector2f(body.radius, body.radius).mul(1.05f)
             val upperLeft = Vector2f(body.position).sub(bound)
             val lowerRight = Vector2f(body.position).add(bound)
             quadtree.insert(body.id, upperLeft.x, upperLeft.y, lowerRight.x, lowerRight.y)
@@ -23,7 +23,7 @@ data class BoundedWorldSimulator(
 
         // now loop over all bodies, and find their closest potential collisions
         bodies.forEach { bodyA ->
-            val bound = Vector2f(bodyA.radius * 2f * scalingFactor, bodyA.radius * 2f * scalingFactor)
+            val bound = Vector2f(bodyA.radius * 2f, bodyA.radius * 2f)
             val upperLeft = Vector2f(bodyA.position).sub(bound)
             val lowerRight = Vector2f(bodyA.position).add(bound)
             val qNeighbours = quadtree.queryWithIds(upperLeft.x, upperLeft.y, lowerRight.x, lowerRight.y).filterNot { it.second == bodyA.id }
@@ -58,7 +58,7 @@ data class BoundedWorldSimulator(
         // TODO: use quadratic solver to calculate if there's an actual collision in the timestep rather than just looking at their relative distance
         val impactVector = Vector2f(bodyB.position).sub(bodyA.position)
         val d = impactVector.length()
-        val sumOfRadii = scalingFactor * (bodyA.radius + bodyB.radius)
+        val sumOfRadii = bodyA.radius + bodyB.radius
         if (d < sumOfRadii) {
             collisions.add(bodyA.id)
             collisions.add(bodyB.id)
@@ -92,18 +92,18 @@ data class BoundedWorldSimulator(
     // this is cheap and nasty. it should work out how far it bounces from the wall by
     // looking at the step time and calculating when it hits the wall
     private fun edges(body: Body) {
-        if (body.position.x > width - body.radius * scalingFactor) {
-            body.position.x = width - body.radius * scalingFactor
+        if (body.position.x > width - body.radius) {
+            body.position.x = width - body.radius
             body.velocity.x *= -1f
-        } else if (body.position.x < body.radius * scalingFactor) {
-            body.position.x = body.radius * scalingFactor
+        } else if (body.position.x < body.radius) {
+            body.position.x = body.radius
             body.velocity.x *= -1f
         }
-        if (body.position.y > height - body.radius * scalingFactor) {
-            body.position.y = height - body.radius * scalingFactor
+        if (body.position.y > height - body.radius) {
+            body.position.y = height - body.radius
             body.velocity.y *= -1f
-        } else if (body.position.y < body.radius * scalingFactor) {
-            body.position.y = body.radius * scalingFactor
+        } else if (body.position.y < body.radius) {
+            body.position.y = body.radius
             body.velocity.y *= -1f
         }
     }

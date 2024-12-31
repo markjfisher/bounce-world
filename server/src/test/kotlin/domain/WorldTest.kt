@@ -15,7 +15,6 @@ class WorldTest : StringSpec({
     val defaultWorldApplicationConfig = MapApplicationConfig(
         "world.width" to "200",
         "world.height" to "200",
-        "world.scalingFactor" to "4",
         "world.updatesPerSecond" to "5",
         "world.shouldAutoStart" to "false",
         "world.initialSpeed" to "1.5",
