@@ -1,6 +1,6 @@
 package domain
 
-//import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude
 import geometry.Point
 
 data class VectorData(
@@ -32,10 +32,10 @@ data class WorldStatus(
     val height: Int,
     val frozen: Boolean,
     val wrapping: Boolean,
-//    @JsonInclude(value= JsonInclude.Include.ALWAYS, content= JsonInclude.Include.ALWAYS)
+    @JsonInclude(value= JsonInclude.Include.ALWAYS, content= JsonInclude.Include.ALWAYS)
     val bodyCounts: List<BodySummary>,
-//    @JsonInclude(value= JsonInclude.Include.ALWAYS, content= JsonInclude.Include.ALWAYS)
+    @JsonInclude(value= JsonInclude.Include.ALWAYS, content= JsonInclude.Include.ALWAYS)
     val bodies: List<BodyData>,
-//    @JsonInclude(value= JsonInclude.Include.ALWAYS, content= JsonInclude.Include.ALWAYS)
+    @JsonInclude(value= JsonInclude.Include.ALWAYS, content= JsonInclude.Include.ALWAYS)
     val clients: List<ClientData>
 )

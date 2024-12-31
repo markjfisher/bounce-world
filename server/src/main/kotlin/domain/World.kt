@@ -28,6 +28,7 @@ open class World(
     // the data about clients
     private val clients = mutableMapOf<Int, GameClient>()
     fun clients(): List<GameClient> = clients.values.toList()
+    fun clientIds(): Set<Int> = clients.keys.toSet()
     fun setClients(newClients: Map<Int, GameClient>) {
         clients.clear()
         clients.putAll(newClients)

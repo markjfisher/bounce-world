@@ -1,6 +1,6 @@
 package server
 
-import command.CommandProcessor
+import command.WorldCommandProcessor
 import config.WorldConfig
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.Socket
@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 class TcpServer(
-    private val commandProcessor: CommandProcessor,
+    private val worldCommandProcessor: WorldCommandProcessor,
     private val worldConfig: WorldConfig,
     private val scope: CoroutineScope,
 ) {
@@ -52,8 +52,9 @@ class TcpServer(
             if (command == null) {
                 println("No client command to process")
             } else {
-                val response = commandProcessor.process(command)
-                output.writeByteArray(response)
+                // TODO: need to replace this with something! This is the TCP side, so need to do similar to WorldRouting
+//                val response = worldCommandProcessor.process(command)
+//                output.writeByteArray(response)
             }
         } catch (e: Throwable) {
             println("Error while handling client: ${e.message}")

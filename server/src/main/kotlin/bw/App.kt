@@ -1,28 +1,34 @@
 package bw
 
-import command.CommandProcessor
+import command.ClientCommandProcessor
+import command.ShapesCommandProcessor
+import command.WorldCommandProcessor
 import config.WorldConfig
-import domain.World
 import factory.WorldFactory
+import io.ktor.serialization.jackson.jackson
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.server.application.install
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.ApplicationEngine
 import io.ktor.server.engine.applicationEnvironment
 import io.ktor.server.engine.connector
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.util.AttributeKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import routing.configureRouting
+import routing.clientRouting
+import routing.shapesRouting
+import routing.worldRouting
 import server.TcpServer
 
 // the keys to store values in the Attributes framework. I like this!
-val CommandProcessorAttributeKey = AttributeKey<CommandProcessor>("CommandProcessor")
-val WorldAttributeKey = AttributeKey<World>("World")
-val WorldConfigAttributeKey = AttributeKey<WorldConfig>("WorldConfig")
+val WorldCommandProcessorAttributeKey = AttributeKey<WorldCommandProcessor>("WorldCommandProcessor")
+val ClientCommandProcessorAttributeKey = AttributeKey<ClientCommandProcessor>("ClientCommandProcessor")
+val ShapesCommandProcessorAttributeKey = AttributeKey<ShapesCommandProcessor>("ShapesCommandProcessor")
 
 fun main() = runBlocking {
     val env = applicationEnvironment {
@@ -30,12 +36,15 @@ fun main() = runBlocking {
     }
     val worldConfig = WorldConfig(env.config)
     val world = WorldFactory.create(worldConfig)
-    val commandProcessor = CommandProcessor(world)
+
+    val worldCommandProcessor = WorldCommandProcessor(world, worldConfig)
+    val clientCommandProcessor = ClientCommandProcessor(world)
+    val shapesCommandProcessor = ShapesCommandProcessor(world)
 
     // Create a tcp listener in its own thread/coroutine. We can't use Attributes in this side, as it's not part of the ktor framework, as such
     // so we inject the commandProcessor directly as a dependency.
     launch(Dispatchers.IO) {
-        val tcpServer = TcpServer(commandProcessor, worldConfig, this)
+        val tcpServer = TcpServer(worldCommandProcessor, worldConfig, this)
         tcpServer.start()
     }
 
@@ -45,11 +54,14 @@ fun main() = runBlocking {
         configure = { envConfig(env) },
         module = {
             // ktor uses attributes for storing and retrieving state without passing it via parameters
-            attributes.put(CommandProcessorAttributeKey, commandProcessor)
-            attributes.put(WorldAttributeKey, world)
-            attributes.put(WorldConfigAttributeKey, worldConfig)
-            // here's how we invoke the module function. There could be more modules and just run them here like this
-            module()
+            attributes.put(WorldCommandProcessorAttributeKey, worldCommandProcessor)
+            attributes.put(ClientCommandProcessorAttributeKey, clientCommandProcessor)
+            attributes.put(ShapesCommandProcessorAttributeKey, shapesCommandProcessor)
+
+            commonModule()
+            worldModule()
+            clientModule()
+            shapesModule()
         }
     ).start(wait = true)
 
@@ -64,7 +76,27 @@ fun ApplicationEngine.Configuration.envConfig(env: ApplicationEnvironment) {
     }
 }
 
+fun Application.commonModule() {
+    install(ContentNegotiation) {
+        jackson {
+            //// pretty print:
+            // enable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT)
+            //// To include non-null values only:
+            // setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+        }
+    }
+}
+
 // referenced in Test, and in main. It was referenced in application.conf:ktor.application.modules, but I've moved to a completely code driven setup
-fun Application.module() {
-    configureRouting()
+fun Application.worldModule() {
+    // The idea of modules is to group any functionality we need to setup here. At the moment there is only routing
+    worldRouting()
+}
+
+fun Application.clientModule() {
+    clientRouting()
+}
+
+fun Application.shapesModule() {
+    shapesRouting()
 }
