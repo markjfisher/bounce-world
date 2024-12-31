@@ -1,0 +1,10 @@
+# Top-most EditorConfig file
+root = true
+
+# Default settings for all files
+[*]
+trim_trailing_whitespace = true
+
+# Disable trimming for .dat files
+[*.dat]
+trim_trailing_whitespace = false

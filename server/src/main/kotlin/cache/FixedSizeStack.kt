@@ -1,21 +1,20 @@
 package cache
 
-import domain.AppState
 import java.util.LinkedList
 
 // Adds to the front, and reads from the back, keeping maxSize entries.
-class FixedSizeStack(private val maxSize: Int) {
-    private val stack: LinkedList<AppState> = LinkedList()
+class FixedSizeStack<T>(private val maxSize: Int) {
+    private val stack: LinkedList<T> = LinkedList()
 
-    fun push(appState: AppState) {
+    fun push(item: T) {
         if (stack.size == maxSize) {
             stack.removeLast()
         }
-        stack.addFirst(appState)
+        stack.addFirst(item)
     }
 
-    fun peek(): AppState? = stack.lastOrNull()
-    fun pop(): AppState? = stack.removeLastOrNull()
+    fun peek(): T? = stack.lastOrNull()
+    fun pop(): T? = stack.removeLastOrNull()
 
     fun size(): Int = stack.size
 

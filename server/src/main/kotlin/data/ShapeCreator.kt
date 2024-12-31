@@ -6,8 +6,9 @@ import kotlin.math.sqrt
 
 object ShapeCreator {
     private var nextShapeId: Int = 0
+    private const val SHAPES_RESOURCE_PATH = "/shapes/"
 
-    @OptIn(ExperimentalStdlibApi::class)
+//    @OptIn(ExperimentalStdlibApi::class)
     private fun fromString(s: String): List<Int> {
         val strippedString = s.replace("[\r\n]+".toRegex(), "")
         val sideLength = sqrt(strippedString.length.toFloat()).roundToInt()
@@ -70,188 +71,45 @@ object ShapeCreator {
         )
     }
 
+    private fun readShapeFromResource(resourceName: String): Shape? {
+        val stream = ShapeCreator::class.java.getResourceAsStream(SHAPES_RESOURCE_PATH + resourceName)
+        stream?.bufferedReader().use { reader ->
+            val lines = reader?.readLines() ?: return null
+
+            val mass = lines.first().toFloat()
+            val shapeString = lines.drop(1).joinToString(separator = "\n")
+
+            return createShape(mass, fromString(shapeString))
+        }
+    }
+
     fun createShapes(): List<Shape> {
-        val shapes = mutableListOf<Shape>()
-        shapes.addAll(listOf(
-            createShape(5.8f, fromString(
-                """
-                    |  ┌┐ 
-                    |┌─┘└┐
-                    |└┐ ┌┘
-                    | └┐│ 
-                    |  └┘ 
-                    """.trimMargin()
-                )
-            ),
-            createShape(4.6f, fromString(
-                """
-                    | ┌┐  
-                    |┌┘└┐ 
-                    |└┐ └┐
-                    | │ ┌┘
-                    | └─┘ 
-                    """.trimMargin()
-                )
-            ),
-            createShape(4.0f, fromString(
-                """
-                    | ┌┐ 
-                    |┌┘└┐
-                    |└┐┌┘
-                    | └┘ 
-                    """.trimMargin()
-                )
-            ),
-            createShape(4.0f, fromString(
-                """
-                    | ┌┐ 
-                    |┌┘└┐
-                    |│┌┐│
-                    |└┘└┘
-                    """.trimMargin()
-                )
-            ),
-            createShape(4.1f, fromString(
-                """
-                    | \/ 
-                    |\/\/
-                    |/\/\
-                    | /\ 
-                    """.trimMargin()
-            )
-            ),
-            createShape(3.6f, fromString(
-                    """
-                    | * 
-                    |***
-                    | * 
-                    """.trimMargin()
-                )
-            ),
-            createShape(3.4f, fromString(
-                    """
-                    | . 
-                    |. .
-                    | . 
-                    """.trimMargin()
-                )
-            ),
-//            createShape(4.0f, fromString(
-//                    """
-//                    | ▙
-//                    |▟█▛
-//                    | ▜
-//                    """.trimMargin()
-//                )
-//            ),
-//            createShape(4.0f, fromString(
-//                    """
-//                    | ▟
-//                    |▜█▙
-//                    | ▛
-//                    """.trimMargin()
-//                )
-//            ),
-            createShape(3.4f, fromString(
-                    """
-                    | ┌┐
-                    |┌┼┘
-                    |└┘ 
-                    """.trimMargin()
-                )
-            ),
-            createShape(3.4f, fromString(
-                    """
-                    |┌┐ 
-                    |└┼┐
-                    | └┘
-                    """.trimMargin()
-                )
-            ),
-            createShape(3.0f, fromString(
-                    """
-                    |/\
-                    |\/
-                    """.trimMargin()
-                )
-            ),
-//            createShape(3.0f, fromString(
-//                    """
-//                    |&X
-//                    |X&
-//                    """.trimMargin()
-//                )
-//            ),
-            createShape(3.0f, fromString(
-                    """
-                    |WW
-                    |MM
-                    """.trimMargin()
-                )
-            ),
-            createShape(3.0f, fromString(
-                    """
-                    |##
-                    |##
-                    """.trimMargin()
-                )
-            ),
-//            createShape(3.2f, fromString(
-//                    """
-//                    |▟▙
-//                    |▜▛
-//                    """.trimMargin()
-//                )
-//            ),
-//            createShape(2.2f, fromString(
-//                    """
-//                    |┼
-//                    """.trimMargin()
-//                )
-//            ),
-            createShape(2.0f, fromString(
-                    """
-                    |*
-                    """.trimMargin()
-                )
-            ),
-            createShape(2.0f, fromString(
-                    """
-                    |O
-                    """.trimMargin()
-                )
-            ),
-            createShape(2.0f, fromString(
-                    """
-                    |#
-                    """.trimMargin()
-                )
-            ),
-            createShape(2.0f, fromString(
-                    """
-                    |X
-                    """.trimMargin()
-                )
-            ),
-            createShape(2.0f, fromString(
-                    """
-                    |@
-                    """.trimMargin()
-                )
-            ),
-            createShape(2.0f, fromString(
-                    """
-                    |V
-                    """.trimMargin()
-                )
-            ),
-            createShape(2.0f, fromString(
-                    """
-                    |^
-                    """.trimMargin()
-                )
-            ),
-        ))
-        return shapes
+        val shapeResources = listOf(
+            "shape01.dat",
+            "shape02.dat",
+            "shape03.dat",
+            "shape04.dat",
+            "shape05.dat",
+            "shape06.dat",
+            "shape07.dat",
+//            "shape08.dat",
+//            "shape09.dat",
+            "shape10.dat",
+            "shape11.dat",
+            "shape12.dat",
+//            "shape13.dat",
+            "shape14.dat",
+            "shape15.dat",
+//            "shape16.dat",
+//            "shape17.dat",
+            "shape18.dat",
+            "shape19.dat",
+            "shape20.dat",
+            "shape21.dat",
+            "shape22.dat",
+            "shape23.dat",
+            "shape24.dat",
+        )
+        return shapeResources.mapNotNull { readShapeFromResource(it) }
     }
 }

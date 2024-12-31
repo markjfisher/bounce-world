@@ -1,9 +1,0 @@
-{
-    "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx8G -Xms2G -Xlog:disable",
-    "java.jdt.ls.java.home": "C:\\msys64\\home\\markj\\.sdkman\\candidates\\java\\current",
-    "kotlin.languageServer.enabled": true,
-    "kotlin.debugAdapter.enabled": true,
-    "kotlin.trace.server": "messages",
-    "kotlin.completion.snippets.enabled": true,
-    "java.configuration.updateBuildConfiguration": "interactive"
-}

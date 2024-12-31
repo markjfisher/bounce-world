@@ -1,5 +1,6 @@
 package collections
 
+// Used primarily by Quadtree
 class IntList(private val numFields: Int) {
     var data: IntArray
     private var num = 0
