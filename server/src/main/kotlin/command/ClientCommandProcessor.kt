@@ -4,6 +4,7 @@ import domain.GameClient
 import domain.GameClientInfo
 import domain.ScreenSize
 import domain.World
+import logger
 
 class ClientCommandProcessor(private val world: World) {
     fun addClient(name: String, version: Int, screenWidth: Int, screenHeight: Int): GameClient {
@@ -13,7 +14,7 @@ class ClientCommandProcessor(private val world: World) {
             screenSize = ScreenSize(screenWidth, screenHeight)
         )
         val gameClient = world.createClient(gameClientInfo)
-        println("Created client: $gameClient")
+        logger.info("Created client: $gameClient")
         return gameClient
     }
 }

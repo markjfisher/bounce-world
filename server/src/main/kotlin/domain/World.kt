@@ -11,16 +11,16 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import logger
 import org.joml.Vector2f
 import simulator.WorldSimulator
-import kotlin.math.abs
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 import kotlin.random.Random
 
 open class World(
-    private val config: WorldConfig,
-    private val wrappedSimulator: WorldSimulator,
-    private val boundedSimulator: WorldSimulator
+    private val config: WorldConfig, private val wrappedSimulator: WorldSimulator, private val boundedSimulator: WorldSimulator
 ) {
     private val simulationScope = CoroutineScope(Dispatchers.Default)
     private val heartbeatScope = CoroutineScope(Dispatchers.IO)
@@ -67,6 +67,10 @@ open class World(
 
     val currentClientVisibleShapes = mutableMapOf<Int, MutableSet<VisibleShape>>()
 
+    fun updateHeartbeat(id: Int) {
+        clientHeartbeats[id] = System.currentTimeMillis()
+    }
+
     fun rebuild(newIds: List<Int>) {
         isFrozen = true
         stopped = true
@@ -88,7 +92,7 @@ open class World(
             clientIds.forEach { clientId ->
                 val sinceHeartbeat = System.currentTimeMillis() - (clientHeartbeats[clientId] ?: 0)
                 if (sinceHeartbeat > config.heartbeatTimeoutMillis) {
-                    println("No heartbeat from client ${clients[clientId]?.name ?: "UNKNOWN"} for $sinceHeartbeat ms, unregistering client.")
+                    logger.info("No heartbeat from client ${clients[clientId]?.name ?: "UNKNOWN"} for $sinceHeartbeat ms, unregistering client.")
                     unregisterClient(clientId)
                 }
             }
@@ -154,10 +158,7 @@ open class World(
 
     fun createClient(gameClientInfo: GameClientInfo): GameClient {
         val client = GameClient(
-            id = nextClientId++,
-            name = gameClientInfo.name,
-            version = gameClientInfo.version,
-            screenSize = gameClientInfo.screenSize
+            id = nextClientId++, name = gameClientInfo.name, version = gameClientInfo.version, screenSize = gameClientInfo.screenSize
         )
         addClient(client)
         client.updateWorldBounds(config.width, config.height)
@@ -169,34 +170,26 @@ open class World(
     fun at(point: Point): GameClient? = occupiedScreens[point]
     fun getClient(id: Int): GameClient? = clients[id]
 
-    private fun createRandomBodyWithShape(id: Int, shapeId: Int, offsetX: Int, offsetY: Int): Body {
+    // grid is the screen location to create this body in, e.g. (0,0) for first client, (1,0) for second, etc.
+    fun createBody(shapeId: Int, grid: Point): Body {
         val shape = shapes.first { it.id == shapeId }
-        // Create a position that's within a screen's boundaries, but will be inside the particular client's boundary that created it.
-        // This doesn't use the whole world width/height, just a single screen, and caters for the radius of the shape by reducing the possible x/y coordinates it start at to be within a screen's size
-        val pos = Vector2f(
-            Random.nextFloat() * (config.width.toFloat() - shape.sideLength - 5f) + offsetX + shape.sideLength / 2f + 2,
-            Random.nextFloat() * (config.height.toFloat() - shape.sideLength - 5f) + offsetY + shape.sideLength / 2f + 2
-        )
-        var vx = Random.nextFloat() * 2f - 1f
-        val vy = Random.nextFloat() * 2f - 1f
-        if (abs(vx) < 0.000001f && abs(vy) < 0.000001f) {
-            // ensure it's impossible to get a zero vector for velocity
-            vx = 0.1f
+        val nextId = currentSimulator.bodies.count() + 1
+        val angle = Random.nextFloat() * 2f * Math.PI.toFloat()
+        val velocity = Vector2f(cos(angle), sin(angle)).mul(config.initialSpeed)
+        // ensure the client didn't ask for a location outside the world boundary, if they did, put it in the first screen (0,0)
+        val correctedGrid = when {
+            grid.x >= worldBoundary().x || grid.y >= worldBoundary().y || grid.x < 0 || grid.y < 0 -> Point(0, 0)
+            else -> grid
         }
-        return Body.from(
-            id = id,
-            // position is a random location: [(offsetX to offsetX + screenWidth), (offsetY to offsetY + screenHeight)]
-            position = pos,
-            // everything starts with speed "initialSpeed" pixels/sec in some random direction
-            velocity = Vector2f(vx, vy).normalize().mul(config.initialSpeed),
-            shape = shape
+        val offsetX = correctedGrid.x * config.width
+        val offsetY = correctedGrid.y * config.height
+        // Create a position that's within a screen's boundaries, but will be inside the particular client's boundary that created it.
+        // caters for the radius of the shape by reducing the possible x/y coordinates it starts at to be within a screen's size
+        val pos = Vector2f(
+            offsetX + Random.nextFloat() * (config.width.toFloat() - shape.sideLength - 5f) + shape.sideLength / 2f + 2,
+            offsetY + Random.nextFloat() * (config.height.toFloat() - shape.sideLength - 5f) + shape.sideLength / 2f + 2
         )
-    }
-
-    // generates new bodies within a screen, adding the offsets given to position, the world simulator will fit them as close as it can to their position
-    fun createBodies(startId: Int, offsetX: Int, offsetY: Int, sizes: List<Int>): List<Body> = sizes.mapIndexed { i, size ->
-        // find a random shape with the given size and create a body from it
-        createRandomBodyWithShape(startId + i, shapes.groupBy { it.sideLength }[size]!!.random().id, offsetX, offsetY)
+        return Body.from(id = nextId, position = pos, velocity = velocity, shape = shape)
     }
 
     private fun findNextUnoccupiedScreen(): Point {
@@ -237,8 +230,7 @@ open class World(
         return occupiedScreens.keys.bounds().second + Point(1, 1)
     }
 
-    fun broadcastToAllClients(message: String, delaySeconds: Int) {
-        /*
+    fun broadcastToAllClients(message: String, delaySeconds: Int) {/*
            Process:
            - send clients a CLIENT_CMD_EVENT
            - they call back and get an "enable_broadcast" cmd
@@ -263,7 +255,7 @@ open class World(
 
     private suspend fun disableAllBroadcast(seconds: Int) {
         delay(1000L * seconds)
-        println("sending disabled broadcast to all clients")
+        logger.info("sending disabled broadcast to all clients")
         addCommandToAllClients(ClientCommand.DISABLE_BROADCAST)
     }
 
@@ -278,7 +270,7 @@ open class World(
 
     private suspend fun disableClientBroadcast(clientId: Int, seconds: Int) {
         delay(1000L * seconds)
-        println("sending disabled broadcast to client $clientId")
+        logger.info("sending disabled broadcast to client $clientId")
         addCommandToClient(clientId, ClientCommand.DISABLE_BROADCAST)
     }
 
@@ -397,9 +389,18 @@ open class World(
         return visibleShapesByClient
     }
 
-    fun addBody(size: Int) {
-        val bodies = createBodies(currentSimulator.bodies.count(), 0, 0, listOf(size))
-        currentSimulator.addBodies(bodies)
+    // original implementation just putting a new shape of this size in the first screen
+    fun addRandomBodyWithSize(size: Int) {
+        val randomShapeId = shapes.groupBy { it.sideLength }[size]!!.random().id
+        val body = createBody(randomShapeId, Point(0, 0))
+        currentSimulator.addBodies(listOf(body))
+        addEventToAllClients(StatusEvent.OBJECT_CHANGE)
+    }
+
+    // add specific shape to world in location grid. Allows clients to add to themselves (or others!)
+    fun addBody(shapeId: Int, grid: Point) {
+        val body = createBody(shapeId, grid)
+        currentSimulator.addBodies(listOf(body))
         addEventToAllClients(StatusEvent.OBJECT_CHANGE)
     }
 

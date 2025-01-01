@@ -8,12 +8,12 @@ import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
 import io.ktor.utils.io.readUTF8Line
-import io.ktor.utils.io.writeByteArray
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import logger
 
 class TcpServer(
     private val worldCommandProcessor: WorldCommandProcessor,
@@ -21,6 +21,7 @@ class TcpServer(
     private val scope: CoroutineScope,
 ) {
     fun start() {
+        logger.info("Starting TCP server")
         scope.launch {
             val serverSocket = aSocket(SelectorManager(this.coroutineContext)).tcp().bind(worldConfig.tcpHost, worldConfig.tcpPort)
             while (true) {
@@ -45,19 +46,19 @@ class TcpServer(
                     input.readUTF8Line()
                 }
             } catch (e: TimeoutCancellationException) {
-                println("Timed out waiting for command from client at ${socket.remoteAddress}")
+                logger.error("Timed out waiting for command from client at ${socket.remoteAddress}")
                 null
             }
 
             if (command == null) {
-                println("No client command to process")
+                logger.error("No client command to process")
             } else {
                 // TODO: need to replace this with something! This is the TCP side, so need to do similar to WorldRouting
 //                val response = worldCommandProcessor.process(command)
 //                output.writeByteArray(response)
             }
         } catch (e: Throwable) {
-            println("Error while handling client: ${e.message}")
+            logger.error("Error while handling client", e)
         } finally {
             withContext(scope.coroutineContext) {
                 socket.close()

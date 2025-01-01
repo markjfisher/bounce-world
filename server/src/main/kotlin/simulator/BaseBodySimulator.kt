@@ -3,6 +3,7 @@ package simulator
 import config.WorldConfig
 import domain.Body
 import geometry.SpiralGenerator
+import logger
 import org.joml.Vector2f
 
 abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
@@ -22,7 +23,7 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
         bodies.forEach { b ->
             val movedBody = moveBody(b)
             if (movedBody == null) {
-                println("ERROR: could not fit body $b onto grid, skipping to next.")
+                logger.warn("ERROR: could not fit body $b onto grid, skipping to next.")
             } else {
                 this.bodies.add(movedBody)
             }

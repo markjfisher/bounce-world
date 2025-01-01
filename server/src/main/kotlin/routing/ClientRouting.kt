@@ -9,8 +9,10 @@ import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.post
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import logger
 
 fun Application.clientRouting() {
+    logger.info("Creating routing for clients")
     val commandProcessor = attributes[ClientCommandProcessorAttributeKey]
 
     routing {
@@ -20,7 +22,10 @@ fun Application.clientRouting() {
                 val parts = gameClientInfoString.split(",")
                 // Allow simple comma separated fields so the client doesn't have to write JSON for the sake of it
                 if (parts.size != 4) {
-                    call.respond(HttpStatusCode.BadRequest, "Incorrect data format, should have: 'name,version,width,height'")
+                    call.respond(
+                        HttpStatusCode.BadRequest,
+                        "Incorrect data format, should have: 'name,version,width,height'"
+                    )
                     return@post
                 }
                 val name = parts[0]

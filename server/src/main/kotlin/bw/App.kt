@@ -20,10 +20,12 @@ import io.ktor.util.AttributeKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import logger
 import routing.clientRouting
 import routing.shapesRouting
 import routing.worldRouting
 import server.TcpServer
+import java.util.Date
 
 // the keys to store values in the Attributes framework. I like this!
 val WorldCommandProcessorAttributeKey = AttributeKey<WorldCommandProcessor>("WorldCommandProcessor")
@@ -31,6 +33,7 @@ val ClientCommandProcessorAttributeKey = AttributeKey<ClientCommandProcessor>("C
 val ShapesCommandProcessorAttributeKey = AttributeKey<ShapesCommandProcessor>("ShapesCommandProcessor")
 
 fun main() = runBlocking {
+    logger.info("Starting Bounce World Service at ${Date()}")
     val env = applicationEnvironment {
         config = ApplicationConfig("application.conf")
     }
@@ -48,22 +51,17 @@ fun main() = runBlocking {
         tcpServer.start()
     }
 
-    embeddedServer(
-        factory = Netty,
-        environment = env,
-        configure = { envConfig(env) },
-        module = {
-            // ktor uses attributes for storing and retrieving state without passing it via parameters
-            attributes.put(WorldCommandProcessorAttributeKey, worldCommandProcessor)
-            attributes.put(ClientCommandProcessorAttributeKey, clientCommandProcessor)
-            attributes.put(ShapesCommandProcessorAttributeKey, shapesCommandProcessor)
+    embeddedServer(factory = Netty, environment = env, configure = { envConfig(env) }, module = {
+        // ktor uses attributes for storing and retrieving state without passing it via parameters
+        attributes.put(WorldCommandProcessorAttributeKey, worldCommandProcessor)
+        attributes.put(ClientCommandProcessorAttributeKey, clientCommandProcessor)
+        attributes.put(ShapesCommandProcessorAttributeKey, shapesCommandProcessor)
 
-            commonModule()
-            worldModule()
-            clientModule()
-            shapesModule()
-        }
-    ).start(wait = true)
+        commonModule()
+        worldModule()
+        clientModule()
+        shapesModule()
+    }).start(wait = true)
 
     // required by runBlocking<Unit>, we have to exit with no value, but the start function above returns a value
     Unit

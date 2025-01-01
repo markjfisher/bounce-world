@@ -10,6 +10,7 @@ import domain.VectorData
 import domain.World
 import domain.WorldStatus
 import geometry.Point
+import logger
 import kotlin.math.roundToInt
 
 class WorldCommandProcessor(private val world: World, private val config: WorldConfig) {
@@ -17,7 +18,7 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
         if (!world.clientIds().contains(id)) {
             return byteArrayOf(0)
         }
-        world.clientHeartbeats[id] = System.currentTimeMillis()
+        world.updateHeartbeat(id)
         val data = try {
             val csv = asCSV(id)
             // if there are no bodies in the view, we will return a value of 0 (as byte)
@@ -27,7 +28,7 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                 byteArrayOf(0)
             }
         } catch (e: Exception) {
-            println("ERROR processing client ${id}: ${e.message}, sending 0")
+            logger.error("ERROR processing client ${id}: ${e.message}, sending 0")
             byteArrayOf(0)
         }
 
@@ -98,13 +99,20 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
         return byteArrayOf(1) // Success response
     }
 
-    fun addBody(size: Int): ByteArray {
+    fun addRandomBodyWithSize(size: Int): ByteArray {
         if (size in 1..5) {
-            world.addBody(size)
+            world.addRandomBodyWithSize(size)
         }
         return byteArrayOf(1) // Success response
     }
 
+    fun addBody(shapeId: Int, clientId: Int): ByteArray {
+        val client = world.getClient(clientId) ?: return byteArrayOf(1)
+        world.shapes.firstOrNull { it.id == shapeId } ?: return byteArrayOf(1)
+
+        world.addBody(shapeId, client.position)
+        return byteArrayOf(1)
+    }
 
     fun clientCommand(clientId: String, cmd: String): ByteArray {
         val clientCommand = ClientCommand.from(cmd) ?: return byteArrayOf()

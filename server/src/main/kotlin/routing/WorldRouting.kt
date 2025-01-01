@@ -4,13 +4,17 @@ import bw.WorldCommandProcessorAttributeKey
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
+import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondBytes
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
+import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
+import logger
 
 fun Application.worldRouting() {
+    logger.info("Creating routing for world")
     // everything is proxied to the CommandProcessor. Will have to decide if we call it WorldCommandProcessor, so we can have similar for Shapes and Clients
     val commandProcessor = attributes[WorldCommandProcessorAttributeKey]
 
@@ -39,10 +43,25 @@ fun Application.worldRouting() {
             call.respond(HttpStatusCode.OK, status)
         }
 
+        // this should really have been a post, but for client ease I made it a get. See "/new-body" for post version that deals with locations correctly too
         get("/add/{size}") {
             val size = call.parameters["size"]?.toIntOrNull()
             if (size != null) {
-                val response = commandProcessor.addBody(size)
+                val response = commandProcessor.addRandomBodyWithSize(size)
+                call.respondBytes(response, contentType = ContentType.Application.OctetStream)
+            } else {
+                call.respond(HttpStatusCode.BadRequest, "Invalid size parameter")
+            }
+        }
+
+        //
+        post("/new-body") {
+            val body = call.receiveText()
+            val (shapeIdString, clientIdString) = body.split(',', limit = 2)
+            val shapeId = shapeIdString.toIntOrNull()
+            val clientId = clientIdString.toIntOrNull()
+            if (shapeId != null && clientId != null) {
+                val response = commandProcessor.addBody(shapeId, clientId)
                 call.respondBytes(response, contentType = ContentType.Application.OctetStream)
             } else {
                 call.respond(HttpStatusCode.BadRequest, "Invalid size parameter")

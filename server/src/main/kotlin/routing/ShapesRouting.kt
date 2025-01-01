@@ -7,8 +7,10 @@ import io.ktor.server.response.respondBytes
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
+import logger
 
 fun Application.shapesRouting() {
+    logger.info("Creating routing for shapes")
     val commandProcessor = attributes[ShapesCommandProcessorAttributeKey]
 
     routing {
