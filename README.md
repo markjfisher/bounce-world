@@ -6,6 +6,28 @@ The bounce world coordinator service.
 
 Releases can be found at https://github.com/markjfisher/bounce-world/releases
 
+## Transitional Notes
+
+See https://github.com/rjaros/kvision-examples/tree/master/addressbook-fullstack-ktor for example of kvision with ktor.
+
+### Compiling
+
+* compileKotlinJs - Compiles frontend sources.
+* compileKotlinJvm - Compiles backend sources.
+
+### Running
+
+* jsRun - Starts a webpack dev server on port 3000
+* jvmRun - Starts a dev server on port 8080
+
+### Packaging
+
+* jsBrowserDistribution - Bundles the compiled js files into `build/dist/js/productionExecutable`
+* jsJar - Packages a standalone "web" frontend jar with all required files into `build/libs/*.jar`
+* jvmJar - Packages a backend jar with compiled source files into `build/libs/*.jar`
+* jar - Packages a "fat" jar with all backend sources and dependencies while also embedding frontend resources into `build/libs/*.jar`
+
+
 ## running
 
 To run the service with default parameters (listening on all bindings on port 8080, in 'grid' configuration for clients), download the jar, then run it with
@@ -41,7 +63,7 @@ not directly affect the clients, it just gives more accuracy to all the bodies o
 - `WORLD_LOCATION_PATTERN=grid`
 
 This is either `grid` or `right` and controls where the next client will be add in the world view.
-`right` is useful for demos at shows where all the screens are laid out on a table going to the right. 
+`right` is useful for demos at shows where all the screens are laid out on a table going to the right.
 
 - `WORLD_ENABLE_WRAPPING=false`
 

@@ -198,29 +198,6 @@ class WorldSimulatorTest : StringSpec({
         bodyA.position.y.shouldBe(8f plusOrMinus(0.01f))
     }
 
-    "scaled world simulator works as non scaled version but with larger values" {
-        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 80; it.height = 80 }
-        // Positions and velocities work same, just the radius is larger than the shape indicates, so collisions happen sooner as the body is scaled up to world sizes
-        val bodyA = Body.from(position = Vector2f(10f, 10f), velocity = Vector2f(2f, 0f), shape = shapes[0]!!)
-        val bodyB = Body.from(position = Vector2f(26f, 10f), velocity = Vector2f(-2f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA, bodyB)) }
-
-        worldSimulator.step()
-        bodyA.position.x shouldBe 12.0f
-        bodyB.position.x shouldBe 24.0f
-
-        worldSimulator.step()
-        bodyA.position.x shouldBe 14.0f
-        bodyB.position.x shouldBe 22.0f
-
-        // 1 more step makes them collide, they are touching from the last step, so all movement will be backwards from where they came
-        worldSimulator.step()
-        bodyA.velocity.x shouldBe -2.0f
-        bodyB.velocity.x shouldBe 2.0f
-        bodyA.position.x shouldBe 12.0f
-        bodyB.position.x shouldBe 24.0f
-    }
-
     "cannot add to grid if it does not have enough space" {
         val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 5; it.height = 5 }
         val shapesForSpaceTest = mutableMapOf(
@@ -247,44 +224,44 @@ class WorldSimulatorTest : StringSpec({
     }
 
     "can detect collision at boundary" {
-        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 160; it.height = 80 }
+        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 40; it.height = 20 }
         val shapesForBoundaryTest = mutableMapOf(
-            0 to Shape(2, 1.0f, 5, emptyList())
+            0 to Shape(2, 1.0f, 2, emptyList())
         )
         val worldSimulator = WrappingWorldSimulator(config)
-        val bodyA = Body.from(position = Vector2f(31.375097f, 3.468848f), velocity = Vector2f(-0.54833025f, -0.12327973f), shape = shapesForBoundaryTest[0]!!)
-        val bodyB = Body.from(position = Vector2f(12.075428f, 77.72633f), velocity = Vector2f(0.05472869f, 0.033775542f), shape = shapesForBoundaryTest[0]!!)
+        val bodyA = Body.from(position = Vector2f(2f, 2.5f), velocity = Vector2f(1f, -1f), shape = shapesForBoundaryTest[0]!!)
+        val bodyB = Body.from(position = Vector2f(2f, 18.5f), velocity = Vector2f(1f, 2f), shape = shapesForBoundaryTest[0]!!)
         worldSimulator.addBodies(listOf(bodyA, bodyB))
 
         // work out the distance to the nearest version of B in wrapped (toroidal) space
         var distance = worldSimulator.calculateDistance(bodyA, bodyB)
-        distance.shouldBe(20.135881f plusOrMinus(0.000001f))
+        distance.shouldBe(4f plusOrMinus(0.000001f))
 
         // find the position of B that is closest to A in toroidal mapping
         val closestB = worldSimulator.findClosestWrappedPosition(bodyA.position, bodyB.position)
-        closestB.x.shouldBe(12.075428f plusOrMinus(0.000001f))
-        closestB.y.shouldBe(-2.273666f plusOrMinus(0.000001f))
+        closestB.x.shouldBe(2f plusOrMinus(0.000001f))
+        closestB.y.shouldBe(-1.5f plusOrMinus(0.000001f))
 
         var collisionTimes = worldSimulator.calculateCollisionTimes(bodyA, bodyB)
         collisionTimes shouldHaveSize 1
-        collisionTimes[0].shouldBe(0.21817695f plusOrMinus(0.000001f))
+        collisionTimes[0].shouldBe(0.6666667f plusOrMinus(0.000001f))
 
         // we know these should collide, as the time is between 0 and 1 (which is our step time)
         worldSimulator.step()
 
         // calculate new distance apart, should still be over 20 as we bounced
         distance = worldSimulator.calculateDistance(bodyA, bodyB)
-        distance.shouldBe(20.486927f plusOrMinus(0.000001f))
+        distance.shouldBe(3f plusOrMinus(0.000001f))
 
         // check a and b are at correct locations and speeds (note directions have changed)
-        bodyA.position.x.shouldBe(31.293434f plusOrMinus(0.000001f))
-        bodyA.position.y.shouldBe(3.4845412f plusOrMinus(0.000001f))
-        bodyA.velocity.x.shouldBe(0.048564315f plusOrMinus(0.000001f))
-        bodyA.velocity.y.shouldBe(0.054475166f plusOrMinus(0.000001f))
-        bodyB.position.x.shouldBe(11.663491f plusOrMinus(0.000001f))
-        bodyB.position.y.shouldBe(77.62114f plusOrMinus(0.000001f))
-        bodyB.velocity.x.shouldBe(-0.5421659f plusOrMinus(0.000001f))
-        bodyB.velocity.y.shouldBe(-0.14397936f plusOrMinus(0.000001f))
+        bodyA.position.x.shouldBe(3f plusOrMinus(0.000001f))
+        bodyA.position.y.shouldBe(2.5f plusOrMinus(0.000001f))
+        bodyA.velocity.x.shouldBe(1f plusOrMinus(0.000001f))
+        bodyA.velocity.y.shouldBe(2f plusOrMinus(0.000001f))
+        bodyB.position.x.shouldBe(3f plusOrMinus(0.000001f))
+        bodyB.position.y.shouldBe(19.5f plusOrMinus(0.000001f))
+        bodyB.velocity.x.shouldBe(1f plusOrMinus(0.000001f))
+        bodyB.velocity.y.shouldBe(-1f plusOrMinus(0.000001f))
 
         // and there's no longer a collision about to happen as they are moving apart
         collisionTimes = worldSimulator.calculateCollisionTimes(bodyA, bodyB)

@@ -13,16 +13,25 @@ kvision-version = "8.1.0"
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor-version" }
 ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor-version" }
 ktor-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor-version" }
+ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml-jvm", version.ref = "ktor-version" }
 
 ## which serialization library - was using jackson, but kvision is kotlinx-serialization, so swapping
 #ktor-jackson = { module = "io.ktor:ktor-serialization-jackson", version.ref = "ktor-version" }
 ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor-version" }
 
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
-ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml-jvm", version.ref = "ktor-version" }
 joml-core = { module = "org.joml:joml", version.ref = "joml-version" }
-kvision-server-ktor = { module = "io.kvision:kvision-server-ktor", version.ref = "kvision-version" }
 
+## kvision
+kvision-server-ktor = { module = "io.kvision:kvision-server-ktor", version.ref = "kvision-version" }
+kvision-core = { module = "io.kvision:kvision", version.ref = "kvision-version" }
+kvision-bootstrap = { module = "io.kvision:kvision-bootstrap", version.ref = "kvision-version" }
+kvision-state = { module = "io.kvision:kvision-state", version.ref = "kvision-version" }
+kvision-fontawesome = { module = "io.kvision:kvision-fontawesome", version.ref = "kvision-version" }
+kvision-i18n = { module = "io.kvision:kvision-i18n", version.ref = "kvision-version" }
+
+
+## testing
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor-version" }
 kotest-ktor-core = { module = "io.kotest.extensions:kotest-assertions-ktor", version.ref = "kotest-ktor-version" }
 kotest-ktor-assertions = { module = "io.kotest:kotest-assertions-core-jvm", version.ref = "kotest-runner-junit5-version" }
@@ -32,4 +41,6 @@ mockk-core = { module = "io.mockk:mockk", version.ref = "mockk-version" }
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-version" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin-version" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
+kvision = { id = "io.kvision", version.ref = "kvision-version" }
