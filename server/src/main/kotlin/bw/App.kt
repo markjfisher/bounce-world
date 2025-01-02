@@ -5,22 +5,19 @@ import command.ShapesCommandProcessor
 import command.WorldCommandProcessor
 import config.WorldConfig
 import factory.WorldFactory
-import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationEnvironment
-import io.ktor.server.application.install
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.ApplicationEngine
 import io.ktor.server.engine.applicationEnvironment
 import io.ktor.server.engine.connector
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.util.AttributeKey
+import io.kvision.remote.kvisionInit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import logger
 import routing.clientRouting
 import routing.shapesRouting
@@ -65,10 +62,10 @@ fun main() = runBlocking {
         attributes.put(ClientCommandProcessorAttributeKey, clientCommandProcessor)
         attributes.put(ShapesCommandProcessorAttributeKey, shapesCommandProcessor)
 
-        commonModule()
         worldModule()
         clientModule()
         shapesModule()
+        kvisionModule()
     }).start(wait = true)
 
     // required by runBlocking<Unit>, we have to exit with no value, but the start function above returns a value
@@ -79,15 +76,6 @@ fun ApplicationEngine.Configuration.envConfig(env: ApplicationEnvironment) {
     connector {
         host = env.config.property("ktor.deployment.host").getString()
         port = env.config.property("ktor.deployment.port").getString().toInt()
-    }
-}
-
-fun Application.commonModule() {
-    install(ContentNegotiation) {
-        json(Json {
-            prettyPrint = false
-            isLenient = true
-        })
     }
 }
 
@@ -103,4 +91,9 @@ fun Application.clientModule() {
 
 fun Application.shapesModule() {
     shapesRouting()
+}
+
+fun Application.kvisionModule() {
+    logger.info("Initialising kvision")
+    kvisionInit()
 }
