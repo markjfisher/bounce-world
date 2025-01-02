@@ -4,10 +4,12 @@ import geometry.Direction.EAST
 import geometry.Direction.NORTH
 import geometry.Direction.SOUTH
 import geometry.Direction.WEST
+import kotlinx.serialization.Serializable
 import kotlin.math.atan2
 import kotlin.math.sign
 import kotlin.math.sqrt
 
+@Serializable
 data class Point(val x: Int, val y: Int): Comparable<Point> {
     override fun compareTo(other: Point): Int {
         return if (y == other.y) x.compareTo(other.x) else y.compareTo(other.y)

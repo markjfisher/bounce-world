@@ -1,7 +1,5 @@
 package server
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import command.ClientCommandProcessor
 import command.ShapesCommandProcessor
 import command.WorldCommandProcessor
@@ -17,13 +15,16 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import logger
 
-private val objectMapper: ObjectMapper = jacksonObjectMapper()
+inline fun <reified T> serializeObjectToByteArray(obj: T): ByteArray {
+    // Explicitly get the serializer for the type T and use it to serialize obj
+    val jsonString = Json.encodeToString(obj)
 
-private fun serializeObjectToByteArray(obj: Any): ByteArray {
-    // Convert the object to a JSON string and then to a ByteArray
-    return objectMapper.writeValueAsBytes(obj)
+    // Convert the JSON string to a ByteArray
+    return jsonString.toByteArray(Charsets.UTF_8)
 }
 
 class TcpServer(

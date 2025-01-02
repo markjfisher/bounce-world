@@ -1,6 +1,7 @@
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ktor)
 }
 
@@ -18,10 +19,11 @@ dependencies {
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)
     implementation(libs.ktor.content.negotiation)
-    implementation(libs.ktor.jackson)
+    implementation(libs.ktor.serialization.json)
     implementation(libs.logback.classic)
     implementation(libs.ktor.server.config.yaml)
     implementation(libs.joml.core)
+    implementation(libs.kvision.server.ktor)
 
     testImplementation(libs.kotest.ktor.core)
     testImplementation(libs.kotest.ktor.assertions)

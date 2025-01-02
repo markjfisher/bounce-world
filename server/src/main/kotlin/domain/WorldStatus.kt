@@ -1,13 +1,15 @@
 package domain
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import geometry.Point
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class VectorData(
     val x: Float,
     val y: Float
 )
 
+@Serializable
 data class BodyData(
     val id: Int,
     val radius: Float,
@@ -16,26 +18,26 @@ data class BodyData(
     val velocity: VectorData
 )
 
+@Serializable
 data class BodySummary(
     val size: Int,
     val count: Int
 )
 
+@Serializable
 data class ClientData(
     val id: Int,
     val name: String,
     val location: Point
 )
 
+@Serializable
 data class WorldStatus(
     val width: Int,
     val height: Int,
     val frozen: Boolean,
     val wrapping: Boolean,
-    @JsonInclude(value= JsonInclude.Include.ALWAYS, content= JsonInclude.Include.ALWAYS)
     val bodyCounts: List<BodySummary>,
-    @JsonInclude(value= JsonInclude.Include.ALWAYS, content= JsonInclude.Include.ALWAYS)
     val bodies: List<BodyData>,
-    @JsonInclude(value= JsonInclude.Include.ALWAYS, content= JsonInclude.Include.ALWAYS)
     val clients: List<ClientData>
 )

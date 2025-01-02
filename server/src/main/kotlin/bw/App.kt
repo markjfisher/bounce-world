@@ -5,7 +5,7 @@ import command.ShapesCommandProcessor
 import command.WorldCommandProcessor
 import config.WorldConfig
 import factory.WorldFactory
-import io.ktor.serialization.jackson.jackson
+import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationEnvironment
 import io.ktor.server.application.install
@@ -20,6 +20,7 @@ import io.ktor.util.AttributeKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import logger
 import routing.clientRouting
 import routing.shapesRouting
@@ -83,12 +84,10 @@ fun ApplicationEngine.Configuration.envConfig(env: ApplicationEnvironment) {
 
 fun Application.commonModule() {
     install(ContentNegotiation) {
-        jackson {
-            //// pretty print:
-            // enable(com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT)
-            //// To include non-null values only:
-            // setSerializationInclusion(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
-        }
+        json(Json {
+            prettyPrint = false
+            isLenient = true
+        })
     }
 }
 

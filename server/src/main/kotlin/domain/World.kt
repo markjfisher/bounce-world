@@ -20,7 +20,9 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 open class World(
-    private val config: WorldConfig, private val wrappedSimulator: WorldSimulator, private val boundedSimulator: WorldSimulator
+    private val config: WorldConfig,
+    private val wrappedSimulator: WorldSimulator,
+    private val boundedSimulator: WorldSimulator
 ) {
     private val simulationScope = CoroutineScope(Dispatchers.Default)
     private val heartbeatScope = CoroutineScope(Dispatchers.IO)
