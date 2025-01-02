@@ -47,7 +47,14 @@ fun main() = runBlocking {
     // Create a tcp listener in its own thread/coroutine. We can't use Attributes in this side, as it's not part of the ktor framework, as such
     // so we inject the commandProcessor directly as a dependency.
     launch(Dispatchers.IO) {
-        val tcpServer = TcpServer(worldCommandProcessor, worldConfig, this)
+        val tcpServer = TcpServer(
+            worldCommandProcessor,
+            clientCommandProcessor,
+            shapesCommandProcessor,
+            worldConfig.tcpHost,
+            worldConfig.tcpPort,
+            this
+        )
         tcpServer.start()
     }
 

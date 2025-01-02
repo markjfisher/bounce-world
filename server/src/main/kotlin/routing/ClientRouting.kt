@@ -38,7 +38,7 @@ fun Application.clientRouting() {
                     return@post
                 }
 
-                val gameClient = commandProcessor.addClient(parts[0], version, screenWidth, screenHeight)
+                val gameClient = commandProcessor.addClient(name, version, screenWidth, screenHeight)
                 call.respondBytes(byteArrayOf(gameClient.id.toByte()), status = HttpStatusCode.Created)
             }
         }

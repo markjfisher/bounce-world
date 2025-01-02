@@ -416,10 +416,4 @@ open class World(
     fun decreaseSpeed() {
         currentSimulator.bodies.forEach { body -> body.velocity.div(1.05f) }
     }
-
-    companion object {
-        // The world size will be its boundary * these values.
-        const val SCREEN_WIDTH = 40
-        const val SCREEN_HEIGHT = 22
-    }
 }
