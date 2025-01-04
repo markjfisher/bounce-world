@@ -4,16 +4,23 @@ import command.ClientCommandProcessor
 import command.ShapesCommandProcessor
 import command.WorldCommandProcessor
 import config.WorldConfig
+import domain.World
 import factory.WorldFactory
 import io.ktor.server.application.Application
 import io.ktor.server.application.ApplicationEnvironment
+import io.ktor.server.application.install
 import io.ktor.server.config.ApplicationConfig
 import io.ktor.server.engine.ApplicationEngine
 import io.ktor.server.engine.applicationEnvironment
 import io.ktor.server.engine.connector
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import io.ktor.server.plugins.compression.Compression
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
 import io.ktor.util.AttributeKey
+import io.kvision.remote.applyRoutes
+import io.kvision.remote.getServiceManager
 import io.kvision.remote.kvisionInit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -29,6 +36,7 @@ import java.util.Date
 val WorldCommandProcessorAttributeKey = AttributeKey<WorldCommandProcessor>("WorldCommandProcessor")
 val ClientCommandProcessorAttributeKey = AttributeKey<ClientCommandProcessor>("ClientCommandProcessor")
 val ShapesCommandProcessorAttributeKey = AttributeKey<ShapesCommandProcessor>("ShapesCommandProcessor")
+val WorldAttributeKey = AttributeKey<World>("World")
 
 fun main() = runBlocking {
     logger.info("Starting Bounce World Service at ${Date()}")
@@ -61,6 +69,8 @@ fun main() = runBlocking {
         attributes.put(WorldCommandProcessorAttributeKey, worldCommandProcessor)
         attributes.put(ClientCommandProcessorAttributeKey, clientCommandProcessor)
         attributes.put(ShapesCommandProcessorAttributeKey, shapesCommandProcessor)
+        // for the web client
+        attributes.put(WorldAttributeKey, world)
 
         worldModule()
         clientModule()
@@ -95,5 +105,11 @@ fun Application.shapesModule() {
 
 fun Application.kvisionModule() {
     logger.info("Initialising kvision")
+    install(Compression)
+    install(WebSockets)
+    routing {
+        applyRoutes(getServiceManager<IBouncyService>())
+        applyRoutes(getServiceManager<IBouncyWsService>())
+    }
     kvisionInit()
 }

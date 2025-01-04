@@ -36,6 +36,9 @@ open class World(
         clients.putAll(newClients)
     }
 
+    fun getWorldWidth() = worldBoundary().x * config.width
+    fun getWorldHeight() = worldBoundary().y * config.height
+
     // last heartbeat received
     val clientHeartbeats = mutableMapOf<Int, Long>()
 
@@ -145,8 +148,8 @@ open class World(
         occupiedScreens[nextPoint] = gameClient
 
         // adjust the simulator's dimensions
-        currentSimulator.width = worldBoundary().x * config.width
-        currentSimulator.height = worldBoundary().y * config.height
+        currentSimulator.width = getWorldWidth()
+        currentSimulator.height = getWorldHeight()
 
         if (!isStarted && config.shouldAutoStart) {
             simulationScope.launch {

@@ -1,0 +1,7 @@
+.bs-component {
+    position: relative;
+}
+
+.bs-component+.bs-component {
+    margin-top: 1rem
+}

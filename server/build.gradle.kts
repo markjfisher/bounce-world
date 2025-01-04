@@ -3,7 +3,8 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
-    // alias(libs.plugins.kvision)
+    // This gives a "java not compatible with multiplatform" warning, but the web app doesn't work without it
+    alias(libs.plugins.kvision)
 }
 
 group = "bounce.world"
@@ -23,7 +24,7 @@ kotlin {
         browser {
             commonWebpackConfig {
                 outputFileName = "main.bundle.js"
-                sourceMaps = false
+                sourceMaps = true
             }
         }
         binaries.executable()
@@ -49,6 +50,7 @@ kotlin {
                 implementation(libs.ktor.server.netty)
                 implementation(libs.ktor.content.negotiation)
                 implementation(libs.ktor.serialization.json)
+                implementation(libs.ktor.server.compression)
                 implementation(libs.logback.classic)
                 implementation(libs.ktor.server.config.yaml)
                 implementation(libs.joml.core)

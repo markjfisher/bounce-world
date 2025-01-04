@@ -20,7 +20,7 @@ fun Application.worldRouting() {
 
     routing {
         get("/") {
-            call.respondText("Bounce World 2")
+            call.respondText("Bounce World")
         }
 
         get("/w/{clientId}") {
