@@ -1,5 +1,8 @@
 package domain
 
+import bw.BodyShared
+import bw.GameClientShared
+import bw.WorldShared
 import config.WorldConfig
 import data.ShapeCreator
 import geometry.GridPatternGenerator
@@ -19,6 +22,10 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
+interface WorldUpdateListener {
+    suspend fun update(state: WorldShared)
+}
+
 open class World(
     private val config: WorldConfig,
     private val wrappedSimulator: WorldSimulator,
@@ -26,6 +33,21 @@ open class World(
 ) {
     private val simulationScope = CoroutineScope(Dispatchers.Default)
     private val heartbeatScope = CoroutineScope(Dispatchers.IO)
+
+    private val updateListeners: MutableSet<WorldUpdateListener> = mutableSetOf()
+
+    fun addListener(listener: WorldUpdateListener) {
+        updateListeners.add(listener)
+    }
+
+    private fun notifyListeners() {
+        updateListeners.forEach { listener ->
+            val worldShared = toWorldShared()
+            heartbeatScope.launch {
+                listener.update(worldShared)
+            }
+        }
+    }
 
     // the data about clients
     private val clients = mutableMapOf<Int, GameClient>()
@@ -303,6 +325,7 @@ open class World(
         clients.keys.forEach { id ->
             addEvent(id, statusEvent)
         }
+        notifyListeners()
     }
 
     private fun removeEventFromAllClients(statusEvent: StatusEvent) {
@@ -310,6 +333,7 @@ open class World(
             val clientEvents = statusEvents[id] ?: mutableSetOf()
             clientEvents.remove(statusEvent)
         }
+        notifyListeners()
     }
 
     private fun addEvent(clientId: Int, statusEvent: StatusEvent) {
@@ -422,3 +446,30 @@ open class World(
         currentSimulator.bodies.forEach { body -> body.velocity.div(1.05f) }
     }
 }
+
+fun World.toWorldShared() = WorldShared(
+    width = getWorldWidth(),
+    height = getWorldHeight(),
+    upTime = "TBD",
+    clients = clients().associate { client ->
+        client.id to GameClientShared(
+            id = client.id,
+            name = client.name,
+            version = client.version,
+            position = Pair(client.position.x, client.position.y),
+            screenSize = Pair(client.screenSize.width, client.screenSize.height)
+        )
+    },
+    isFrozen = isFrozen,
+    isWrapping = isWrapping,
+    bodies = currentSimulator.bodies.map { body ->
+        BodyShared(
+            id = body.id,
+            position = Pair(body.position.x, body.position.y),
+            velocity = Pair(body.velocity.x, body.velocity.y),
+            mass = body.mass,
+            radius = body.radius,
+            shapeId = body.shapeId
+        )
+    }
+)
