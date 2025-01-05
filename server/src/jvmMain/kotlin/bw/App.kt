@@ -39,7 +39,7 @@ val ShapesCommandProcessorAttributeKey = AttributeKey<ShapesCommandProcessor>("S
 val WorldAttributeKey = AttributeKey<World>("World")
 
 fun main() = runBlocking {
-    logger.info("Starting Bounce World Service at ${Date()}")
+    logger.info("Starting Bouncy World Service at ${Date()}")
     val env = applicationEnvironment {
         config = ApplicationConfig("application.conf")
     }

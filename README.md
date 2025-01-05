@@ -1,6 +1,6 @@
 # bounce-world
 
-The bounce world coordinator service.
+The bounce, or bouncy world coordinator service.
 
 ## releases
 

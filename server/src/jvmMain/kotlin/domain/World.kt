@@ -21,6 +21,7 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
+import kotlin.time.TimeSource
 
 interface WorldUpdateListener {
     suspend fun update(state: WorldShared)
@@ -35,6 +36,8 @@ open class World(
     private val heartbeatScope = CoroutineScope(Dispatchers.IO)
 
     private val updateListeners: MutableSet<WorldUpdateListener> = mutableSetOf()
+    private val startTime: TimeSource.Monotonic.ValueTimeMark = TimeSource.Monotonic.markNow() // LocalDateTime.now().minusMonths(1).minusDays(5).minusHours(2).minusMinutes(34)
+    var currentUptime: String = formatUptime(startTime, TimeSource.Monotonic.markNow())
 
     fun addListener(listener: WorldUpdateListener) {
         updateListeners.add(listener)
@@ -98,6 +101,17 @@ open class World(
         clientHeartbeats[id] = System.currentTimeMillis()
     }
 
+    init {
+        if (!isStarted && config.shouldAutoStart) {
+            simulationScope.launch {
+                runSimulation()
+            }
+            heartbeatScope.launch {
+                checkClientsStillConnected()
+            }
+        }
+    }
+
     fun rebuild(newIds: List<Int>) {
         isFrozen = true
         stopped = true
@@ -108,6 +122,7 @@ open class World(
             val client = clients[id] ?: throw Exception("No client with id $id")
             addClient(client)
         }
+        stopped = false
 
         addEventToAllClients(StatusEvent.OBJECT_CHANGE)
     }
@@ -130,6 +145,8 @@ open class World(
     private suspend fun runSimulation() {
         var started: Long
         isStarted = true
+
+        currentUptime = formatUptime(startTime, TimeSource.Monotonic.markNow())
 
         while (!stopped) {
             started = System.currentTimeMillis()
@@ -156,6 +173,11 @@ open class World(
                 delay(d.toLong())
             }
 
+            val newUptime = formatUptime(startTime, TimeSource.Monotonic.markNow())
+            if (newUptime != currentUptime) {
+                currentUptime = newUptime
+                notifyListeners()
+            }
         }
     }
 
@@ -172,15 +194,6 @@ open class World(
         // adjust the simulator's dimensions
         currentSimulator.width = getWorldWidth()
         currentSimulator.height = getWorldHeight()
-
-        if (!isStarted && config.shouldAutoStart) {
-            simulationScope.launch {
-                runSimulation()
-            }
-            heartbeatScope.launch {
-                checkClientsStillConnected()
-            }
-        }
     }
 
     fun createClient(gameClientInfo: GameClientInfo): GameClient {
@@ -450,7 +463,7 @@ open class World(
 fun World.toWorldShared() = WorldShared(
     width = getWorldWidth(),
     height = getWorldHeight(),
-    upTime = "TBD",
+    upTime = currentUptime,
     clients = clients().associate { client ->
         client.id to GameClientShared(
             id = client.id,
@@ -473,3 +486,25 @@ fun World.toWorldShared() = WorldShared(
         )
     }
 )
+
+fun formatUptime(startTime: TimeSource.Monotonic.ValueTimeMark, endTime: TimeSource.Monotonic.ValueTimeMark): String {
+    val elapsed = endTime - startTime
+    return elapsed.toComponents { h, m, _, _ ->
+        buildString {
+            val d = elapsed.inWholeDays
+            if (d > 0) {
+                append("$d day")
+                if (d != 1L) append("s")
+                append(", ")
+            }
+            if (h > 0 || d > 0) {
+                val partHours = h - d * 24
+                append("$partHours hour")
+                if (partHours != 1L) append("s")
+                append(", ")
+            }
+            append("$m min")
+            if (m != 1) append("s")
+        }
+    }
+}

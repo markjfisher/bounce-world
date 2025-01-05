@@ -6,17 +6,14 @@ import domain.WorldUpdateListener
 import domain.toWorldShared
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.websocket.WebSocketServerSession
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import java.util.concurrent.ConcurrentHashMap
 import logger
+import java.util.concurrent.ConcurrentHashMap
 
 actual class BouncyService : IBouncyService {
     @Inject
@@ -40,9 +37,6 @@ object Model {
 actual class BouncyWsService : IBouncyWsService, WorldUpdateListener {
     @Inject
     lateinit var wsSession: WebSocketServerSession
-
-    private val keepaliveScope = CoroutineScope(Dispatchers.IO)
-
     private var hasRegistered = false
 
     @OptIn(DelicateCoroutinesApi::class)
@@ -61,7 +55,7 @@ actual class BouncyWsService : IBouncyWsService, WorldUpdateListener {
 
         // have to keep the channel alive by listening to input messages.
         try {
-            // when a client refreshes, it's actually the input channel that is closed, not the output, but keep both here in case the output channel closes for some reason
+            // when a web browser if force-reloaded, it's the input channel that closes, not the output, but keep both here in case the output channel closes for some reason
             while (!output.isClosedForSend && !input.isClosedForReceive) {
                 // small timeout on receive so we don't hang waiting for inputs (at the moment there are non from web app)
                 val signal = withTimeoutOrNull(100) {
