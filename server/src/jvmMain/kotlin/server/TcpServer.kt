@@ -106,7 +106,7 @@ class TcpServer(
 
             // SHAPES commands
             command == "shape-data" -> scp.getShapesData()
-            command == "shape-count" -> serializeObjectToByteArray(scp.getShapesCount())
+            command == "shape-count" -> byteArrayOf(scp.getShapesCount().toByte())
             else -> {
                 logger.error("Unknown command: $command")
                 byteArrayOf(0)
