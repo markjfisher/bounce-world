@@ -8,10 +8,10 @@ import io.ktor.network.sockets.Socket
 import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.openReadChannel
 import io.ktor.network.sockets.openWriteChannel
-import io.ktor.utils.io.readUTF8Line
+import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.writeByteArray
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -53,27 +53,36 @@ class TcpServer(
     private suspend fun handleClient(socket: Socket) {
         val input = socket.openReadChannel()
         val output = socket.openWriteChannel(autoFlush = true)
+        var isKeepActive = true
 
         try {
-            val command: String? = try {
-                withTimeoutOrNull(1000) {
-                    input.readUTF8Line()
+            while (isKeepActive) {
+                val buffer = ByteArray(1024)
+                val bytesRead: Int? = withTimeoutOrNull(5_000) {
+                    input.readAvailable(buffer, 0, buffer.size)
                 }
-            } catch (e: TimeoutCancellationException) {
-                logger.error("Timed out waiting for command from client at ${socket.remoteAddress}")
-                null
-            }
 
-            if (command == null) {
-                logger.error("No client command to process")
-            } else {
-                val response = process(command)
-                output.writeByteArray(response)
+                if (bytesRead == null) {
+                    logger.info("No client command to process, will continue waiting.")
+                } else if (bytesRead == -1 || input.isClosedForRead) {
+                    // logger.warn("connection closed")
+                    break
+                } else {
+                    val command = buffer.copyOf(bytesRead)
+                    // in this scenario we can strip the string of any CR or LF (e.g. for linux cli from "echo").
+                    // For a more general binary scenario we would not convert to string, but everything for Bouncy World is strings on the commands
+                    val commandString = command.toString(Charsets.UTF_8).trim()
+
+                    // Check if this is from a client maintaining a persistent connection (sending command with "x-" at the start)
+                    isKeepActive = commandString.startsWith("x-")
+                    val response = process(commandString.substringAfter("x-").trim())
+                    output.writeByteArray(response)
+                }
             }
         } catch (e: Throwable) {
             logger.error("Error while handling client", e)
         } finally {
-            withContext(scope.coroutineContext) {
+            withContext(NonCancellable) {
                 socket.close()
             }
         }
@@ -81,6 +90,7 @@ class TcpServer(
 
     private fun process(command: String): ByteArray {
         val commandRegex = """^[a-zA-Z-]+\s""".toRegex()
+
         // rp == remove prefix
         fun rp(command: String): String = command.replaceFirst(commandRegex, "")
 
@@ -93,8 +103,8 @@ class TcpServer(
             command == "inc" -> wcp.increaseSpeed()
             command == "dec" -> wcp.decreaseSpeed()
             command == "freeze" -> wcp.toggleFreeze()
-            command == "msg" -> serializeObjectToByteArray(wcp.getLatestMessage())
-            command == "who" -> serializeObjectToByteArray(wcp.getClients())
+            command == "msg" -> wcp.getLatestMessage().toByteArray(Charsets.UTF_8)
+            command == "who" -> wcp.who().toByteArray(Charsets.UTF_8)
             command.startsWith("new-body ") -> doNewBody(rp(command))
             command.startsWith("add-body ") -> doAddBody(rp(command))
             command.startsWith("cmd-put ") -> doClientCommand(rp(command))
@@ -171,7 +181,7 @@ class TcpServer(
                 "Invalid Parameters".toByteArray()
             } else {
                 val gameClient = ccp.addClient(name, version, screenWidth, screenHeight)
-                serializeObjectToByteArray(gameClient.id)
+                byteArrayOf(gameClient.id.toByte())
             }
         } else {
             "Incorrect data format, should have: 'name,version,width,height'".toByteArray()
