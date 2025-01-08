@@ -58,14 +58,16 @@ class TcpServer(
         try {
             while (isKeepActive) {
                 val buffer = ByteArray(1024)
+                // allow client 5s to send something
                 val bytesRead: Int? = withTimeoutOrNull(5_000) {
                     input.readAvailable(buffer, 0, buffer.size)
                 }
 
                 if (bytesRead == null) {
-                    logger.info("No client command to process, will continue waiting.")
+                    logger.info("No client command to process, exiting")
+                    break
                 } else if (bytesRead == -1 || input.isClosedForRead) {
-                    // logger.warn("connection closed")
+                    logger.info("client connection closed")
                     break
                 } else {
                     val command = buffer.copyOf(bytesRead)
@@ -77,6 +79,9 @@ class TcpServer(
                     isKeepActive = commandString.startsWith("x-")
                     val response = process(commandString.substringAfter("x-").trim())
                     output.writeByteArray(response)
+                    if (commandString.startsWith("close")) {
+                        isKeepActive = false
+                    }
                 }
             }
         } catch (e: Throwable) {
@@ -105,6 +110,7 @@ class TcpServer(
             command == "freeze" -> wcp.toggleFreeze()
             command == "msg" -> wcp.getLatestMessage().toByteArray(Charsets.UTF_8)
             command == "who" -> wcp.who().toByteArray(Charsets.UTF_8)
+            command.startsWith("close") -> wcp.close(rp(command))
             command.startsWith("new-body ") -> doNewBody(rp(command))
             command.startsWith("add-body ") -> doAddBody(rp(command))
             command.startsWith("cmd-put ") -> doClientCommand(rp(command))

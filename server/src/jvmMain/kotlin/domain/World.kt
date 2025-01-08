@@ -255,6 +255,7 @@ open class World(
 
     fun removeClient(id: Int) {
         val client = getClient(id) ?: return
+        logger.info("Removing client $client")
         clients.remove(client.id)
         clientHeartbeats.remove(client.id)
         statusEvents.remove(client.id)

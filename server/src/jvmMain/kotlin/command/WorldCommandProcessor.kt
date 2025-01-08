@@ -160,6 +160,15 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
         return fixedString
     }
 
+    fun close(clientId: String): ByteArray {
+        logger.info("closing client $clientId")
+        val id = clientId.toIntOrNull()
+        if (id != null) {
+            world.removeClient(id)
+        }
+        return byteArrayOf()
+    }
+
     private fun asCSV(clientId: Int): String {
         val visibleShapes = world.currentClientVisibleShapes[clientId]
         if (!visibleShapes.isNullOrEmpty()) {
