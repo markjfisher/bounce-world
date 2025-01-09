@@ -52,7 +52,8 @@ kotlin {
                 implementation(libs.ktor.serialization.json)
                 implementation(libs.ktor.server.compression)
                 implementation(libs.logback.classic)
-                implementation(libs.ktor.server.config.yaml)
+                // This stops the hocon loader from being put in the the jar file at META-INF/services/io.ktor.server.config.ConfigLoader
+                // implementation(libs.ktor.server.config.yaml)
                 implementation(libs.joml.core)
             }
         }
