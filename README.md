@@ -10,12 +10,28 @@ Releases can be found at https://github.com/markjfisher/bounce-world/releases
 
 See https://github.com/rjaros/kvision-examples/tree/master/addressbook-fullstack-ktor for example of kvision with ktor.
 
-### Compiling
+### Compiling and Building
+
+The project uses gradle to build the main jar.
+
+```
+./gradlew
+```
+## Running the service from the JAR file
+
+To run the service with default parameters (listening on all bindings on port 8080, in 'grid' configuration for clients), download the jar, then run it with
+
+```shell
+# substitute the correct version here
+$ java -jar path/to/server-2.0.0.jar
+```
+
+### Individual compile tasks (devs only)
 
 * compileKotlinJs - Compiles frontend sources.
 * compileKotlinJvm - Compiles backend sources.
 
-### Running
+### Running the dev build
 
 * jsRun - Starts a webpack dev server on port 3000
 * jvmRun - Starts a dev server on port 8080
@@ -28,23 +44,7 @@ See https://github.com/rjaros/kvision-examples/tree/master/addressbook-fullstack
 * jar - Packages a "fat" jar with all backend sources and dependencies while also embedding frontend resources into `build/libs/*.jar`
 
 
-## running
-
-To run the service with default parameters (listening on all bindings on port 8080, in 'grid' configuration for clients), download the jar, then run it with
-
-```shell
-# substitute the correct version here
-$ java -jar path/to/server-1.0.8-all.jar
-```
-
-To run with 'table' settings, so all clients add to the right, with port 8081, use:
-
-```shell
-$ MICRONAUT_SERVER_PORT=8081 WORLD_LOCATION_PATTERN=right java -jar /path/to/server-1.0.8-all.jar
-```
-
-There are many parameters that can be changed by setting them on the command line before the java command.
-These can all be found in [the application config file](server/src/main/resources/application.toml)
+## TODO: fix the docs for setting properties values for how ktor does it
 
 Here are the useful values with their defaults.
 
@@ -107,14 +107,6 @@ returns a simple array of the clients ids and names as a json object:
 
 ### reordering clients
 
+THIS IS WIP AND NOT WORKING YET
+
 - GET `/reorder/id1,id2,id3,...`
-
-
-## building
-
-Use the gradle wrapper script to download gradle and build the libraries
-```shell
-$ ./gradlew
-```
-
-The built library can be found at `server/build/libs/server-<VERSION>-all.jar`
