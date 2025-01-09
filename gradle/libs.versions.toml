@@ -8,6 +8,7 @@ mockk-version = "1.13.14"
 kotest-ktor-version = "2.0.0"
 kotest-runner-junit5-version = "5.9.1"
 kvision-version = "8.1.0"
+taskinfo-version = "2.2.0"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor-version" }
@@ -45,3 +46,4 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin-version" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
 kvision = { id = "io.kvision", version.ref = "kvision-version" }
+taskinfo = { id = "org.barfuin.gradle.taskinfo", version.ref = "taskinfo-version" }

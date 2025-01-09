@@ -6,7 +6,8 @@ tasks {
 }
 
 defaultTasks(
-    ":server:clean", ":server:build"
+    // ":server:clean", ":server:jar"
+    ":server:jar"
 )
 
 allprojects {

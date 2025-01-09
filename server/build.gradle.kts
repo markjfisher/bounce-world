@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     // This gives a "java not compatible with multiplatform" warning, but the web app doesn't work without it
     alias(libs.plugins.kvision)
+    alias(libs.plugins.taskinfo)
 }
 
 group = "bounce.world"
@@ -16,7 +17,6 @@ version = "2.0.0"
 //    val isDevelopment: Boolean = project.ext.has("development")
 //    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 //}
-
 
 kotlin {
     jvmToolchain(17)
@@ -41,7 +41,7 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                implementation(libs.kvision.server.ktor)
+                api(libs.kvision.server.ktor)
             }
         }
         jvmMain {
