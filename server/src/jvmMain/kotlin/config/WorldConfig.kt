@@ -1,6 +1,6 @@
 package config
 
-import io.ktor.server.config.*
+import io.ktor.server.config.ApplicationConfig
 
 class WorldConfig(config: ApplicationConfig) {
     var width = config.property("world.width").getString().toInt()

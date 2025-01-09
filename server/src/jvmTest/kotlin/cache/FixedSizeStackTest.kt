@@ -1,9 +1,9 @@
 package cache
 
-import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.shouldBe
 import domain.AppState
 import domain.Body
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
 import org.joml.Vector2f
 
 class FixedSizeStackTest : StringSpec({
