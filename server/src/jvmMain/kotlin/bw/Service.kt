@@ -15,11 +15,14 @@ import kotlinx.coroutines.withTimeoutOrNull
 import logger
 import java.util.concurrent.ConcurrentHashMap
 
+@Suppress("ACTUAL_WITHOUT_EXPECT")
 actual class BouncyService : IBouncyService {
     @Inject
     lateinit var call: ApplicationCall
 
-    override suspend fun getWorldData() = call.application.attributes[WorldAttributeKey].toWorldShared()
+    override suspend fun getWorldData(): WorldShared {
+        return call.application.attributes[WorldAttributeKey].toWorldShared()
+    }
 
     override suspend fun getClients(): List<GameClientShared> {
         TODO("Not yet implemented")
@@ -34,6 +37,7 @@ object Model {
     val clients: ConcurrentHashMap.KeySetView<SendChannel<WorldShared>, Boolean> = ConcurrentHashMap.newKeySet()
 }
 
+@Suppress("ACTUAL_WITHOUT_EXPECT")
 actual class BouncyWsService : IBouncyWsService, WorldUpdateListener {
     @Inject
     lateinit var wsSession: WebSocketServerSession
@@ -59,7 +63,7 @@ actual class BouncyWsService : IBouncyWsService, WorldUpdateListener {
             while (!output.isClosedForSend && !input.isClosedForReceive) {
                 // small timeout on receive so we don't hang waiting for inputs (at the moment there are non from web app)
                 val signal = withTimeoutOrNull(100) {
-                    input.receiveOrNull()
+                    input.receiveCatching().getOrNull()
                 }
 
                 if (signal != null) {
@@ -76,11 +80,11 @@ actual class BouncyWsService : IBouncyWsService, WorldUpdateListener {
         }
     }
 
-    private suspend fun ReceiveChannel<Int>.receiveOrNull(): Int? = try {
-        receive()
-    } catch (e: ClosedReceiveChannelException) {
-        null
-    }
+//    private suspend fun ReceiveChannel<Int>.receiveOrNull(): Int? = try {
+//        receive()
+//    } catch (e: ClosedReceiveChannelException) {
+//        null
+//    }
 
     @OptIn(DelicateCoroutinesApi::class)
     override suspend fun update(state: WorldShared) {
