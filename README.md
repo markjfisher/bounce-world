@@ -44,15 +44,15 @@ $ java -jar path/to/server-2.0.0.jar
 * jar - Packages a "fat" jar with all backend sources and dependencies while also embedding frontend resources into `build/libs/*.jar`
 
 
-## TODO: fix the docs for setting properties values for how ktor does it
+## Environment variables to control the server
 
 Here are the useful values with their defaults.
 
-- `WORLD_HEARTBEAT_TIMEOUT_MILLIS=60000`
+- `WORLD_HEARTBEAT_TIMEOUT_MILLIS=40000`
 This is the timeout before a client that hasn't asked for any data is removed from the server, and their
 slot is freed so the next connection will take that same slot.
 
-- `WORLD_INITIAL_SPEED=11`
+- `WORLD_INITIAL_SPEED=5.5`
 This is the initial magnitude of velocity that bodies start with in the world when they are spawned.
 
 - `WORLD_UPDATES_PER_SECOND=10`
@@ -71,12 +71,30 @@ Changes simulator to use a wrapped world rather than bouncing off the edges of t
 will wrap up and down, left and right instead of bouncing within the boundary. With wrapping it's like
 there are no walls around the edges to keep the bodies in.
 
-- `MICRONAUT_SERVER_HOST=0.0.0.0`
+- `WORLD_WIDTH=40`, `WORLD_HEIGHT=22`
+
+Shouldn't really be changed, but can be. The width/height per window when adding clients to world. If you change this, then
+the bodies will not render correctly on the client, as positions may get skewed.
+
+- `HOST=0.0.0.0`
 
 By default, the server will listen on all bindings on the local network adapter. Change this to a particular IP
 address if you have several bindings and only want to listen on one of them, e.g. 127.0.0.1 for only on
 the local machine with no one outside being able to connect. This is useful for connecting emulators only on
 the local machine.
+
+- `PORT=8080`
+
+Change the REST port listening on.
+
+- `TCP_HOST=0.0.0.0`
+
+Change the interface the TCP server listens on. As of BW2, it is much quicker for the client to use the TCP endpoint rather than REST, as the client
+will keep a persistent connection open and not have the open/close additional times for HTTP.
+
+- `TCP_PORT=9002`
+
+Change the port the TCP server listens on.
 
 ## CLI interaction
 

@@ -78,7 +78,7 @@ fun main() = runBlocking {
         kvisionModule()
     }).start(wait = true)
 
-    // required by runBlocking<Unit>, we have to exit with no value, but the start function above returns a value
+    // required by runBlocking<Unit>, we have to exit with no value, but the start function above returns one
     Unit
 }
 
@@ -104,7 +104,7 @@ fun Application.shapesModule() {
 }
 
 fun Application.kvisionModule() {
-    logger.info("Initialising kvision")
+    logger.info("Initialising kvision services for web client")
     install(Compression)
     install(WebSockets)
     routing {

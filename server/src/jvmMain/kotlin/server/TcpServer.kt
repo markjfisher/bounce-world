@@ -36,7 +36,7 @@ class TcpServer(
     private val scope: CoroutineScope,
 ) {
     fun start() {
-        logger.info("Starting TCP server")
+        logger.info("Starting TCP server on interface: $host, port: $port")
         scope.launch {
             val serverSocket = aSocket(SelectorManager(this.coroutineContext)).tcp().bind(host, port)
             while (true) {
