@@ -3,6 +3,7 @@ package server
 import command.ClientCommandProcessor
 import command.ShapesCommandProcessor
 import command.WorldCommandProcessor
+import extensions.serializeObjectToByteArray
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.Socket
 import io.ktor.network.sockets.aSocket
@@ -15,17 +16,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import logger
-
-inline fun <reified T> serializeObjectToByteArray(obj: T): ByteArray {
-    // Explicitly get the serializer for the type T and use it to serialize obj
-    val jsonString = Json.encodeToString(obj)
-
-    // Convert the JSON string to a ByteArray
-    return jsonString.toByteArray(Charsets.UTF_8)
-}
+import java.io.IOException
 
 class TcpServer(
     private val wcp: WorldCommandProcessor,
@@ -79,13 +71,18 @@ class TcpServer(
                     isKeepActive = commandString.startsWith("x-")
                     val response = process(commandString.substringAfter("x-").trim())
                     output.writeByteArray(response)
+                    // logger.info("sending client data len: ${response.size} (${String.format("%02x", response.size)}):\n${response.toCustomHexDump()}")
+
                     if (commandString.startsWith("close")) {
                         isKeepActive = false
                     }
                 }
             }
         } catch (e: Throwable) {
-            logger.error("Error while handling client", e)
+            when (e) {
+                is IOException -> logger.error("IO error from client: ${e.message}")
+                else -> logger.error("Error while handling client", e)
+            }
         } finally {
             withContext(NonCancellable) {
                 socket.close()
@@ -98,6 +95,7 @@ class TcpServer(
 
         // rp == remove prefix
         fun rp(command: String): String = command.replaceFirst(commandRegex, "")
+        // logger.info("Processing command: >$command<\n${command.toByteArray(Charsets.UTF_8).toCustomHexDump()}")
 
         return when {
             // WORLD commands
@@ -108,8 +106,8 @@ class TcpServer(
             command == "inc" -> wcp.increaseSpeed()
             command == "dec" -> wcp.decreaseSpeed()
             command == "freeze" -> wcp.toggleFreeze()
-            command == "msg" -> wcp.getLatestMessage().toByteArray(Charsets.UTF_8)
-            command == "who" -> wcp.who().toByteArray(Charsets.UTF_8)
+            command == "msg" -> min1(wcp.getLatestMessage())
+            command == "who" -> min1(wcp.who())
             command.startsWith("close") -> wcp.close(rp(command))
             command.startsWith("new-body ") -> doNewBody(rp(command))
             command.startsWith("add-body ") -> doAddBody(rp(command))
@@ -130,8 +128,20 @@ class TcpServer(
         }
     }
 
+    private fun min1(s: String): ByteArray {
+        return if (s.isNotEmpty()) {
+            s.toByteArray(Charsets.UTF_8)
+        } else {
+            byteArrayOf(0)
+        }
+    }
+
     private fun doGetWorldData(arg: String): ByteArray {
-        val clientId = arg.toIntOrNull() ?: return "Invalid ClientID: $arg".toByteArray()
+        val clientId = arg.toIntOrNull()
+        if (clientId == null) {
+            logger.error("No client id found for >$arg<")
+            return byteArrayOf(0)
+        }
         return wcp.getWorldData(clientId)
     }
 
@@ -142,24 +152,36 @@ class TcpServer(
         return if (shapeId != null && clientId != null) {
             wcp.addBody(shapeId, clientId)
         } else {
-            "Invalid size parameter".toByteArray()
+            logger.error("Invalid size parameter: >$arg<")
+            byteArrayOf(0)
         }
     }
 
     private fun doAddBody(arg: String): ByteArray {
-        val size = arg.toIntOrNull() ?: return "Invalid size parameter: $arg".toByteArray()
+        val size = arg.toIntOrNull()// ?: return "Invalid size parameter: $arg".toByteArray()
+        if (size == null) {
+            logger.error("Invalid size parameter: >$arg<")
+            return byteArrayOf(0)
+        }
         return wcp.addRandomBodyWithSize(size)
     }
 
     private fun doClientCommand(arg: String): ByteArray {
         // cmd-put clientId,cmd  # the clientId can be "ALL" for all clients or just their id value
         val (clientId, cmd) = arg.split(',', limit = 2)
-        if (clientId.isEmpty() || cmd.isEmpty()) return "Invalid Command: $arg, should be in format 'cmd-put clientId,cmd'".toByteArray()
+        if (clientId.isEmpty() || cmd.isEmpty()) {
+            logger.error("Invalid Command: $arg, should be in format 'cmd-put clientId,cmd'")
+            return byteArrayOf(0)
+        }
         return wcp.clientCommand(clientId, cmd)
     }
 
     private fun doFetchCommands(arg: String): ByteArray {
-        arg.toIntOrNull() ?: return "Invalid ClientID: $arg".toByteArray()
+        val clientId = arg.toIntOrNull()
+        if (clientId == null) {
+            logger.error("Invalid clientID: >$arg<")
+            return byteArrayOf(0)
+        }
         return wcp.fetchCommands(arg)
     }
 
@@ -170,7 +192,8 @@ class TcpServer(
             val (clientId, time, message) = parts
             wcp.broadcastCommand(clientId, time, message)
         } else {
-            "Invalid parameters $arg".toByteArray()
+            logger.error("Broadcast Command: invalid parameters $arg")
+            return byteArrayOf(0)
         }
     }
 
@@ -184,13 +207,15 @@ class TcpServer(
             val screenHeight = parts[3].toIntOrNull()
 
             if (version == null || screenWidth == null || screenHeight == null || name.isEmpty()) {
-                "Invalid Parameters".toByteArray()
+                logger.error("Invalid Parameters given: >$arg<")
+                byteArrayOf(0)
             } else {
                 val gameClient = ccp.addClient(name, version, screenWidth, screenHeight)
                 byteArrayOf(gameClient.id.toByte())
             }
         } else {
-            "Incorrect data format, should have: 'name,version,width,height'".toByteArray()
+            logger.error("Incorrect data format, should have: 'name,version,width,height'")
+            byteArrayOf(0)
         }
     }
 }

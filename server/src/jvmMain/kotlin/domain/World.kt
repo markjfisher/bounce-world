@@ -18,6 +18,7 @@ import logger
 import org.joml.Vector2f
 import simulator.WorldSimulator
 import kotlin.math.cos
+import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
@@ -88,7 +89,7 @@ open class World(
     private var isStarted = false
     var isFrozen = false
     private var stopped = false
-    private var nextClientId = 0
+    private var nextClientId = 1        // reserve 0 for an error response
     private val stepTime = 1f / config.updatesPerSecond
     var isWrapping = config.enableWrapping
 
@@ -285,7 +286,8 @@ open class World(
            For the second phase, ie. turning off, we will need to pause in a background thread for the required "time", and send the second part of the message
          */
 
-        currentBroadcastMessage = message
+        // max message size is 119 chars (fits in 120 with padded 0 char for C strings on client)
+        currentBroadcastMessage = message.substring(0, min(119, message.length))
         addCommandToAllClients(ClientCommand.ENABLE_BROADCAST)
 
         heartbeatScope.launch {
@@ -301,7 +303,7 @@ open class World(
     }
 
     fun broadcastToClient(clientId: Int, message: String, delaySeconds: Int) {
-        currentBroadcastMessage = message
+        currentBroadcastMessage = message.substring(0, min(119, message.length))
         addCommandToClient(clientId, ClientCommand.ENABLE_BROADCAST)
 
         heartbeatScope.launch {
@@ -369,7 +371,7 @@ open class World(
     }
 
     fun getCommands(clientId: Int): ByteArray {
-        val commands = clientCommands[clientId] ?: return byteArrayOf()
+        val commands = clientCommands[clientId] ?: return byteArrayOf(0)
         clientCommands.remove(clientId)
         return commands.map { it.event.toByte() }.toByteArray()
     }

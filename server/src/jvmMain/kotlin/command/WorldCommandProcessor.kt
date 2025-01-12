@@ -107,32 +107,32 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
     }
 
     fun addBody(shapeId: Int, clientId: Int): ByteArray {
-        val client = world.getClient(clientId) ?: return byteArrayOf(1)
-        world.shapes.firstOrNull { it.id == shapeId } ?: return byteArrayOf(1)
+        val client = world.getClient(clientId) ?: return byteArrayOf(0)
+        world.shapes.firstOrNull { it.id == shapeId } ?: return byteArrayOf(0)
 
         world.addBody(shapeId, client.position)
         return byteArrayOf(1)
     }
 
     fun clientCommand(clientId: String, cmd: String): ByteArray {
-        val clientCommand = ClientCommand.from(cmd) ?: return byteArrayOf()
+        val clientCommand = ClientCommand.from(cmd) ?: return byteArrayOf(0)
 
         if (clientId == "ALL") {
             world.addCommandToAllClients(clientCommand)
         } else {
-            val id = clientId.toIntOrNull() ?: return byteArrayOf()
-            val client = world.getClient(id) ?: return byteArrayOf()
+            val id = clientId.toIntOrNull() ?: return byteArrayOf(0)
+            val client = world.getClient(id) ?: return byteArrayOf(0)
             world.addCommandToClient(client.id, clientCommand)
         }
         return byteArrayOf(1)
     }
 
     fun broadcastCommand(clientId: String, time: String, message: String): ByteArray {
-        val t = time.toIntOrNull() ?: return byteArrayOf()
+        val t = time.toIntOrNull() ?: return byteArrayOf(0)
         if (clientId == "ALL") {
             world.broadcastToAllClients(message, t)
         } else {
-            val id = clientId.toIntOrNull() ?: return byteArrayOf()
+            val id = clientId.toIntOrNull() ?: return byteArrayOf(0)
             world.broadcastToClient(id, message, t)
         }
 
@@ -141,8 +141,8 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
 
      // This fetches the cmd code bytes the client has been instructed to perform
      fun fetchCommands(clientId: String): ByteArray {
-         val id = clientId.toIntOrNull() ?: return byteArrayOf()
-         val client = world.getClient(id) ?: return byteArrayOf()
+         val id = clientId.toIntOrNull() ?: return byteArrayOf(0)
+         val client = world.getClient(id) ?: return byteArrayOf(0)
          val commandData = world.getCommands(client.id)
          return commandData
      }
@@ -166,7 +166,7 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
         if (id != null) {
             world.removeClient(id)
         }
-        return byteArrayOf()
+        return byteArrayOf(1)
     }
 
     private fun asCSV(clientId: Int): String {

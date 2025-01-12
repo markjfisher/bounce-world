@@ -29,6 +29,7 @@ fun Application.worldRouting() {
                 val response  = commandProcessor.getWorldData(clientId)
                 call.respondBytes(response, contentType = ContentType.Application.OctetStream)
             } else {
+                logger.error("No valid client id found: ${call.parameters["clientId"]}")
                 call.respond(HttpStatusCode.BadRequest, "Invalid clientId parameter")
             }
         }
@@ -50,6 +51,7 @@ fun Application.worldRouting() {
                 val response = commandProcessor.addRandomBodyWithSize(size)
                 call.respondBytes(response, contentType = ContentType.Application.OctetStream)
             } else {
+                logger.error("No valid size found: ${call.parameters["size"]}")
                 call.respond(HttpStatusCode.BadRequest, "Invalid size parameter")
             }
         }
@@ -64,6 +66,7 @@ fun Application.worldRouting() {
                 val response = commandProcessor.addBody(shapeId, clientId)
                 call.respondBytes(response, contentType = ContentType.Application.OctetStream)
             } else {
+                logger.error("No valid size found: ${call.parameters["size"]}")
                 call.respond(HttpStatusCode.BadRequest, "Invalid size parameter")
             }
         }
@@ -95,6 +98,7 @@ fun Application.worldRouting() {
                 val response = commandProcessor.clientCommand(clientId, cmd)
                 call.respondBytes(response, contentType = ContentType.Application.OctetStream)
             } else {
+                logger.error("No valid parameters found: ${call.parameters}")
                 call.respond(HttpStatusCode.BadRequest, "Invalid parameters")
             }
         }
@@ -105,6 +109,7 @@ fun Application.worldRouting() {
                 val response = commandProcessor.fetchCommands(clientId)
                 call.respondBytes(response, contentType = ContentType.Application.OctetStream)
             } else {
+                logger.error("No valid parameters found: ${call.parameters}")
                 call.respond(HttpStatusCode.BadRequest, "Invalid parameters")
             }
         }
@@ -117,6 +122,7 @@ fun Application.worldRouting() {
                 val response = commandProcessor.broadcastCommand(clientId, time, message)
                 call.respondBytes(response, contentType = ContentType.Application.OctetStream)
             } else {
+                logger.error("No valid parameters found: ${call.parameters}")
                 call.respond(HttpStatusCode.BadRequest, "Invalid parameters")
             }
         }
