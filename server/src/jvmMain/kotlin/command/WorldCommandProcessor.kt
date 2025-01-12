@@ -161,7 +161,7 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
     }
 
     fun close(clientId: String): ByteArray {
-        logger.info("closing client $clientId")
+        // logger.info("closing client $clientId")
         val id = clientId.toIntOrNull()
         if (id != null) {
             world.removeClient(id)
