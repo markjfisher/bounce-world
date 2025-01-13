@@ -1,3 +1,9 @@
+plugins {
+    alias(libs.plugins.kotlin.jvm) apply(false)
+    alias(libs.plugins.kotlin.multiplatform) apply(false)
+    alias(libs.plugins.kotlin.serialization) apply(false)
+}
+
 tasks {
     getByName<Wrapper>("wrapper") {
         gradleVersion = "8.12"
@@ -6,7 +12,8 @@ tasks {
 }
 
 defaultTasks(
-    ":server:clean", ":server:jar"
+    ":core:clean", ":core:build",
+    ":server:clean", ":server:jar",
     // ":server:jar"
 )
 

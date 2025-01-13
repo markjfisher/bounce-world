@@ -43,7 +43,7 @@ fun main() = runBlocking {
     val env = applicationEnvironment {
         config = ApplicationConfig("application.conf")
     }
-    val worldConfig = WorldConfig(env.config)
+    val worldConfig = createWorldConfig(env.config)
     val world = WorldFactory.create(worldConfig)
 
     val worldCommandProcessor = WorldCommandProcessor(world, worldConfig)
@@ -112,4 +112,19 @@ fun Application.kvisionModule() {
         applyRoutes(getServiceManager<IBouncyWsService>())
     }
     kvisionInit()
+}
+
+fun createWorldConfig(config: ApplicationConfig): WorldConfig {
+    return WorldConfig(
+        width = config.property("world.width").getString().toInt(),
+        height = config.property("world.height").getString().toInt(),
+        updatesPerSecond = config.property("world.updatesPerSecond").getString().toInt(),
+        shouldAutoStart = config.property("world.shouldAutoStart").getString().toBoolean(),
+        initialSpeed = config.property("world.initialSpeed").getString().toFloat(),
+        heartbeatTimeoutMillis = config.property("world.heartbeatTimeoutMillis").getString().toLong(),
+        locationPattern = config.property("world.locationPattern").getString(),
+        enableWrapping = config.property("world.enableWrapping").getString().toBoolean(),
+        tcpHost = config.property("world.tcp.host").getString(),
+        tcpPort = config.property("world.tcp.port").getString().toInt(),
+    )
 }

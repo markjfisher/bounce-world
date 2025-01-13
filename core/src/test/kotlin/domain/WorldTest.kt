@@ -4,7 +4,6 @@ import config.WorldConfig
 import geometry.Point
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import io.ktor.server.config.MapApplicationConfig
 import io.mockk.mockk
 import simulator.WorldSimulator
 
@@ -12,20 +11,18 @@ class WorldTest : StringSpec({
     val simulator: WorldSimulator = mockk(relaxed = true)
     val boundSimulator: WorldSimulator = mockk(relaxed = true)
 
-    val defaultWorldApplicationConfig = MapApplicationConfig(
-        "world.width" to "200",
-        "world.height" to "200",
-        "world.updatesPerSecond" to "5",
-        "world.shouldAutoStart" to "false",
-        "world.initialSpeed" to "1.5",
-        "world.heartbeatTimeoutMillis" to "10000",
-        "world.locationPattern" to "grid",
-        "world.enableWrapping" to "true",
-        "world.tcp.host" to "0.0.0.0",
-        "world.tcp.port" to "9002"
+    val config = WorldConfig(
+        200,
+        200,
+        5,
+        false,
+        1.5f,
+        10000,
+        "grid",
+        true,
+        "0.0.0.0",
+        9002,
     )
-
-    val config = WorldConfig(defaultWorldApplicationConfig)
 
     "can add clients" {
         val world = World(config, simulator, boundSimulator)

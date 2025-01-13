@@ -31,6 +31,13 @@ kotlin {
     }
     jvm {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
+        compilerOptions {
+            // THIS IS NOT GETTING THROUGH TO THE KTOR INSTANCE - todo: fix it
+            // use -PisDevelopment when building with gradle for this
+            val isDevelopment: Boolean = project.hasProperty("isDevelopment")
+            listOf("-Dio.ktor.development=$isDevelopment")
+        }
+        @OptIn(ExperimentalKotlinGradlePluginApi::class)
         mainRun {
             mainClass.set("bw.AppKt")
         }
@@ -41,19 +48,21 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                // implementation(project(":core"))
                 api(libs.kvision.server.ktor)
             }
         }
         jvmMain {
             dependencies {
+                implementation(project(":core"))
                 implementation(libs.ktor.server.core)
                 implementation(libs.ktor.server.netty)
                 implementation(libs.ktor.content.negotiation)
                 implementation(libs.ktor.serialization.json)
                 implementation(libs.ktor.server.compression)
-                implementation(libs.logback.classic)
                 // This stops the hocon loader from being put in the the jar file at META-INF/services/io.ktor.server.config.ConfigLoader
                 // implementation(libs.ktor.server.config.yaml)
+                implementation(libs.logback.classic)
                 implementation(libs.joml.core)
             }
         }

@@ -2,8 +2,8 @@ package bw
 
 import bw.Model.clients
 import com.google.inject.Inject
+import domain.World
 import domain.WorldUpdateListener
-import domain.toWorldShared
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.websocket.WebSocketServerSession
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -21,7 +21,7 @@ actual class BouncyService : IBouncyService {
     lateinit var call: ApplicationCall
 
     override suspend fun getWorldData(): WorldShared {
-        return call.application.attributes[WorldAttributeKey].toWorldShared()
+        return WorldShared.from(call.application.attributes[WorldAttributeKey])
     }
 
     override suspend fun getClients(): List<GameClientShared> {
@@ -55,7 +55,7 @@ actual class BouncyWsService : IBouncyWsService, WorldUpdateListener {
         clients.retainAll { !it.isClosedForSend }
         clients.add(output)
         // immediately populate the new client
-        output.send(world.toWorldShared())
+        output.send(WorldShared.from(world))
 
         // have to keep the channel alive by listening to input messages.
         try {
@@ -87,7 +87,8 @@ actual class BouncyWsService : IBouncyWsService, WorldUpdateListener {
 //    }
 
     @OptIn(DelicateCoroutinesApi::class)
-    override suspend fun update(state: WorldShared) {
+    override suspend fun update(world: World) {
+        val state = WorldShared.from(world)
         // check for any clients that were closed first, so we don't send things to non-open connections
         clients.retainAll { !it.isClosedForSend }
         clients.forEach { client ->

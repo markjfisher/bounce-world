@@ -1,8 +1,8 @@
 package domain
 
-import bw.BodyShared
-import bw.GameClientShared
-import bw.WorldShared
+//import bw.BodyShared
+//import bw.GameClientShared
+//import bw.WorldShared
 import config.WorldConfig
 import data.ShapeCreator
 import geometry.GridPatternGenerator
@@ -25,7 +25,7 @@ import kotlin.random.Random
 import kotlin.time.TimeSource
 
 interface WorldUpdateListener {
-    suspend fun update(state: WorldShared)
+    suspend fun update(world: World)
 }
 
 open class World(
@@ -46,9 +46,8 @@ open class World(
 
     private fun notifyListeners() {
         updateListeners.forEach { listener ->
-            val worldShared = toWorldShared()
             heartbeatScope.launch {
-                listener.update(worldShared)
+                listener.update(this@World)
             }
         }
     }
@@ -463,32 +462,32 @@ open class World(
     }
 }
 
-fun World.toWorldShared() = WorldShared(
-    width = getWorldWidth(),
-    height = getWorldHeight(),
-    upTime = currentUptime,
-    clients = clients().associate { client ->
-        client.id to GameClientShared(
-            id = client.id,
-            name = client.name,
-            version = client.version,
-            position = Pair(client.position.x, client.position.y),
-            screenSize = Pair(client.screenSize.width, client.screenSize.height)
-        )
-    },
-    isFrozen = isFrozen,
-    isWrapping = isWrapping,
-    bodies = currentSimulator.bodies.map { body ->
-        BodyShared(
-            id = body.id,
-            position = Pair(body.position.x, body.position.y),
-            velocity = Pair(body.velocity.x, body.velocity.y),
-            mass = body.mass,
-            radius = body.radius,
-            shapeId = body.shapeId
-        )
-    }
-)
+//fun World.toWorldShared() = WorldShared(
+//    width = getWorldWidth(),
+//    height = getWorldHeight(),
+//    upTime = currentUptime,
+//    clients = clients().associate { client ->
+//        client.id to GameClientShared(
+//            id = client.id,
+//            name = client.name,
+//            version = client.version,
+//            position = Pair(client.position.x, client.position.y),
+//            screenSize = Pair(client.screenSize.width, client.screenSize.height)
+//        )
+//    },
+//    isFrozen = isFrozen,
+//    isWrapping = isWrapping,
+//    bodies = currentSimulator.bodies.map { body ->
+//        BodyShared(
+//            id = body.id,
+//            position = Pair(body.position.x, body.position.y),
+//            velocity = Pair(body.velocity.x, body.velocity.y),
+//            mass = body.mass,
+//            radius = body.radius,
+//            shapeId = body.shapeId
+//        )
+//    }
+//)
 
 fun formatUptime(startTime: TimeSource.Monotonic.ValueTimeMark, endTime: TimeSource.Monotonic.ValueTimeMark): String {
     val elapsed = endTime - startTime

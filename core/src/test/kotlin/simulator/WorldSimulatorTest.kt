@@ -7,7 +7,6 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.floats.plusOrMinus
 import io.kotest.matchers.shouldBe
-import io.ktor.server.config.MapApplicationConfig
 import org.joml.Vector2f
 
 class WorldSimulatorTest : StringSpec({
@@ -17,20 +16,18 @@ class WorldSimulatorTest : StringSpec({
         Shape(2, 0.5f, 2, emptyList()),
     ).associateBy { it.id }
 
-    val defaultWorldApplicationConfig = MapApplicationConfig(
-        "world.width" to "20",
-        "world.height" to "20",
-        "world.updatesPerSecond" to "1",
-        "world.shouldAutoStart" to "false",
-        "world.initialSpeed" to "1.5",
-        "world.heartbeatTimeoutMillis" to "10000",
-        "world.locationPattern" to "grid",
-        "world.enableWrapping" to "true",
-        "world.tcp.host" to "0.0.0.0",
-        "world.tcp.port" to "9002"
+    val defaultConfig = WorldConfig(
+        width = 200,
+        height = 200,
+        updatesPerSecond = 1,
+        shouldAutoStart = false,
+        initialSpeed = 1.5f,
+        heartbeatTimeoutMillis = 10000,
+        locationPattern = "grid",
+        enableWrapping = true,
+        tcpHost = "0.0.0.0",
+        tcpPort = 9002,
     )
-
-    val defaultConfig = WorldConfig(defaultWorldApplicationConfig)
 
     "bodies on a collision course should collide and change velocities" {
         val bodyA = Body.from(position = Vector2f(2f, 2f), velocity = Vector2f(0.5f, 0f), shape = shapes[0]!!)
@@ -163,7 +160,7 @@ class WorldSimulatorTest : StringSpec({
     }
 
     "wrapping body that crosses to extreme right of world" {
-        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 10; it.height = 2 }
+        val config = defaultConfig.also { it.width = 10; it.height = 2 }
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(5.6f, 0f), shape = shapes[0]!!)
         val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
@@ -173,7 +170,7 @@ class WorldSimulatorTest : StringSpec({
     }
 
     "wrapping body that crosses to extreme left of world" {
-        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 10; it.height = 2 }
+        val config = defaultConfig.also { it.width = 10; it.height = 2 }
         val bodyA = Body.from(position = Vector2f(3f, 0f), velocity = Vector2f(-5f, 0f), shape = shapes[0]!!)
         val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
@@ -181,7 +178,7 @@ class WorldSimulatorTest : StringSpec({
     }
 
     "wrapping body that crosses to extreme bottom of world" {
-        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 2; it.height = 10 }
+        val config = defaultConfig.also { it.width = 2; it.height = 10 }
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 5.6f), shape = shapes[0]!!)
         val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
@@ -191,7 +188,7 @@ class WorldSimulatorTest : StringSpec({
     }
 
     "wrapping body that crosses to extreme top of world" {
-        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 2; it.height = 10 }
+        val config = defaultConfig.also { it.width = 2; it.height = 10 }
         val bodyA = Body.from(position = Vector2f(0f, 3f), velocity = Vector2f(0f, -5f), shape = shapes[0]!!)
         val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)) }
         worldSimulator.step()
@@ -199,7 +196,7 @@ class WorldSimulatorTest : StringSpec({
     }
 
     "cannot add to grid if it does not have enough space" {
-        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 5; it.height = 5 }
+        val config = defaultConfig.also { it.width = 5; it.height = 5 }
         val shapesForSpaceTest = mutableMapOf(
             0 to Shape(0, 1.0f, 5, emptyList()),
             1 to Shape(1, 1.0f, 2, emptyList()),
@@ -224,7 +221,7 @@ class WorldSimulatorTest : StringSpec({
     }
 
     "can detect collision at boundary" {
-        val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 40; it.height = 20 }
+        val config = defaultConfig.also { it.width = 40; it.height = 20 }
         val shapesForBoundaryTest = mutableMapOf(
             0 to Shape(2, 1.0f, 2, emptyList())
         )
