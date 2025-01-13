@@ -48,7 +48,6 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                // implementation(project(":core"))
                 api(libs.kvision.server.ktor)
             }
         }
