@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.taskinfo)
 }
 
-group = "bounce.world"
+group = "space-apps.bwserver"
 version = "2.0.0"
 
 //application {

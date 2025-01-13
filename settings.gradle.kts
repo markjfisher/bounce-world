@@ -2,6 +2,6 @@ rootProject.name = "bounce-world"
 
 include(
     "core",
-    "server",
+    "bwserver",
     // "visualizations",
 )

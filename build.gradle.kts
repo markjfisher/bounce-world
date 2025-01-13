@@ -13,8 +13,7 @@ tasks {
 
 defaultTasks(
     ":core:clean", ":core:build",
-    ":server:clean", ":server:jar",
-    // ":server:jar"
+    ":bwserver:clean", ":bwserver:jar",
 )
 
 allprojects {
