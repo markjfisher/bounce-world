@@ -2,6 +2,7 @@ package visualization
 
 import config.WorldConfig
 import domain.World
+import geometry.Point
 import javafx.scene.canvas.Canvas
 import javafx.scene.paint.Color
 import kotlinx.coroutines.CoroutineScope
@@ -9,7 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import simulator.BoundedWorldSimulator
-import simulator.WorldSimulator
+import simulator.WrappingWorldSimulator
 import tornadofx.App
 import tornadofx.View
 import tornadofx.borderpane
@@ -21,21 +22,40 @@ import kotlin.random.Random
 class WorldSimulatorApp: App(WorldView::class)
 
 class WorldView : View("World Simulator") {
-    private val worldConfig = WorldConfig().apply { shouldAutoStart = false; enableWrapping = false; width = 1200; height = 600; initialSpeed = 8f }
-    private val worldSimulator = WorldSimulator(worldConfig)
+    private val worldConfig = WorldConfig(
+        width = 80,
+        height = 80,
+        updatesPerSecond = 160,
+        shouldAutoStart = false,
+        initialSpeed = 12f,
+        heartbeatTimeoutMillis = 40000,
+        locationPattern = "grid",
+        enableWrapping = false,
+        tcpHost = "0.0.0.0",
+        tcpPort = 9002,
+    )
+    private val worldSimulator = WrappingWorldSimulator(worldConfig)
     private val boundedWorldSimulator = BoundedWorldSimulator(worldConfig)
     private val world = World(worldConfig, worldSimulator, boundedWorldSimulator)
-    private val f = 2400.0 / worldConfig.width
-    private val canvas = Canvas(2400.0, 1200.0)
+    private val canvasWidth = 800.0
+    private val canvasHeight = 800.0
+    private val f = canvasWidth / worldConfig.width
+    private val canvas = Canvas(canvasWidth, canvasHeight)
     private val colours = mutableMapOf<Int, Color>()
 
     private val simulationScope = CoroutineScope(Dispatchers.Default)
 
     init {
-//        val newBodies = world.createBodies(0,0, 0, List(50) { 5 } + List(300) { 4 } + List(500) { 3 } + List(600) { 1 })
-        val newBodies = world.createBodies(0,0, 0, List(50) { 5 } + List(300) { 4 } + List(500) { 3 } + List(600) { 1 })
-//        val newBodies = world.createBodies(0,0, 0, List(2) { 5 })
-        world.currentSimulator.addBodies(newBodies)
+//        val sizes = List(50) { 5 } + List(300) { 4 } + List(500) { 3 } + List(600) { 1 }
+        val sizes = List(2) { 5 } + List(3) { 4 } + List(8) { 3 } + List(15) { 2 } + List(20) { 1 }
+        val grouped = world.shapes.groupBy { it.sideLength }
+
+        sizes.forEach { size ->
+            val shape = grouped[size]!!.random()
+            val body = world.createBody(shape.id, Point(Random.nextInt(world.getWorldWidth() - 20) + shape.sideLength + 10, Random.nextInt(world.getWorldHeight() - 20) + shape.sideLength + 10))
+            world.currentSimulator.bodies.add(body)
+        }
+
         colours.putAll(world.currentSimulator.bodies.associate {
             it.id to Color.color(
                 Random.nextDouble(),
@@ -57,7 +77,7 @@ class WorldView : View("World Simulator") {
         with(gc) {
             clearRect(0.0, 0.0, canvas.width, canvas.height) // Clear the canvas
             world.currentSimulator.bodies.forEach { body ->
-                val radius = body.radius * 4f // scaled to world size
+                val radius = body.radius
                 val positions = calculateWrappedPositions(body.position.x.toDouble(), body.position.y.toDouble(), radius.toDouble(), world.currentSimulator.width.toDouble(), world.currentSimulator.height.toDouble())
 
                 // Draw the circle representing the body at potentially wrapped positions
@@ -105,7 +125,7 @@ class WorldView : View("World Simulator") {
     private fun updateWorld() {
         simulationScope.launch {
             while (true) {
-                delay(10)
+                delay(2)
                 world.currentSimulator.step()
 
                 runLater {

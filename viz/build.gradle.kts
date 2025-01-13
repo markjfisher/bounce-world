@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.ktor)
+    application
 }
 
 group = "space-apps.viz"
@@ -8,22 +8,16 @@ version = "1.0.0"
 
 application {
     mainClass.set("WorldSimulatorAppKt")
-
-    val isDevelopment: Boolean = project.ext.has("development")
-    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
 }
 
 dependencies {
-    implementation(libs.ktor.server.core)
-    implementation(libs.ktor.server.netty)
-    implementation(libs.ktor.content.negotiation)
-    implementation(libs.ktor.serialization.json)
-    implementation(libs.ktor.server.compression)
+    implementation(project(":core"))
+    implementation(libs.kotlinx.coroutines)
+    implementation(libs.kotlinx.serialization.json)
+
     implementation(libs.logback.classic)
     implementation(libs.joml.core)
     implementation(libs.tornadofx.core)
-
-    implementation(project(":server"))
 }
 
 //plugins {
