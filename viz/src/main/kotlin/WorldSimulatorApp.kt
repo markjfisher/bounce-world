@@ -48,11 +48,11 @@ class WorldView : View("World Simulator") {
     init {
 //        val sizes = List(50) { 5 } + List(300) { 4 } + List(500) { 3 } + List(600) { 1 }
         val sizes = List(2) { 5 } + List(3) { 4 } + List(8) { 3 } + List(15) { 2 } + List(20) { 1 }
-        val grouped = world.shapes.groupBy { it.sideLength }
+        val grouped = world.getShapes().groupBy { (it.radius * 2f).toInt() }
 
         sizes.forEach { size ->
             val shape = grouped[size]!!.random()
-            val body = world.createBody(shape.id, Point(Random.nextInt(world.getWorldWidth() - 20) + shape.sideLength + 10, Random.nextInt(world.getWorldHeight() - 20) + shape.sideLength + 10))
+            val body = world.createBody(shape.id, Point(Random.nextInt(world.getWorldWidth() - 20) + (shape.radius * 2f).toInt() + 10, Random.nextInt(world.getWorldHeight() - 20) + (shape.radius * 2f).toInt() + 10))
             world.currentSimulator.bodies.add(body)
         }
 

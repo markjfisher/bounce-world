@@ -108,7 +108,7 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
 
     fun addBody(shapeId: Int, clientId: Int): ByteArray {
         val client = world.getClient(clientId) ?: return byteArrayOf(0)
-        world.shapes.firstOrNull { it.id == shapeId } ?: return byteArrayOf(0)
+        world.getShapes().firstOrNull { it.id == shapeId } ?: return byteArrayOf(0)
 
         world.addBody(shapeId, client.position)
         return byteArrayOf(1)

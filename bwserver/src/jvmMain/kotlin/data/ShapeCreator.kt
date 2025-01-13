@@ -1,5 +1,6 @@
 package data
 
+import domain.BWShape
 import domain.Shape
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -63,7 +64,7 @@ object ShapeCreator {
     }
 
     private fun createShape(mass: Float, data: List<Int>): Shape {
-        return Shape(
+        return BWShape(
             id = nextShapeId++,
             mass = mass,
             sideLength = sqrt(data.size.toDouble()).roundToInt(),

@@ -9,11 +9,25 @@ import io.kotest.matchers.floats.plusOrMinus
 import io.kotest.matchers.shouldBe
 import org.joml.Vector2f
 
+data class BWShape(
+    override val id: Int,
+    override val mass: Float,
+    val sideLength: Int,
+    val data: List<Int>
+) : Shape {
+    override val radius: Float
+        get() = sideLength / 2f
+
+    override fun codedString(): String {
+        return data.map { it.toChar() }.joinToString("")
+    }
+}
+
 class WorldSimulatorTest : StringSpec({
     val shapes = mutableListOf(
-        Shape(0, 1f, 2, emptyList()),
-        Shape(1, 2f, 2, emptyList()),
-        Shape(2, 0.5f, 2, emptyList()),
+        BWShape(0, 1f, 2, emptyList()),
+        BWShape(1, 2f, 2, emptyList()),
+        BWShape(2, 0.5f, 2, emptyList()),
     ).associateBy { it.id }
 
     val defaultConfig = WorldConfig(
@@ -198,9 +212,9 @@ class WorldSimulatorTest : StringSpec({
     "cannot add to grid if it does not have enough space" {
         val config = defaultConfig.also { it.width = 5; it.height = 5 }
         val shapesForSpaceTest = mutableMapOf(
-            0 to Shape(0, 1.0f, 5, emptyList()),
-            1 to Shape(1, 1.0f, 2, emptyList()),
-            2 to Shape(2, 1.0f, 1, emptyList()),
+            0 to BWShape(0, 1.0f, 5, emptyList()),
+            1 to BWShape(1, 1.0f, 2, emptyList()),
+            2 to BWShape(2, 1.0f, 1, emptyList()),
         )
         val worldSimulator = WrappingWorldSimulator(config)
         // fill it with 1 body of width 5,5
@@ -223,7 +237,7 @@ class WorldSimulatorTest : StringSpec({
     "can detect collision at boundary" {
         val config = defaultConfig.also { it.width = 40; it.height = 20 }
         val shapesForBoundaryTest = mutableMapOf(
-            0 to Shape(2, 1.0f, 2, emptyList())
+            0 to BWShape(2, 1.0f, 2, emptyList())
         )
         val worldSimulator = WrappingWorldSimulator(config)
         val bodyA = Body.from(position = Vector2f(2f, 2.5f), velocity = Vector2f(1f, -1f), shape = shapesForBoundaryTest[0]!!)

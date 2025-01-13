@@ -26,7 +26,7 @@ data class Body(
                 position = position,
                 velocity = velocity,
                 mass = shape.mass,
-                radius = shape.sideLength / 2f,
+                radius = shape.radius,
                 shapeId = shape.id
             )
         }

@@ -1,10 +1,6 @@
 package domain
 
-//import bw.BodyShared
-//import bw.GameClientShared
-//import bw.WorldShared
 import config.WorldConfig
-import data.ShapeCreator
 import geometry.GridPatternGenerator
 import geometry.LocationGenerator
 import geometry.Point
@@ -80,7 +76,12 @@ open class World(
     private val occupiedScreens = mutableMapOf<Point, GameClient>()
 
     // the body shapes the clients will be told about
-    val shapes = ShapeCreator.createShapes()
+    private val shapes: MutableList<Shape> = mutableListOf() // ShapeCreator.createShapes()
+    fun setShapes(shapes: List<Shape>) {
+        this.shapes.clear()
+        this.shapes.addAll(shapes)
+    }
+    fun getShapes(): List<Shape> = shapes
 
     // the current client location pattern
     private var currentLocationPattern = config.locationPattern
@@ -226,8 +227,8 @@ open class World(
         // Create a position that's within a screen's boundaries, but will be inside the particular client's boundary that created it.
         // caters for the radius of the shape by reducing the possible x/y coordinates it starts at to be within a screen's size
         val pos = Vector2f(
-            offsetX + Random.nextFloat() * (config.width.toFloat() - shape.sideLength - 5f) + shape.sideLength / 2f + 2,
-            offsetY + Random.nextFloat() * (config.height.toFloat() - shape.sideLength - 5f) + shape.sideLength / 2f + 2
+            offsetX + Random.nextFloat() * (config.width.toFloat() - shape.radius * 2f - 5f) + shape.radius + 2,
+            offsetY + Random.nextFloat() * (config.height.toFloat() - shape.radius * 2f - 5f) + shape.radius + 2
         )
         return Body.from(id = nextId, position = pos, velocity = velocity, shape = shape)
     }
@@ -435,7 +436,7 @@ open class World(
 
     // original implementation just putting a new shape of this size in the first screen
     fun addRandomBodyWithSize(size: Int) {
-        val randomShapeId = shapes.groupBy { it.sideLength }[size]!!.random().id
+        val randomShapeId = shapes.groupBy { (it.radius * 2f).toInt() }[size]!!.random().id
         val body = createBody(randomShapeId, Point(0, 0))
         currentSimulator.addBodies(listOf(body))
         addEventToAllClients(StatusEvent.OBJECT_CHANGE)

@@ -4,6 +4,7 @@ import command.ClientCommandProcessor
 import command.ShapesCommandProcessor
 import command.WorldCommandProcessor
 import config.WorldConfig
+import data.ShapeCreator
 import domain.World
 import factory.WorldFactory
 import io.ktor.server.application.Application
@@ -45,6 +46,8 @@ fun main() = runBlocking {
     }
     val worldConfig = createWorldConfig(env.config)
     val world = WorldFactory.create(worldConfig)
+    val shapes = ShapeCreator.createShapes()
+    world.setShapes(shapes)
 
     val worldCommandProcessor = WorldCommandProcessor(world, worldConfig)
     val clientCommandProcessor = ClientCommandProcessor(world)
