@@ -12,9 +12,10 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
     override var currentStep: Int = 0
     override val collisions: MutableSet<Int> = mutableSetOf()
     override val bodies: MutableList<Body> = mutableListOf()
+    override val bodyMap: MutableMap<Int, Body> = mutableMapOf()
 
     val stepTime = 1f / config.updatesPerSecond
-    override fun reset() { bodies.clear() }
+    override fun reset() { bodies.clear(); bodyMap.clear() }
 
     abstract fun calculateDistance(a: Body, b: Body): Float
 
@@ -26,6 +27,7 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
                 logger.warn("ERROR: could not fit body $b onto grid, skipping to next.")
             } else {
                 this.bodies.add(movedBody)
+                bodyMap[movedBody.id] = movedBody
             }
         }
     }

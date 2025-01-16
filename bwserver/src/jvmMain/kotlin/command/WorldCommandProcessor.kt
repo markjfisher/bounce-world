@@ -187,7 +187,8 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                 )
 
                 // now convert to a comma delimited string
-                "${vs.shapeId},${scaledToClientViewPosition.x},${scaledToClientViewPosition.y}"
+                val body = world.currentSimulator.bodyMap[vs.bodyId]!!
+                "${body.shapeId},${scaledToClientViewPosition.x},${scaledToClientViewPosition.y}"
             }
             // prepend with the count of shapes we need to read from the string
             return "${visibleShapes.size},$clientData"

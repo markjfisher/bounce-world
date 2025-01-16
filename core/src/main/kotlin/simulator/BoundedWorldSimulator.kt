@@ -29,7 +29,7 @@ data class BoundedWorldSimulator(
             val qNeighbours = quadtree.queryWithIds(upperLeft.x, upperLeft.y, lowerRight.x, lowerRight.y).filterNot { it.second == bodyA.id }
 
             qNeighbours.forEach { (_, bodyId) ->
-                val bodyB = bodies.find { it.id == bodyId }
+                val bodyB = bodyMap[bodyId]
                 if (bodyB != null) {
                     val pair = if (bodyA.id < bodyB.id) Pair(bodyA.id, bodyB.id) else Pair(bodyB.id, bodyB.id)
                     if (!checkedPairs.contains(pair)) {

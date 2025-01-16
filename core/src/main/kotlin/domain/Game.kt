@@ -86,10 +86,10 @@ open class Game (
             val centre4 = cSE + if (bodyWidth % 2 == 0) Point(-nd2, -nd2) else Point(-n_1d2, -n_1d2)
 
             // add the visible shape to the client's list. dupes will be removed, and this also caters for both wrapping and no wrapping
-            visibleItemsByClient[clientIdThatOwns(cNW)]?.add(VisibleShape(item.shapeId, centre1, item.id))
-            visibleItemsByClient[clientIdThatOwns(cNE)]?.add(VisibleShape(item.shapeId, centre2, item.id))
-            visibleItemsByClient[clientIdThatOwns(cSW)]?.add(VisibleShape(item.shapeId, centre3, item.id))
-            visibleItemsByClient[clientIdThatOwns(cSE)]?.add(VisibleShape(item.shapeId, centre4, item.id))
+            visibleItemsByClient[clientIdThatOwns(cNW)]?.add(VisibleShape(centre1, item.id))
+            visibleItemsByClient[clientIdThatOwns(cNE)]?.add(VisibleShape(centre2, item.id))
+            visibleItemsByClient[clientIdThatOwns(cSW)]?.add(VisibleShape(centre3, item.id))
+            visibleItemsByClient[clientIdThatOwns(cSE)]?.add(VisibleShape(centre4, item.id))
 
         }
         return visibleItemsByClient

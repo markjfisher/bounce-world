@@ -8,6 +8,7 @@ interface WorldSimulator {
     var currentStep: Int
     val collisions: MutableSet<Int>
     val bodies: MutableList<Body>
+    val bodyMap: MutableMap<Int, Body>
 
     fun step()
     fun addBodies(bodies: List<Body>)
