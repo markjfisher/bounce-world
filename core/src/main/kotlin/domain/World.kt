@@ -288,7 +288,7 @@ open class World(
 
         // max message size is 119 chars (fits in 120 with padded 0 char for C strings on client)
         currentBroadcastMessage = message.substring(0, min(119, message.length))
-        addCommandToAllClients(ClientCommand.ENABLE_BROADCAST)
+        // TODO: addCommandToAllClients(BWClientCommand.ENABLE_BROADCAST)
 
         heartbeatScope.launch {
             disableAllBroadcast(delaySeconds)
@@ -299,12 +299,12 @@ open class World(
     private suspend fun disableAllBroadcast(seconds: Int) {
         delay(1000L * seconds)
         logger.info("sending disabled broadcast to all clients")
-        addCommandToAllClients(ClientCommand.DISABLE_BROADCAST)
+        // TODO: addCommandToAllClients(BWClientCommand.DISABLE_BROADCAST)
     }
 
     fun broadcastToClient(clientId: Int, message: String, delaySeconds: Int) {
         currentBroadcastMessage = message.substring(0, min(119, message.length))
-        addCommandToClient(clientId, ClientCommand.ENABLE_BROADCAST)
+        // TODO: addCommandToClient(clientId, BWClientCommand.ENABLE_BROADCAST)
 
         heartbeatScope.launch {
             disableClientBroadcast(clientId, delaySeconds)
@@ -314,7 +314,7 @@ open class World(
     private suspend fun disableClientBroadcast(clientId: Int, seconds: Int) {
         delay(1000L * seconds)
         logger.info("sending disabled broadcast to client $clientId")
-        addCommandToClient(clientId, ClientCommand.DISABLE_BROADCAST)
+        // TODO: addCommandToClient(clientId, BWClientCommand.DISABLE_BROADCAST)
     }
 
     fun addCommandToAllClients(cmd: ClientCommand) {
@@ -460,54 +460,5 @@ open class World(
 
     fun decreaseSpeed() {
         currentSimulator.bodies.forEach { body -> body.velocity.div(1.05f) }
-    }
-}
-
-//fun World.toWorldShared() = WorldShared(
-//    width = getWorldWidth(),
-//    height = getWorldHeight(),
-//    upTime = currentUptime,
-//    clients = clients().associate { client ->
-//        client.id to GameClientShared(
-//            id = client.id,
-//            name = client.name,
-//            version = client.version,
-//            position = Pair(client.position.x, client.position.y),
-//            screenSize = Pair(client.screenSize.width, client.screenSize.height)
-//        )
-//    },
-//    isFrozen = isFrozen,
-//    isWrapping = isWrapping,
-//    bodies = currentSimulator.bodies.map { body ->
-//        BodyShared(
-//            id = body.id,
-//            position = Pair(body.position.x, body.position.y),
-//            velocity = Pair(body.velocity.x, body.velocity.y),
-//            mass = body.mass,
-//            radius = body.radius,
-//            shapeId = body.shapeId
-//        )
-//    }
-//)
-
-fun formatUptime(startTime: TimeSource.Monotonic.ValueTimeMark, endTime: TimeSource.Monotonic.ValueTimeMark): String {
-    val elapsed = endTime - startTime
-    return elapsed.toComponents { h, m, _, _ ->
-        buildString {
-            val d = elapsed.inWholeDays
-            if (d > 0) {
-                append("$d day")
-                if (d != 1L) append("s")
-                append(", ")
-            }
-            if (h > 0 || d > 0) {
-                val partHours = h - d * 24
-                append("$partHours hour")
-                if (partHours != 1L) append("s")
-                append(", ")
-            }
-            append("$m min")
-            if (m != 1) append("s")
-        }
     }
 }

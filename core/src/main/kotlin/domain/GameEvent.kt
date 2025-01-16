@@ -1,0 +1,4 @@
+package domain
+
+interface GameEvent {
+}

@@ -1,10 +1,10 @@
 package command
 
 import config.WorldConfig
+import domain.BWClientCommand
 import domain.BodyData
 import domain.BodySummary
 import domain.ClientBasic
-import domain.ClientCommand
 import domain.ClientData
 import domain.VectorData
 import domain.World
@@ -115,7 +115,7 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
     }
 
     fun clientCommand(clientId: String, cmd: String): ByteArray {
-        val clientCommand = ClientCommand.from(cmd) ?: return byteArrayOf(0)
+        val clientCommand = BWClientCommand.from(cmd) ?: return byteArrayOf(0)
 
         if (clientId == "ALL") {
             world.addCommandToAllClients(clientCommand)
