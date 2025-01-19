@@ -1,4 +1,4 @@
-package domain
+package items
 
 import geometry.Point
 import org.joml.Vector2f
@@ -11,7 +11,11 @@ interface GameItem {
     val mass: Float
     val radius: Float
 
-    fun bodyCorners(width: Int, height: Int): List<Point> {
+    // angle of direction in radians. 0 = East, North = pi/2 (as all good maths should be)
+    // This is needed because the item can be stationary, but potentially could move
+    var direction: Double
+
+    fun itemCorners(width: Int, height: Int): List<Point> {
         val centre = Point(position.x.roundToInt(), position.y.roundToInt())
         val n = (radius * 2).roundToInt()
         // calculate the offsets to the centre point for grid positions this body covers
@@ -49,5 +53,5 @@ interface GameItem {
         }
         return Point(wrappedX, wrappedY)
     }
-
 }
+

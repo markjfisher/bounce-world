@@ -6,8 +6,9 @@ data class BWGameClient(
     override val id: Int,
     override val name: String,
     override val version: Int,
+    override val screenWidth: Int,
+    override val screenHeight: Int,
     var position: Point = Point(0, 0),
-    var screenSize: ScreenSize = ScreenSize(0, 0)
 ) : GameClientNew {
     var worldBounds: Pair<Point, Point> = Pair(Point(0, 0), Point(0, 0))
 

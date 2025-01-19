@@ -1,7 +1,7 @@
 package simulator
 
 import domain.GameEvent
-import domain.GameItem
+import items.GameItem
 
 interface GameSimulator {
     // The simulation can potentially grow as needed
@@ -16,7 +16,7 @@ interface GameSimulator {
 
     // the items in the simulation
     val items: MutableList<GameItem>
-    fun addItems(bodies: List<GameItem>)
+    fun addItem(item: GameItem)
 
     // a way to move the simulation on
     fun step()

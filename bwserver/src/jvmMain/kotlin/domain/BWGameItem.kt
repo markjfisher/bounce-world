@@ -1,5 +1,6 @@
 package domain
 
+import items.GameItem
 import org.joml.Vector2f
 
 data class BWGameItem(

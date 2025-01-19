@@ -4,4 +4,6 @@ interface GameClientNew {
     val id: Int
     val name: String
     val version: Int
+    val screenWidth: Int
+    val screenHeight: Int
 }
