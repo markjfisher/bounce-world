@@ -8,6 +8,7 @@ import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.floats.plusOrMinus
 import io.kotest.matchers.shouldBe
 import org.joml.Vector2f
+import wrapped.findClosestWrappedPosition
 
 data class BWShape(
     override val id: Int,
@@ -248,8 +249,8 @@ class WorldSimulatorTest : StringSpec({
         var distance = worldSimulator.calculateDistance(bodyA, bodyB)
         distance.shouldBe(4f plusOrMinus(0.000001f))
 
-        // find the position of B that is closest to A in toroidal mapping
-        val closestB = worldSimulator.findClosestWrappedPosition(bodyA.position, bodyB.position)
+        // find the position of B that is closest to A in toroidal mapping - TODO: move this as it's testing a different thing now
+        val closestB = findClosestWrappedPosition(bodyA.position, bodyB.position, 40, 20)
         closestB.x.shouldBe(2f plusOrMinus(0.000001f))
         closestB.y.shouldBe(-1.5f plusOrMinus(0.000001f))
 

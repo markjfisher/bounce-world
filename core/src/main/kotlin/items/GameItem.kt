@@ -15,7 +15,7 @@ interface GameItem {
     // This is needed because the item can be stationary, but potentially could move
     var direction: Double
 
-    fun itemCorners(width: Int, height: Int): List<Point> {
+    fun itemCorners(width: Int, height: Int, doBounding: Boolean = true): List<Point> {
         val centre = Point(position.x.roundToInt(), position.y.roundToInt())
         val n = (radius * 2).roundToInt()
         // calculate the offsets to the centre point for grid positions this body covers
@@ -37,7 +37,7 @@ interface GameItem {
         val topRight = Point(bottomRight.x, topLeft.y)
         val bottomLeft = Point(topLeft.x, bottomRight.y)
 
-        return listOf(topLeft, topRight, bottomLeft, bottomRight).map { p -> boundPoint(p, width, height) }
+        return listOf(topLeft, topRight, bottomLeft, bottomRight).map { p -> if (doBounding) boundPoint(p, width, height) else p }
     }
 
     private fun boundPoint(p: Point, width: Int, height: Int): Point {

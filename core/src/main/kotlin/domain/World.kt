@@ -128,21 +128,6 @@ open class World(
         addEventToAllClients(StatusEvent.OBJECT_CHANGE)
     }
 
-    private suspend fun checkClientsStillConnected() {
-        while (!stopped) {
-            // creating a list to iterate over instead of directly on the keys stops the concurrent update error as we're not modifying this list
-            val clientIds = clients.keys.toList() // use the clients directly rather than channels, as they may not have sent any data yet, so aren't in the channels list, but we do have them in the initial heartbeats
-            clientIds.forEach { clientId ->
-                val sinceHeartbeat = System.currentTimeMillis() - (clientHeartbeats[clientId] ?: 0)
-                if (sinceHeartbeat > config.heartbeatTimeoutMillis) {
-                    logger.info("No heartbeat from client ${clients[clientId]?.name ?: "UNKNOWN"} for $sinceHeartbeat ms, unregistering client.")
-                    unregisterClient(clientId)
-                }
-            }
-            delay(5000L)
-        }
-    }
-
     private suspend fun runSimulation() {
         var started: Long
         isStarted = true

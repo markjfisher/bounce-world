@@ -6,13 +6,13 @@ import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 
-class QuadtreeTest : StringSpec ({
+class QuadTreeTest : StringSpec ({
     "can create quadtree" {
-        Quadtree(100, 100, 100, 5) shouldNotBe null
+        QuadTree(100, 100, 100, 5) shouldNotBe null
     }
 
     "can add to and find single element in quadtree" {
-        val qt = Quadtree(100, 100, 1, 5)
+        val qt = QuadTree(100, 100, 1, 5)
         qt.insert(1, 10f, 10f, 15f, 15f)
 
         // non-intersecting
@@ -33,7 +33,7 @@ class QuadtreeTest : StringSpec ({
     }
 
     "non intersecting query finds no elements" {
-        val qt = Quadtree(100, 100, 1, 5)
+        val qt = QuadTree(100, 100, 1, 5)
         qt.insert(69, 10f, 10f, 15f, 15f)
         qt.insert(96, 20f, 10f, 25f, 15f)
 
@@ -42,7 +42,7 @@ class QuadtreeTest : StringSpec ({
     }
 
     "fully covered query finds all elements" {
-        val qt = Quadtree(100, 100, 1, 5)
+        val qt = QuadTree(100, 100, 1, 5)
         qt.insert(69, 10f, 10f, 15f, 15f)
         qt.insert(96, 20f, 10f, 25f, 15f)
 
@@ -63,7 +63,7 @@ class QuadtreeTest : StringSpec ({
     }
 
     "multiple elements test" {
-        val qt = Quadtree(10000, 10000, 1, 5)
+        val qt = QuadTree(10000, 10000, 1, 5)
         qt.insert(69, 1000f, 1000f, 1500f, 1500f)
         qt.insert(96, 2000f, 1000f, 2500f, 1500f)
         qt.insert(111, 8000f, 8000f, 8500f, 8500f)
@@ -99,7 +99,7 @@ class QuadtreeTest : StringSpec ({
     }
 
     "intersecting but not whole covering query finds intersecting elements" {
-        val qt = Quadtree(100, 100, 1, 5)
+        val qt = QuadTree(100, 100, 1, 5)
         qt.insert(69, 10f, 10f, 15f, 15f)
         qt.insert(96, 20f, 10f, 25f, 15f)
 
@@ -109,7 +109,7 @@ class QuadtreeTest : StringSpec ({
     }
 
     "partial query finds covered element only" {
-        val qt = Quadtree(100, 100, 1, 5)
+        val qt = QuadTree(100, 100, 1, 5)
         qt.insert(69, 10f, 10f, 15f, 15f)
         qt.insert(96, 20f, 10f, 25f, 15f)
 
@@ -123,7 +123,7 @@ class QuadtreeTest : StringSpec ({
     }
 
     "can remove and re-add elements" {
-        val qt = Quadtree(100, 100, 1, 5)
+        val qt = QuadTree(100, 100, 1, 5)
         qt.insert(69, 10f, 10f, 15f, 15f)
         qt.insert(96, 20f, 10f, 25f, 15f)
 

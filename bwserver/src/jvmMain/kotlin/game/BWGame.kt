@@ -13,6 +13,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import logger
 import simulator.GameSimulator
+import string.formatUptime
 import kotlin.time.TimeSource
 
 class BWGame(
@@ -21,7 +22,6 @@ class BWGame(
 ): Game(simulator) {
     private var started = false
     private var frozen = false
-    private var running = true
 
     private var currentLocationPattern = config.locationPattern
     private val occupiedScreens = mutableMapOf<Point, BWGameClient>()
@@ -35,28 +35,19 @@ class BWGame(
                 startGame()
             }
             heartbeatScope.launch {
-                checkClientsStillConnected()
+                checkClientsStillConnected(config.heartbeatTimeoutMillis)
             }
         }
     }
 
-    private suspend fun checkClientsStillConnected() {
-        while (running) {
-            clientIds().forEach { clientId ->
-                val sinceHeartbeat = System.currentTimeMillis() - (clientHeartbeats[clientId] ?: 0)
-                if (sinceHeartbeat > config.heartbeatTimeoutMillis) {
-                    logger.info("No heartbeat from client ${getClient(clientId)?.name ?: "UNKNOWN"} for $sinceHeartbeat ms, removing client.")
-                    removeClient(clientId)
-                }
-            }
-            delay(5000L)
-        }
-    }
-
-    fun addClient(gameClient: BWGameClient) {
-        super.addClient(gameClient)
+    fun addClient(name: String, version: Int, screenWidth: Int, screenHeight: Int) {
+        // what id will we give the client?
+        val client = BWGameClient()
+        // convert the gameClient.position to a world coordinate. It's half way across and down for whatever screen it's on
         val nextScreenPoint = findNextUnoccupiedScreen()
         gameClient.position = nextScreenPoint
+
+        super.addClient(gameClient, gameClient.position)
     }
 
     override fun removeClient(clientId: Int) {

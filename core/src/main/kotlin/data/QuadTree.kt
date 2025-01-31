@@ -8,15 +8,16 @@ interface IQtVisitor {
     // Called when traversing a branch node.
     // (mx, my) indicate the center of the node's AABB.
     // (sx, sy) indicate the half-size of the node's AABB.
-    fun branch(qt: Quadtree, node: Int, depth: Int, mx: Int, my: Int, sx: Int, sy: Int)
+    fun branch(qt: QuadTree, node: Int, depth: Int, mx: Int, my: Int, sx: Int, sy: Int)
 
     // Called when traversing a leaf node.
     // (mx, my) indicate the center of the node's AABB.
     // (sx, sy) indicate the half-size of the node's AABB.
-    fun leaf(qt: Quadtree, node: Int, depth: Int, mx: Int, my: Int, sx: Int, sy: Int)
+    fun leaf(qt: QuadTree, node: Int, depth: Int, mx: Int, my: Int, sx: Int, sy: Int)
 }
 
-class Quadtree(width: Int, height: Int,
+class QuadTree(
+    width: Int, height: Int,
     // Maximum allowed elements in a leaf before the leaf is subdivided/split unless the leaf is at the maximum allowed tree depth.
     private val maxElements: Int,
     // Stores the maximum depth allowed for the quadtree.
@@ -98,7 +99,7 @@ class Quadtree(width: Int, height: Int,
             for (j in 0..3) {
                 val child = fc + j
 
-                // Increment empty leaf count if the child is an empty 
+                // Increment empty leaf count if the child is an empty
                 // leaf. Otherwise if the child is a branch, add it to
                 // the stack to be processed in the next iteration.
                 if (nodes.get(child, NODE_IDX_NUM) == 0) ++numEmptyLeaves
@@ -108,10 +109,10 @@ class Quadtree(width: Int, height: Int,
                 }
             }
 
-            // If all the children were empty leaves, remove them and 
+            // If all the children were empty leaves, remove them and
             // make this node the new empty leaf.
             if (numEmptyLeaves == 4) {
-                // Remove all 4 children in reverse order so that they 
+                // Remove all 4 children in reverse order so that they
                 // can be reclaimed on subsequent insertions in proper
                 // order.
                 nodes.erase(fc + 3)
@@ -178,7 +179,7 @@ class Quadtree(width: Int, height: Int,
         return out
     }
 
-    // Traverses all the nodes in the tree, calling 'branch' for branch nodes and 'leaf' 
+    // Traverses all the nodes in the tree, calling 'branch' for branch nodes and 'leaf'
     // for leaf nodes.
     fun traverse(visitor: IQtVisitor) {
         val toProcess: IntList = IntList(ND_NUM)
@@ -386,7 +387,7 @@ class Quadtree(width: Int, height: Int,
         // ----------------------------------------------------------------------------------------
         // Element node fields:
         // ----------------------------------------------------------------------------------------
-        // Points to the next element in the leaf node. A value of -1 
+        // Points to the next element in the leaf node. A value of -1
         // indicates the end of the list.
         const val ENODE_IDX_NEXT: Int = 0
 

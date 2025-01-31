@@ -1,7 +1,7 @@
 package simulator
 
 import config.WorldConfig
-import data.Quadtree
+import data.QuadTree
 import domain.Body
 import org.joml.Vector2f
 
@@ -11,7 +11,7 @@ data class BoundedWorldSimulator(
 ): BaseBodySimulator(config) {
     override fun step() {
         val checkedPairs: MutableSet<Pair<Int, Int>> = mutableSetOf()
-        val quadtree = Quadtree(width, height, 1, 6)
+        val quadtree = QuadTree(width, height, 1, 6)
         collisions.clear()
         bodies.forEach { body ->
             // create a rectangle for the location of the current body, make it slightly larger than a box covering the radius of the body

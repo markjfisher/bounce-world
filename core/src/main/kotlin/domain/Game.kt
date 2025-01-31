@@ -1,21 +1,22 @@
 package domain
 
-import data.Quadtree
+import data.QuadTree
+import geometry.translatePointToTargetViewCoordinates
 import items.GameItem
 import items.Player
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import logger
 import org.joml.Vector2f
 import simulator.GameSimulator
-import kotlin.math.cos
-import kotlin.math.max
-import kotlin.math.sin
+import string.formatUptime
+import wrapped.findClosestWrappedPosition
 import kotlin.time.TimeSource
 
 
-open class Game (
+open class Game(
     // private val gameConfig: GameConfig,
     private val simulator: GameSimulator
 ) {
@@ -27,16 +28,11 @@ open class Game (
     private val updateListeners: MutableSet<GameUpdateListener> = mutableSetOf()
     private val startTime: TimeSource.Monotonic.ValueTimeMark = TimeSource.Monotonic.markNow()
     private var currentUptime: String = formatUptime(startTime, TimeSource.Monotonic.markNow())
-
     // part of simulator?
     private val gameEvents = mutableMapOf<Int, MutableSet<GameEvent>>()
-
     // This maps the player gameItem to a client id, so we can find their screen sizes etc
     private val playerIdToClientMap = mutableMapOf<Int, Int>()
-
-    // should shapes belong to the simulator? Maybe not, they are game things, simulator moves items.
-    // An item can be a body with shape, or a player etc.
-    // we have List<GameItem> in the simulator
+    protected var running = true
 
     fun clients(): List<GameClientNew> = clientMap.values.toList()
     fun clientIds(): Set<Int> = clientMap.keys.toSet()
@@ -67,85 +63,121 @@ open class Game (
         gameEvents.remove(client.id)
     }
 
-    private fun gameToViewCoordinates(player: Player, point: Vector2f): Vector2f {
-        // Translate the point to be relative to the player's position
-        val translatedX = point.x - player.position.x
-        val translatedY = point.y - player.position.y
-
-        // Correctly rotate the translated point to align the player's forward direction with the "up" direction in the view
-        // Adjusting the rotation formula to correctly handle the player's direction
-        val direction = -(player.direction - Math.PI / 2)
-        val rotatedX = translatedX * cos(direction) - translatedY * sin(direction)
-        val rotatedY = translatedX * sin(direction) + translatedY * cos(direction)
-
-        return Vector2f(rotatedX.toFloat(), rotatedY.toFloat())
-    }
-
-//    fun determineVisibleItems(): Map<Int, Set<VisibleItem>> {
-//        val visibleItemsMap = mutableMapOf<Int, Set<VisibleItem>>()
-//
-//        // TODO: turn into fold? useful like this until we test and debug it
-//        // TODO: is this the correct way around? Look for player objects, or should we start with the known clients? Does it matter?
-//        simulator.items.filterIsInstance<Player>().forEach loop@{ player ->
-//            val clientIdForPlayer = playerIdToClientMap[player.id] ?: return@loop
-//            val client = clientMap[clientIdForPlayer] ?: return@loop
-//            visibleItemsMap[player.id] = simulator.items.filter { item -> item.id != player.id && isItemVisible(player, client, item, gameWidth(), gameHeight()) }
-//                .map { VisibleItem(it.id, it.position) }
-//                .toSet()
-//        }
-//
-//        return visibleItemsMap
-//    }
-
-    fun determineVisibleItems(): Map<Int, Set<VisibleItem>> {
+    // creates the map of player.id to set of item ids that can be seen, and their position RELATIVE to the player's direction
+    // The player itself is excluded from the items
+    fun determineVisibleItems(isWrapped: Boolean): Map<Int, Set<VisibleItem>> {
         val visibleItemsMap = mutableMapOf<Int, Set<VisibleItem>>()
 
-        val quadtree = Quadtree(gameWidth(), gameHeight(), 1, 6)
+        val quadtree = QuadTree(gameWidth(), gameHeight(), 1, 6)
         simulator.items.forEach { item ->
-            // Create a rectangle for the location of the current item
-            val bound = Vector2f(item.radius, item.radius).mul(1.05f) // Assuming each item has a radius property
-            val upperLeft = Vector2f(item.position).sub(bound)
-            val lowerRight = Vector2f(item.position).add(bound)
-            quadtree.insert(item.id, upperLeft.x, upperLeft.y, lowerRight.x, lowerRight.y)
+            // Create a slightly expanded rectangle for the location of the current item
+            val bound = Vector2f(item.radius, item.radius).mul(1.05f)
+            val lowerLeft = Vector2f(item.position).sub(bound)
+            val upperRight = Vector2f(item.position).add(bound)
+            // println("adding item with boundary: $lowerLeft to $upperRight")
+            quadtree.insert(item.id, lowerLeft.x, lowerLeft.y, upperRight.x, upperRight.y)
         }
 
+        // for every player, find the closest items
         simulator.items.filterIsInstance<Player>().forEach loop@{ player ->
             val clientIdForPlayer = playerIdToClientMap[player.id] ?: return@loop
             val client = clientMap[clientIdForPlayer] ?: return@loop
 
-            // Determine the range to query based on the client's screen size
-            val queryRange = max(client.screenWidth, client.screenHeight).toFloat()
-            val queryBound = Vector2f(queryRange, queryRange)
-            val upperLeftQuery = Vector2f(player.position).sub(queryBound)
-            val lowerRightQuery = Vector2f(player.position).add(queryBound)
+            val halfScreenWidth = client.screenWidth.toFloat() / 2f
+            val halfScreenHeight = client.screenHeight.toFloat() / 2f
 
-            // Query the QuadTree for items near the player
-            val nearbyItemIds = quadtree.queryWithIds(upperLeftQuery.x, upperLeftQuery.y, lowerRightQuery.x, lowerRightQuery.y)
+            // Determine the range to query based on the client's screen size
+            val queryBound = Vector2f(halfScreenWidth, halfScreenHeight)
+            val lowerLeftQuery = Vector2f(player.position).sub(queryBound)
+            val upperRightQuery = Vector2f(player.position).add(queryBound)
+
+            // Query the QuadTree for items near the player that aren't the player themselves
+            val nearbyItemIds = quadtree.queryWithIds(lowerLeftQuery.x, lowerLeftQuery.y, upperRightQuery.x, upperRightQuery.y)
                 .map { it.second }
                 .filterNot { it == player.id }
+                .toMutableList()
+
+            if (isWrapped) {
+                val isCloseToLeft = player.position.x - halfScreenWidth < 0f
+                val isCloseToRight = player.position.x + halfScreenWidth > gameWidth()
+                val isCloseToTop = player.position.y - halfScreenHeight < 0f
+                val isCloseToBottom = player.position.y + halfScreenHeight > gameHeight()
+
+                // additionally find edges within the player's view and wrap them to the other side
+                // of it and query again to find wrapped items they can see.
+                if (isCloseToLeft) {
+                    nearbyItemIds += quadtree.queryWithIds(lowerLeftQuery.x + gameWidth(), lowerLeftQuery.y, upperRightQuery.x + gameWidth(), upperRightQuery.y)
+                        .map { it.second }
+                        .filterNot { it == player.id }
+                }
+                if (isCloseToRight) {
+                    nearbyItemIds += quadtree.queryWithIds(lowerLeftQuery.x - gameWidth(), lowerLeftQuery.y, upperRightQuery.x - gameWidth(), upperRightQuery.y)
+                        .map { it.second }
+                        .filterNot { it == player.id }
+                }
+                if (isCloseToTop) {
+                    nearbyItemIds += quadtree.queryWithIds(lowerLeftQuery.x, lowerLeftQuery.y + gameHeight(), upperRightQuery.x - gameWidth(), upperRightQuery.y + gameHeight())
+                        .map { it.second }
+                        .filterNot { it == player.id }
+                }
+                if (isCloseToBottom) {
+                    nearbyItemIds += quadtree.queryWithIds(lowerLeftQuery.x, lowerLeftQuery.y - gameHeight(), upperRightQuery.x - gameWidth(), upperRightQuery.y - gameHeight())
+                        .map { it.second }
+                        .filterNot { it == player.id }
+                }
+                if (isCloseToLeft && isCloseToTop) {
+                    nearbyItemIds += quadtree.queryWithIds(lowerLeftQuery.x + gameWidth(), lowerLeftQuery.y + gameHeight(), upperRightQuery.x + gameWidth(), upperRightQuery.y + gameHeight())
+                        .map { it.second }
+                        .filterNot { it == player.id }
+                }
+                if (isCloseToLeft && isCloseToBottom) {
+                    nearbyItemIds += quadtree.queryWithIds(lowerLeftQuery.x + gameWidth(), lowerLeftQuery.y - gameHeight(), upperRightQuery.x + gameWidth(), upperRightQuery.y - gameHeight())
+                        .map { it.second }
+                        .filterNot { it == player.id }
+                }
+                if (isCloseToRight && isCloseToTop) {
+                    nearbyItemIds += quadtree.queryWithIds(lowerLeftQuery.x - gameWidth(), lowerLeftQuery.y + gameHeight(), upperRightQuery.x - gameWidth(), upperRightQuery.y + gameHeight())
+                        .map { it.second }
+                        .filterNot { it == player.id }
+                }
+                if (isCloseToRight && isCloseToBottom) {
+                    nearbyItemIds += quadtree.queryWithIds(lowerLeftQuery.x - gameWidth(), lowerLeftQuery.y - gameHeight(), upperRightQuery.x - gameWidth(), upperRightQuery.y - gameHeight())
+                        .map { it.second }
+                        .filterNot { it == player.id }
+                }
+            }
 
             // Filter and transform the nearby items to VisibleItems if they are visible
-            visibleItemsMap[player.id] = nearbyItemIds.mapNotNull { itemId ->
-                simulator.items.find { it.id == itemId }
-            }.filter { item ->
-                isItemVisible(player, client, item, gameWidth(), gameHeight())
-            }.map { VisibleItem(it.id, it.position) }
+            visibleItemsMap[player.id] = nearbyItemIds
+                .mapNotNull { itemId -> simulator.items.find { it.id == itemId } }
+                .filter { item ->
+                    // we need this because we have to consider the player's orientation and qt boxes are rounded so may overlap even when not really overlapping
+                    isItemVisible(player, client, item, gameWidth(), gameHeight(), isWrapped)
+                }.map { item ->
+                    // convert the item to the player's view considering the player as pointing north.
+                    val translatedItemLocation = translatePointToTargetViewCoordinates(player.position, player.direction, item.position)
+                    VisibleItem(item.id, translatedItemLocation)
+                }
                 .toSet()
         }
 
         return visibleItemsMap
     }
 
-    private fun isItemVisible(player: Player, client: GameClientNew, item: GameItem, width: Int, height: Int): Boolean {
-        val corners = item.itemCorners(width, height).map { Vector2f(it.x.toFloat(), it.y.toFloat()) }
+    private fun isItemVisible(player: Player, client: GameClientNew, item: GameItem, width: Int, height: Int, isWrapped: Boolean): Boolean {
+        // the player that caused a close match may be a wrapped version, but we only have the original here
+        // so work out the closest wrapped player location to the item
+
+        val playerPosition = if (isWrapped) findClosestWrappedPosition(item.position, player.position, width, height) else player.position
+
+        val corners = item.itemCorners(width, height, false).map { Vector2f(it.x.toFloat(), it.y.toFloat()) }
         return corners.any { corner ->
-            val viewCoords = gameToViewCoordinates(player, corner)
+            val viewCoords = translatePointToTargetViewCoordinates(playerPosition, player.direction, corner)
             // Check if the corner is within the screen bounds
             viewCoords.x in -client.screenWidth / 2f..client.screenWidth / 2f &&
                     viewCoords.y in -client.screenHeight / 2f..client.screenHeight / 2f
         }
     }
-
 
     fun addListener(listener: GameUpdateListener) {
         updateListeners.add(listener)
@@ -158,26 +190,19 @@ open class Game (
             }
         }
     }
-}
 
-fun formatUptime(startTime: TimeSource.Monotonic.ValueTimeMark, endTime: TimeSource.Monotonic.ValueTimeMark): String {
-    val elapsed = endTime - startTime
-    return elapsed.toComponents { h, m, _, _ ->
-        buildString {
-            val d = elapsed.inWholeDays
-            if (d > 0) {
-                append("$d day")
-                if (d != 1L) append("s")
-                append(", ")
+    suspend fun checkClientsStillConnected(timeoutMillis: Long) {
+        while (running) {
+            val clientIds = clientMap.keys.toList() // use the clients directly rather than channels, as they may not have sent any data yet, so aren't in the channels list, but we do have them in the initial heartbeats
+            clientIds.forEach { clientId ->
+                val sinceHeartbeat = System.currentTimeMillis() - (clientHeartbeats[clientId] ?: 0)
+                if (sinceHeartbeat > timeoutMillis) {
+                    logger.info("No heartbeat from client ${clientMap[clientId]?.name ?: "UNKNOWN"} for $sinceHeartbeat ms, unregistering client.")
+                    removeClient(clientId)
+                }
             }
-            if (h > 0 || d > 0) {
-                val partHours = h - d * 24
-                append("$partHours hour")
-                if (partHours != 1L) append("s")
-                append(", ")
-            }
-            append("$m min")
-            if (m != 1) append("s")
+            delay(5000L)
         }
     }
+
 }

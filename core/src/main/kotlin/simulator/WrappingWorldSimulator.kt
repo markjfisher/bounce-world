@@ -5,6 +5,7 @@ import domain.Body
 import domain.CollisionEvent
 import maths.QuadraticSolver
 import org.joml.Vector2f
+import wrapped.findClosestWrappedPosition
 import kotlin.math.abs
 import kotlin.math.min
 import kotlin.math.pow
@@ -65,33 +66,9 @@ data class WrappingWorldSimulator(
         return distance
     }
 
-    fun findClosestWrappedPosition(a: Vector2f, b: Vector2f): Vector2f {
-        val w = width.toFloat()
-        val h = height.toFloat()
-        // Define the shifts for the 8 surrounding positions plus the original (0,0) position
-        val shifts = listOf(
-            Pair(0f, 0f), // Original
-            Pair(-w, 0f), // W
-            Pair(w, 0f), // E
-            Pair(0f, -h), // N
-            Pair(0f, h), // S
-            Pair(-w, -h), // NW
-            Pair(w, -h), // NE
-            Pair(-w, h), // SW
-            Pair(w, h) // SE
-        )
-
-        val (dx, dy) = shifts.minByOrNull { (dx, dy) ->
-            val wrappedB = Vector2f(b.x + dx, b.y + dy)
-            a.distance(wrappedB)
-        } ?: Pair(0f, 0f)
-
-        return Vector2f(b.x + dx, b.y + dy)
-    }
-
     // Will the 2 bodies collide in the current 1s timeframe?
     fun calculateCollisionTimes(a: Body, b: Body): List<Float> {
-        val bClosestPosition = findClosestWrappedPosition(a.position, b.position)
+        val bClosestPosition = findClosestWrappedPosition(a.position, b.position, width, height)
         // this will be bound later
         b.position.set(bClosestPosition)
 
