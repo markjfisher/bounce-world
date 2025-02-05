@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import logger
 import org.joml.Vector2f
 import simulator.WorldSimulator
+import string.formatUptime
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -108,7 +109,7 @@ open class World(
                 runSimulation()
             }
             heartbeatScope.launch {
-                checkClientsStillConnected()
+                // checkClientsStillConnected(1000)
             }
         }
     }

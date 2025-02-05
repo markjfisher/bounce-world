@@ -9,6 +9,7 @@ data class BWGameItem(
     override val velocity: Vector2f,
     override val mass: Float,
     override val radius: Float,
+    override var direction: Double,
     val shapeId: Int,
 ): GameItem {
     companion object {
@@ -19,6 +20,7 @@ data class BWGameItem(
                 velocity = velocity,
                 mass = shape.mass,
                 radius = shape.radius,
+                direction = Math.PI / 2.0,
                 shapeId = shape.id
             )
         }

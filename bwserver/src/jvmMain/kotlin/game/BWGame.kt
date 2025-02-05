@@ -4,14 +4,11 @@ import config.BWGameConfig
 import domain.BWGameClient
 import domain.Game
 import domain.VisibleShape
-import domain.formatUptime
 import geometry.GridPatternGenerator
 import geometry.LocationGenerator
 import geometry.Point
 import geometry.RightGenerator
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import logger
 import simulator.GameSimulator
 import string.formatUptime
 import kotlin.time.TimeSource
@@ -42,12 +39,12 @@ class BWGame(
 
     fun addClient(name: String, version: Int, screenWidth: Int, screenHeight: Int) {
         // what id will we give the client?
-        val client = BWGameClient()
-        // convert the gameClient.position to a world coordinate. It's half way across and down for whatever screen it's on
-        val nextScreenPoint = findNextUnoccupiedScreen()
-        gameClient.position = nextScreenPoint
-
-        super.addClient(gameClient, gameClient.position)
+//        val client = BWGameClient()
+//        // convert the gameClient.position to a world coordinate. It's half way across and down for whatever screen it's on
+//        val nextScreenPoint = findNextUnoccupiedScreen()
+//        gameClient.position = nextScreenPoint
+//
+//        super.addClient(gameClient, gameClient.position)
     }
 
     override fun removeClient(clientId: Int) {
@@ -91,7 +88,7 @@ class BWGame(
             if (!frozen) {
                 simulator.step()
                 currentClientVisibleShapes.clear()
-                currentClientVisibleShapes.putAll(findVisibleItemsByClient())
+                // currentClientVisibleShapes.putAll(findVisibleItemsByClient())
             }
         }
     }
