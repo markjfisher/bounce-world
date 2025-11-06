@@ -3,8 +3,12 @@ package simulator
 import config.WorldConfig
 import domain.Body
 import geometry.SpiralGenerator
+import io.ktor.utils.io.InternalAPI
+import io.ktor.utils.io.locks.withLock
 import logger
 import org.joml.Vector2f
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.locks.ReentrantLock
 
 abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
     override var width: Int = config.width
@@ -13,19 +17,40 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
     override val collisions: MutableSet<Int> = mutableSetOf()
     override val bodies: MutableList<Body> = mutableListOf()
 
+    protected val bodiesLock = ReentrantLock()
+
     val stepTime = 1f / config.updatesPerSecond
-    override fun reset() { bodies.clear() }
+    @OptIn(InternalAPI::class)
+    override fun reset() {
+        bodiesLock.withLock {
+            bodies.clear()
+        }
+    }
 
     abstract fun calculateDistance(a: Body, b: Body): Float
 
+    private val pendingAdds = ConcurrentLinkedQueue<Body>()
+
+    fun addBody(body: Body) {
+        pendingAdds.add(body)
+    }
+
+    fun drainAdds() {
+        var b = pendingAdds.poll()
+        while (b != null) {
+            bodies.add(b)
+            b = pendingAdds.poll()
+        }
+    }
+
     override fun addBodies(bodies: List<Body>) {
         // attempt to add the newBodies to the simulator, adjusting them to fit into empty spaces closest to their intended locations
-        bodies.forEach { b ->
+        for (b in bodies) {
             val movedBody = moveBody(b)
             if (movedBody == null) {
                 logger.warn("ERROR: could not fit body $b onto grid, skipping to next.")
             } else {
-                this.bodies.add(movedBody)
+                addBody(movedBody)
             }
         }
     }

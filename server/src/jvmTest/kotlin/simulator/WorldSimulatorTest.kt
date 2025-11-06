@@ -35,7 +35,7 @@ class WorldSimulatorTest : StringSpec({
     "bodies on a collision course should collide and change velocities" {
         val bodyA = Body.from(position = Vector2f(2f, 2f), velocity = Vector2f(0.5f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(6f, 2f), velocity = Vector2f(-0.5f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(listOf(bodyA, bodyB)) }
+        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(listOf(bodyA, bodyB)); drainAdds() }
 
         worldSimulator.step()
         bodyA.position.x shouldBe 2.5f
@@ -57,7 +57,7 @@ class WorldSimulatorTest : StringSpec({
         // These are at perfect 45 degree angles to each other, and both start 2 steps away from perfect touching at start of step
         val bodyA = Body.from(position = Vector2f(3f, 3f), velocity = Vector2f(1f, 1f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(9f, 3f), velocity = Vector2f(-1f, 1f), shape = shapes[0]!!)
-        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(mutableListOf(bodyA, bodyB)); drainAdds() }
 
         // leading up to collision
         worldSimulator.step()
@@ -85,7 +85,7 @@ class WorldSimulatorTest : StringSpec({
         // These are at perfect 45 degree angles to each other, and both start 2 steps away from perfect touching at start of step
         val bodyA = Body.from(position = Vector2f(3f, 3f), velocity = Vector2f(1f, 1f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(9f, 3f), velocity = Vector2f(-1f, 1f), shape = shapes[1]!!)
-        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(mutableListOf(bodyA, bodyB)); drainAdds() }
 
         // leading up to collision
         worldSimulator.step()
@@ -117,7 +117,7 @@ class WorldSimulatorTest : StringSpec({
     "bodies with different mass colliding" {
         val bodyA = Body.from(position = Vector2f(5f, 5f), velocity = Vector2f(0.75f, 0f), shape = shapes[2]!!)
         val bodyB = Body.from(position = Vector2f(9f, 5f), velocity = Vector2f(-0.25f, 0f), shape = shapes[1]!!)
-        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(mutableListOf(bodyA, bodyB)); drainAdds() }
 
         worldSimulator.step()
         bodyA.position.x shouldBe 5.75f
@@ -138,7 +138,7 @@ class WorldSimulatorTest : StringSpec({
     "bodies moving at high speed will still collide during the step" {
         val bodyA = Body.from(position = Vector2f(8f, 8f), velocity = Vector2f(5f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(11f, 8f), velocity = Vector2f(-5f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(mutableListOf(bodyA, bodyB)); drainAdds() }
 
         // collision after 0.1s (of the 1s step), perfect reflection, so av -> -5,0, bv -> 5,0, so both move for 0.9s in new direction, i.e. 4.5 units in new dir
         // thus ap = 8.5 - 4.5 = (4,8), bp = 10.5 + 4.5 = (15,8)
@@ -154,7 +154,7 @@ class WorldSimulatorTest : StringSpec({
         // Setup WorldSimulator with two bodies not on a collision course
         val bodyA = Body.from(position = Vector2f(2f, 2f), velocity = Vector2f(1f, 0f), shape = shapes[0]!!)
         val bodyB = Body.from(position = Vector2f(7f, 7f), velocity = Vector2f(-1f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(mutableListOf(bodyA, bodyB)) }
+        val worldSimulator = WrappingWorldSimulator(defaultConfig).apply { addBodies(mutableListOf(bodyA, bodyB)); drainAdds() }
 
         worldSimulator.step()
 
@@ -165,7 +165,7 @@ class WorldSimulatorTest : StringSpec({
     "wrapping body that crosses to extreme right of world" {
         val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 10; it.height = 2 }
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(5.6f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)); drainAdds() }
         worldSimulator.step()
         bodyA.position.x.shouldBe(5.6f plusOrMinus(0.01f))
         worldSimulator.step()
@@ -175,7 +175,7 @@ class WorldSimulatorTest : StringSpec({
     "wrapping body that crosses to extreme left of world" {
         val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 10; it.height = 2 }
         val bodyA = Body.from(position = Vector2f(3f, 0f), velocity = Vector2f(-5f, 0f), shape = shapes[0]!!)
-        val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)); drainAdds() }
         worldSimulator.step()
         bodyA.position.x.shouldBe(8f plusOrMinus(0.01f))
     }
@@ -183,7 +183,7 @@ class WorldSimulatorTest : StringSpec({
     "wrapping body that crosses to extreme bottom of world" {
         val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 2; it.height = 10 }
         val bodyA = Body.from(position = Vector2f(0f, 0f), velocity = Vector2f(0f, 5.6f), shape = shapes[0]!!)
-        val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)); drainAdds() }
         worldSimulator.step()
         bodyA.position.y.shouldBe(5.6f plusOrMinus(0.01f))
         worldSimulator.step()
@@ -193,7 +193,7 @@ class WorldSimulatorTest : StringSpec({
     "wrapping body that crosses to extreme top of world" {
         val config = WorldConfig(defaultWorldApplicationConfig).also { it.width = 2; it.height = 10 }
         val bodyA = Body.from(position = Vector2f(0f, 3f), velocity = Vector2f(0f, -5f), shape = shapes[0]!!)
-        val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)) }
+        val worldSimulator = WrappingWorldSimulator(config).apply { addBodies(mutableListOf(bodyA)); drainAdds() }
         worldSimulator.step()
         bodyA.position.y.shouldBe(8f plusOrMinus(0.01f))
     }
@@ -209,15 +209,18 @@ class WorldSimulatorTest : StringSpec({
         // fill it with 1 body of width 5,5
         val bodyA = Body.from(position = Vector2f(2.5f, 2.5f), velocity = Vector2f(0f, 0f), shape = shapesForSpaceTest[0]!!)
         worldSimulator.addBodies(listOf(bodyA))
+        worldSimulator.drainAdds()
 
         // try to add a 2x2, it won't fit anywhere, so should have only 1 body in world
         val bodyB = Body.from(position = Vector2f(1.2f, 1.2f), velocity = Vector2f(0f, 0f), shape = shapesForSpaceTest[1]!!)
         worldSimulator.addBodies(listOf(bodyB))
+        worldSimulator.drainAdds()
         worldSimulator.bodies.size shouldBe 1
 
         // try to add a 1x1, it will fit after spiraling out eventually to 0,0, because of circles, we can just fit it into a corner
         val bodyC = Body.from(position = Vector2f(2.2f, 2.3f), velocity = Vector2f(0f, 0f), shape = shapesForSpaceTest[2]!!)
         worldSimulator.addBodies(listOf(bodyC))
+        worldSimulator.drainAdds()
         worldSimulator.bodies.size shouldBe 2
         worldSimulator.bodies[1].position.x.shouldBe(0.2f plusOrMinus(0.001f))
         worldSimulator.bodies[1].position.y.shouldBe(0.3f plusOrMinus(0.001f))
@@ -232,6 +235,7 @@ class WorldSimulatorTest : StringSpec({
         val bodyA = Body.from(position = Vector2f(2f, 2.5f), velocity = Vector2f(1f, -1f), shape = shapesForBoundaryTest[0]!!)
         val bodyB = Body.from(position = Vector2f(2f, 18.5f), velocity = Vector2f(1f, 2f), shape = shapesForBoundaryTest[0]!!)
         worldSimulator.addBodies(listOf(bodyA, bodyB))
+        worldSimulator.drainAdds()
 
         // work out the distance to the nearest version of B in wrapped (toroidal) space
         var distance = worldSimulator.calculateDistance(bodyA, bodyB)

@@ -9,14 +9,7 @@ plugins {
 }
 
 group = "bounce.world"
-version = "2.0.0"
-
-//application {
-//    mainClass.set("bw.AppKt")
-//
-//    val isDevelopment: Boolean = project.ext.has("development")
-//    applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
-//}
+version = "2.1.0"
 
 kotlin {
     jvmToolchain(17)

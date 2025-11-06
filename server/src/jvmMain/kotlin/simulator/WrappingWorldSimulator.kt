@@ -192,7 +192,7 @@ data class WrappingWorldSimulator(
         // Calculate time to collide with the left wall (x = 0)
         if (body.velocity.x < 0) { // Moving towards the left wall
             val timeToLeftWall = (body.radius - body.position.x) / body.velocity.x
-            if (timeToLeftWall >= 0f && timeToLeftWall < stepTime) {
+            if (timeToLeftWall in 0f..<stepTime) {
                 times.add(timeToLeftWall)
             }
         }
@@ -200,7 +200,7 @@ data class WrappingWorldSimulator(
         // Calculate time to collide with the right wall (x = width)
         if (body.velocity.x > 0) { // Moving towards the right wall
             val timeToRightWall = (width - body.radius - body.position.x) / body.velocity.x
-            if (timeToRightWall >= 0f && timeToRightWall < stepTime) {
+            if (timeToRightWall in 0f..<stepTime) {
                 times.add(timeToRightWall)
             }
         }
@@ -208,7 +208,7 @@ data class WrappingWorldSimulator(
         // Calculate time to collide with the top wall (y = 0)
         if (body.velocity.y < 0) { // Moving towards the top wall
             val timeToTopWall = (body.radius - body.position.y) / body.velocity.y
-            if (timeToTopWall >= 0f && timeToTopWall < stepTime) {
+            if (timeToTopWall in 0f..<stepTime) {
                 times.add(timeToTopWall)
             }
         }
@@ -216,7 +216,7 @@ data class WrappingWorldSimulator(
         // Calculate time to collide with the bottom wall (y = height)
         if (body.velocity.y > 0) { // Moving towards the bottom wall
             val timeToBottomWall = (height - body.radius - body.position.y) / body.velocity.y
-            if (timeToBottomWall >= 0f && timeToBottomWall < stepTime) {
+            if (timeToBottomWall in 0f..<stepTime) {
                 times.add(timeToBottomWall)
             }
         }
