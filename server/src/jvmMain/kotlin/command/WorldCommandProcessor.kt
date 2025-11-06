@@ -9,8 +9,9 @@ import domain.ClientData
 import domain.VectorData
 import domain.World
 import domain.WorldStatus
-import geometry.Point
 import logger
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.roundToInt
 
 class WorldCommandProcessor(private val world: World, private val config: WorldConfig) {
@@ -19,19 +20,7 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
             return byteArrayOf(0)
         }
         world.updateHeartbeat(id)
-        val data = try {
-            val csv = asCSV(id)
-            // if there are no bodies in the view, we will return a value of 0 (as byte)
-            if (csv.isNotEmpty()) {
-                csv.split(",").map { it.toInt().toByte() }.toByteArray()
-            } else {
-                byteArrayOf(0)
-            }
-        } catch (e: Exception) {
-            logger.error("ERROR processing client ${id}: ${e.message}, sending 0")
-            byteArrayOf(0)
-        }
-
+        val data = asBinary(id)
         val stepNumber = world.currentSimulator.currentStep.toByte()
         val appStatus = world.calculateStatus(id)
         val clientData = byteArrayOf(stepNumber, appStatus) + data
@@ -169,30 +158,43 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
         return byteArrayOf(1)
     }
 
-    private fun asCSV(clientId: Int): String {
-        val visibleShapes = world.currentClientVisibleShapes[clientId]
-        if (!visibleShapes.isNullOrEmpty()) {
-            // println("client $clientId visible shapes ---------------")
-            val gameClient = world.getClient(clientId)!!
-            val clientData = visibleShapes.joinToString(",") { vs ->
-                // vs is in world coordinates, remove the client's top left corner position to get it relative to the client's real dimensions
-                val adjustedToClientViewPosition = vs.position - gameClient.worldBounds.first
+    fun asBinary(clientId: Int): ByteArray {
+        return try {
+            val visibleShapes = world.currentClientVisibleShapes[clientId]
+            if (visibleShapes.isNullOrEmpty()) {
+                byteArrayOf(0)
+            } else {
+                val gameClient = world.getClient(clientId)!!
+                val scaleX = gameClient.screenSize.width.toFloat() / config.width
+                val scaleY = gameClient.screenSize.height.toFloat() / config.height
 
-                // now scale down to the client's screen size, we need the width of the minor window view
-                val scalingX = 1f * gameClient.screenSize.width / config.width
-                val scalingY = 1f * gameClient.screenSize.height / config.height
-                val scaledToClientViewPosition = Point(
-                    (adjustedToClientViewPosition.x * scalingX).roundToInt(),
-                    (adjustedToClientViewPosition.y * scalingY).roundToInt()
-                )
+                // Layout: [count:byte] then for each shape [shapeId:byte][x:byte][y:byte]
+                val count = visibleShapes.size
+                val capacity = 1 + count * (1 + 1 + 1)
+                val buf = ByteBuffer
+                    .allocate(capacity)
+                    .order(ByteOrder.LITTLE_ENDIAN) // choose and stick to an endianness
 
-                // now convert to a comma delimited string
-                "${vs.shapeId},${scaledToClientViewPosition.x},${scaledToClientViewPosition.y}"
+                // write the count of shapes - THIS COULD BE A SHORT IF WE EXTEND TO > 255
+                // but would need to adjust the capacity above
+                // buf.putShort(count.toShort())
+                buf.put(count.toByte())
+
+                for (vs in visibleShapes) {
+                    val adjusted = vs.position - gameClient.worldBounds.first
+                    val sx = (adjusted.x * scaleX).roundToInt().toByte()
+                    val sy = (adjusted.y * scaleY).roundToInt().toByte()
+
+                    buf.put(vs.shapeId.toByte())
+                    buf.put(sx)
+                    buf.put(sy)
+                }
+
+                buf.array()
             }
-            // prepend with the count of shapes we need to read from the string
-            return "${visibleShapes.size},$clientData"
-        } else {
-            return ""
+        } catch (e: Exception) {
+            logger.error("ERROR processing client $clientId: ${e.message}, sending 0")
+            byteArrayOf(0)
         }
     }
 
