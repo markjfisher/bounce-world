@@ -103,22 +103,40 @@ data class BoundedWorldSimulator(
     }
 
     // this is cheap and nasty. it should work out how far it bounces from the wall by
-    // looking at the step time and calculating when it hits the wall
+    // looking at the step time and calculating when it hits the wall.
+    // It also uses a small delta near the edges to ensure the client should never wrap because of rounding
+    // example output to client where there were only 10 shapes:
+    /*
+        00000000: 6c00 0b01 1405 001c 1101 0d07 0112 1601  l...............
+        00000010: 12fe 0020 1500 190a 0107 0e01 1e05 0117  ... ............
+        00000020: 1300 060a
+     */
+    // There were 11 shapes sent, all different data.
+    // Looking at the data, there's one shape that has:
+    //   01 12 16
+    //   01 12 fe
+    // so it was reflected in the Y plane, as it was close to an edge.
+    // Added a small delta to ensure the object is not within that distance of the edge
+    // so rounding doesn't cause it to reflect
+
     private fun edges(body: Body) {
-        if (body.position.x > width - body.radius) {
-            body.position.x = width - body.radius
+        if ((body.position.x + body.radius) > (width.toFloat() - EDGE_DELTA)) {
+            body.position.x = width - body.radius - EDGE_DELTA
             body.velocity.x *= -1f
-        } else if (body.position.x < body.radius) {
-            body.position.x = body.radius
+        } else if ((body.position.x - body.radius) < EDGE_DELTA) {
+            body.position.x = body.radius + EDGE_DELTA
             body.velocity.x *= -1f
         }
-        if (body.position.y > height - body.radius) {
-            body.position.y = height - body.radius
+        if ((body.position.y + body.radius) > (height.toFloat() - EDGE_DELTA)) {
+            body.position.y = height - body.radius - EDGE_DELTA
             body.velocity.y *= -1f
-        } else if (body.position.y < body.radius) {
-            body.position.y = body.radius
+        } else if ((body.position.y - body.radius) < EDGE_DELTA) {
+            body.position.y = body.radius + EDGE_DELTA
             body.velocity.y *= -1f
         }
     }
 
+    companion object {
+        const val EDGE_DELTA = 0.2f
+    }
 }
