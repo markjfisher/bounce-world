@@ -2,7 +2,6 @@ package simulator
 
 import domain.Body
 import domain.BodyView
-import domain.CollisionEvent
 
 interface WorldSimulator {
     var width: Int
@@ -35,4 +34,5 @@ interface WorldSimulator {
 
     fun collisionsCopy(): Set<Int>
 
+    fun nextBodyId(): Int
 }

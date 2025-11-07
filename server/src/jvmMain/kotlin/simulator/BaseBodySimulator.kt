@@ -9,10 +9,14 @@ import io.ktor.utils.io.locks.withLock
 import logger
 import org.joml.Vector2f
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 
 @OptIn(InternalAPI::class)
 abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
+    private val idSeq = AtomicInteger(1)
+    override fun nextBodyId(): Int = idSeq.getAndIncrement()
+
     abstract fun calculateDistance(a: Body, b: Body): Float
     protected abstract fun doStepLocked()
 
@@ -46,6 +50,7 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
             collisions.clear()
             pendingAdds.clear()
             currentStep = 0
+            idSeq.set(1)
         }
     }
 

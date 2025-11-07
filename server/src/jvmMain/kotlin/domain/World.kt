@@ -214,7 +214,7 @@ open class World(
     // grid is the screen location to create this body in, e.g. (0,0) for first client, (1,0) for second, etc.
     fun createBody(shapeId: Int, grid: Point): Body {
         val shape = shapes.first { it.id == shapeId }
-        val nextId = currentSimulator.bodyCount() + 1
+        val nextId = currentSimulator.nextBodyId()
         val angle = Random.nextFloat() * 2f * Math.PI.toFloat()
         val velocity = Vector2f(cos(angle), sin(angle)).mul(config.initialSpeed)
         // ensure the client didn't ask for a location outside the world boundary, if they did, put it in the first screen (0,0)
