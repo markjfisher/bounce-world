@@ -159,7 +159,7 @@ open class World(
                 // we have body1 body2 in collisions, and those ids are in the visibleShapes of a client
                 clients.keys.forEach { clientId ->
                     val bodyIdsForCurrentClient = currentClientVisibleShapes[clientId]?.map { it.bodyId }?.toSet() ?: setOf()
-                    if (bodyIdsForCurrentClient.intersect(currentSimulator.collisions).isNotEmpty()) {
+                    if (bodyIdsForCurrentClient.intersect(currentSimulator.collisionsCopy()).isNotEmpty()) {
                         // this client has a body in its view that had a collision this step
                         addEvent(clientId, StatusEvent.COLLISION)
                     }
@@ -214,7 +214,7 @@ open class World(
     // grid is the screen location to create this body in, e.g. (0,0) for first client, (1,0) for second, etc.
     fun createBody(shapeId: Int, grid: Point): Body {
         val shape = shapes.first { it.id == shapeId }
-        val nextId = currentSimulator.bodies.count() + 1
+        val nextId = currentSimulator.bodyCount() + 1
         val angle = Random.nextFloat() * 2f * Math.PI.toFloat()
         val velocity = Vector2f(cos(angle), sin(angle)).mul(config.initialSpeed)
         // ensure the client didn't ask for a location outside the world boundary, if they did, put it in the first screen (0,0)
@@ -403,7 +403,7 @@ open class World(
             visibleShapesByClient[client.id] = mutableSetOf()
         }
 
-        currentSimulator.bodies.forEach { body ->
+        currentSimulator.forEachBody { body ->
             val bodyWidth = (body.radius * 2).roundToInt()
 
             val corners = body.bodyCorners(currentSimulator.width, currentSimulator.height)
@@ -455,11 +455,11 @@ open class World(
     }
 
     fun increaseSpeed() {
-        currentSimulator.bodies.forEach { body -> body.velocity.mul(1.05f) }
+        currentSimulator.forEachBody { body -> body.velocity.mul(1.05f) }
     }
 
     fun decreaseSpeed() {
-        currentSimulator.bodies.forEach { body -> body.velocity.div(1.05f) }
+        currentSimulator.forEachBody { body -> body.velocity.div(1.05f) }
     }
 }
 
@@ -478,7 +478,7 @@ fun World.toWorldShared() = WorldShared(
     },
     isFrozen = isFrozen,
     isWrapping = isWrapping,
-    bodies = currentSimulator.bodies.map { body ->
+    bodies = currentSimulator.mapBodies { body ->
         BodyShared(
             id = body.id,
             position = Pair(body.position.x, body.position.y),

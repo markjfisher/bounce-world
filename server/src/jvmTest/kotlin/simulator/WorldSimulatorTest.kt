@@ -215,15 +215,16 @@ class WorldSimulatorTest : StringSpec({
         val bodyB = Body.from(position = Vector2f(1.2f, 1.2f), velocity = Vector2f(0f, 0f), shape = shapesForSpaceTest[1]!!)
         worldSimulator.addBodies(listOf(bodyB))
         worldSimulator.drainAdds()
-        worldSimulator.bodies.size shouldBe 1
+        println(worldSimulator.snapshotBodyViews())
+        worldSimulator.bodyCount() shouldBe 1
 
         // try to add a 1x1, it will fit after spiraling out eventually to 0,0, because of circles, we can just fit it into a corner
         val bodyC = Body.from(position = Vector2f(2.2f, 2.3f), velocity = Vector2f(0f, 0f), shape = shapesForSpaceTest[2]!!)
         worldSimulator.addBodies(listOf(bodyC))
         worldSimulator.drainAdds()
-        worldSimulator.bodies.size shouldBe 2
-        worldSimulator.bodies[1].position.x.shouldBe(0.2f plusOrMinus(0.001f))
-        worldSimulator.bodies[1].position.y.shouldBe(0.3f plusOrMinus(0.001f))
+        worldSimulator.bodyCount() shouldBe 2
+        worldSimulator.snapshotBodyViews()[1].x.shouldBe(0.2f plusOrMinus(0.001f))
+        worldSimulator.snapshotBodyViews()[1].y.shouldBe(0.3f plusOrMinus(0.001f))
     }
 
     "can detect collision at boundary" {

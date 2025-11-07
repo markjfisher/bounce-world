@@ -31,8 +31,8 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
         val data = mutableListOf<Byte>()
         addWord(data, world.currentSimulator.width)
         addWord(data, world.currentSimulator.height)
-        addWord(data, world.currentSimulator.bodies.count())
-        val bodiesByCount = world.currentSimulator.bodies.groupingBy { (it.radius * 2).toInt() }.eachCount()
+        addWord(data, world.currentSimulator.bodyCount())
+        val bodiesByCount = world.currentSimulator.groupingBodiesBy { (it.radius * 2).toInt() }.eachCount()
         data.add(bodiesByCount.getOrDefault(1, 0).toByte())
         data.add(bodiesByCount.getOrDefault(2, 0).toByte())
         data.add(bodiesByCount.getOrDefault(3, 0).toByte())
@@ -45,7 +45,7 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
     }
 
     fun getStatus(): WorldStatus {
-        val bodyGrouping = world.currentSimulator.bodies.groupingBy { (it.radius * 2).toInt() }.eachCount()
+        val bodyGrouping = world.currentSimulator.groupingBodiesBy { (it.radius * 2).toInt() }.eachCount()
         val worldStatus = WorldStatus(
             width = world.currentSimulator.width,
             height = world.currentSimulator.height,
@@ -53,13 +53,13 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
             wrapping = world.isWrapping,
             clients = world.clients().map { ClientData(id = it.id, name = it.name, location = it.position) },
             bodyCounts = bodyGrouping.map { (size, count) -> BodySummary(size, count) },
-            bodies = world.currentSimulator.bodies.map {
+            bodies = world.currentSimulator.mapBodies {
                 BodyData(
                     id = it.id,
                     radius = it.radius,
                     mass = it.mass,
                     position = VectorData(it.position.x, it.position.y),
-                    velocity = VectorData(it.velocity.x, it.position.y)
+                    velocity = VectorData(it.velocity.x, it.velocity.y)
                 )
             }
         )
@@ -168,9 +168,12 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                 val scaleX = gameClient.screenSize.width.toFloat() / config.width
                 val scaleY = gameClient.screenSize.height.toFloat() / config.height
 
+                // Cap to 240 shapes to keep count within 1 byte
+                val capped = visibleShapes.take(240)
+                val count = capped.size
+
                 // Layout: [count:byte] then for each shape [shapeId:byte][x:byte][y:byte]
-                val count = visibleShapes.size
-                val capacity = 1 + count * (1 + 1 + 1)
+                val capacity = 1 + count * 3
                 val buf = ByteBuffer
                     .allocate(capacity)
                     .order(ByteOrder.LITTLE_ENDIAN) // choose and stick to an endianness
@@ -180,7 +183,7 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                 // buf.putShort(count.toShort())
                 buf.put(count.toByte())
 
-                for (vs in visibleShapes) {
+                for (vs in capped) {
                     val adjusted = vs.position - gameClient.worldBounds.first
                     val sx = (adjusted.x * scaleX).roundToInt().toByte()
                     val sy = (adjusted.y * scaleY).roundToInt().toByte()

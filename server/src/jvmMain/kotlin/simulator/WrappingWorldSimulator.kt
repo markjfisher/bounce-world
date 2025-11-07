@@ -16,7 +16,7 @@ data class WrappingWorldSimulator(
 ): BaseBodySimulator(config) {
     private val isWrapping = true
 
-    override fun step() {
+    override fun doStepLocked() {
         collisions.clear()
         bodies.forEach { body ->
             // distance = speed * time

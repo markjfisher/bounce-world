@@ -6,8 +6,6 @@ import domain.Body
 import io.ktor.utils.io.InternalAPI
 import io.ktor.utils.io.locks.withLock
 import org.joml.Vector2f
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.locks.ReentrantLock
 
 @Suppress("DuplicatedCode")
 data class BoundedWorldSimulator(
@@ -15,60 +13,52 @@ data class BoundedWorldSimulator(
 ): BaseBodySimulator(config) {
 
     @OptIn(InternalAPI::class)
-    override fun step() {
-        bodiesLock.withLock {
-            drainAdds()
+    override fun doStepLocked() {
+        val checkedPairs = HashSet<Long>(bodies.size * 2)
+        val quadtree = Quadtree(width, height, 1, 6)
+        collisions.clear()
+        for (body in bodies) {
+            // create a rectangle for the location of the current body, make it slightly larger than a box covering the radius of the body
+            val bound = Vector2f(body.radius, body.radius).mul(1.05f)
+            val ul = Vector2f(body.position).sub(bound)
+            val lr = Vector2f(body.position).add(bound)
+            quadtree.insert(body.id, ul.x, ul.y, lr.x, lr.y)
+        }
 
-            val checkedPairs = HashSet<Long>(bodies.size * 2)
-            val quadtree = Quadtree(width, height, 1, 6)
-            collisions.clear()
-            for (body in bodies) {
-                // create a rectangle for the location of the current body, make it slightly larger than a box covering the radius of the body
-                val bound = Vector2f(body.radius, body.radius).mul(1.05f)
-                val ul = Vector2f(body.position).sub(bound)
-                val lr = Vector2f(body.position).add(bound)
-                quadtree.insert(body.id, ul.x, ul.y, lr.x, lr.y)
-            }
+        // create a faster lookup
+        val byId = HashMap<Int, Body>(bodies.size)
+        for (b in bodies) byId[b.id] = b
 
-            // create a faster lookup
-            val byId = HashMap<Int, Body>(bodies.size)
-            for (b in bodies) byId[b.id] = b
+        // now loop over all bodies, and find their closest potential collisions
+        for (bodyA in bodies) {
+            val bound = Vector2f(bodyA.radius * 2f, bodyA.radius * 2f)
+            val ul = Vector2f(bodyA.position).sub(bound)
+            val lr = Vector2f(bodyA.position).add(bound)
+            val neighbours = quadtree.queryWithIds(ul.x, ul.y, lr.x, lr.y)
+                .filterNot { it.second == bodyA.id }
 
-            // now loop over all bodies, and find their closest potential collisions
-            for (bodyA in bodies) {
-                val bound = Vector2f(bodyA.radius * 2f, bodyA.radius * 2f)
-                val ul = Vector2f(bodyA.position).sub(bound)
-                val lr = Vector2f(bodyA.position).add(bound)
-                val neighbours = quadtree.queryWithIds(ul.x, ul.y, lr.x, lr.y)
-                    .filterNot { it.second == bodyA.id }
+            for ((_, bodyId) in neighbours) {
+                if (bodyId == bodyA.id) continue
+                val bodyB = byId[bodyId] ?: continue
 
-                for ((_, bodyId) in neighbours) {
-                    if (bodyId == bodyA.id) continue
-                    val bodyB = byId[bodyId] ?: continue
+                // pack unordered pair into a single Long to avoid Pair allocs
+                val a = bodyA.id
+                val b = bodyB.id
+                val key = if (a < b) (a.toLong() shl 32) or (b.toLong() and 0xffffffffL)
+                          else (b.toLong() shl 32) or (a.toLong() and 0xffffffffL)
 
-                    // pack unordered pair into a single Long to avoid Pair allocs
-                    val a = bodyA.id
-                    val b = bodyB.id
-                    val key = if (a < b) (a.toLong() shl 32) or (b.toLong() and 0xffffffffL)
-                              else (b.toLong() shl 32) or (a.toLong() and 0xffffffffL)
-
-                    if (checkedPairs.add(key)) {
-                        resolveCollision(bodyA, bodyB)
-                    }
+                if (checkedPairs.add(key)) {
+                    resolveCollision(bodyA, bodyB)
                 }
             }
-
-            // engineers eh? "close enough"
-            for (body in bodies) {
-                update(body)
-                edges(body)
-            }
-
-            // add any enqueue bodies during this frame
-            drainAdds()
-
-            if (currentStep++ > 255) currentStep = 0
         }
+
+        // engineers eh? "close enough"
+        for (body in bodies) {
+            update(body)
+            edges(body)
+        }
+
     }
 
     override fun calculateDistance(a: Body, b: Body): Float {

@@ -2,6 +2,7 @@ package simulator
 
 import config.WorldConfig
 import domain.Body
+import domain.BodyView
 import geometry.SpiralGenerator
 import io.ktor.utils.io.InternalAPI
 import io.ktor.utils.io.locks.withLock
@@ -10,26 +11,43 @@ import org.joml.Vector2f
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.locks.ReentrantLock
 
+@OptIn(InternalAPI::class)
 abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
+    abstract fun calculateDistance(a: Body, b: Body): Float
+    protected abstract fun doStepLocked()
+
     override var width: Int = config.width
     override var height: Int = config.height
-    override var currentStep: Int = 0
-    override val collisions: MutableSet<Int> = mutableSetOf()
-    override val bodies: MutableList<Body> = mutableListOf()
+    @Volatile override var currentStep: Int = 0
+        protected set
 
-    protected val bodiesLock = ReentrantLock()
+    protected val collisions: MutableSet<Int> = mutableSetOf()
+    protected val bodies: MutableList<Body> = mutableListOf()
+
+    override fun collisionsCopy(): Set<Int> = lock.withLock { collisions.toSet() }
+
+    private val lock = ReentrantLock()
+    private val pendingAdds = ConcurrentLinkedQueue<Body>()
+
+    override fun <T> withBodiesRead(block: (List<Body>) -> T): T =
+        lock.withLock { block(bodies) }
+
+    override fun bodyCount(): Int = lock.withLock { bodies.size }
 
     val stepTime = 1f / config.updatesPerSecond
-    @OptIn(InternalAPI::class)
-    override fun reset() {
-        bodiesLock.withLock {
-            bodies.clear()
-        }
+
+    override fun snapshotBodyViews(): List<BodyView> = lock.withLock {
+        bodies.map { b -> BodyView(b.id, b.position.x, b.position.y, b.radius, b.velocity.x, b.velocity.y) }
     }
 
-    abstract fun calculateDistance(a: Body, b: Body): Float
-
-    private val pendingAdds = ConcurrentLinkedQueue<Body>()
+    override fun reset() {
+        lock.withLock {
+            bodies.clear()
+            collisions.clear()
+            pendingAdds.clear()
+            currentStep = 0
+        }
+    }
 
     fun addBody(body: Body) {
         pendingAdds.add(body)
@@ -40,6 +58,15 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
         while (b != null) {
             bodies.add(b)
             b = pendingAdds.poll()
+        }
+    }
+
+    override fun step() {
+        lock.withLock {
+            drainAdds()
+            doStepLocked()
+            drainAdds()
+            if (currentStep++ > 255) currentStep = 0
         }
     }
 
@@ -56,7 +83,7 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
     }
 
     private fun moveBody(b: Body): Body? {
-        if (!isOverlapping(b)) return b
+        if (!isOverlappingAny(b)) return b
 
         var testedPoints = 0
         val bodyPos = Vector2f(b.position)
@@ -72,7 +99,7 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
             val testPosition = boundVector(Vector2f(bodyPos).add(offset.x.toFloat(), offset.y.toFloat()))
             // change the body's position by the spiral offset, which circles the original point
             mutB.position.set(testPosition)
-            if (!isOverlapping(mutB)) {
+            if (!isOverlappingAny(mutB)) {
                 return mutB
             }
             testedPoints++
@@ -96,9 +123,15 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
         return Vector2f(wrappedX, wrappedY)
     }
 
-    private fun isOverlapping(b: Body): Boolean = bodies.any { otherBody ->
-        isOverlapping(otherBody, b)
-    }
+    private fun isOverlappingAny(candidate: Body): Boolean =
+        withBodiesRead { bs ->
+            for (other in bs) {
+                if (isOverlapping(candidate, other)) {
+                    return@withBodiesRead true
+                }
+            }
+            false
+        }
 
     private fun isOverlapping(a: Body, b: Body): Boolean {
         val distanceApart = calculateDistance(a, b)
