@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [2.2.1]
+
+- Add TcpLineBuffer to ensure requests are complete before trying to process
+  - This is to help fix the netstream issue of sending packets in parts, now server waits for full line
+
 ## [2.2.0]
 
 - Major version bump of all libraries and fixes to codebase to support, including:

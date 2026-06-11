@@ -22,6 +22,9 @@ The project uses gradle to build the main jar.
 To run the service with default parameters (listening on all bindings on port 8080, in 'grid' configuration for clients), download the jar, then run it with
 
 ```shell
+# This is only required to stop the WARNING at start up about java.lang.System::loadLibrary being called from netty
+# If you don't use it, the server still works, just you get an ugly message
+export JAVA_TOOL_OPTIONS='--enable-native-access=ALL-UNNAMED'
 # substitute the correct version here
 $ java -jar path/to/server-2.0.0.jar
 ```
@@ -99,6 +102,12 @@ will keep a persistent connection open and not have the open/close additional ti
 - `TCP_PORT=9002`
 
 Change the port the TCP server listens on.
+
+### TCP command protocol
+
+Commands sent to the TCP port are UTF-8 text, **one command per line**, terminated with ASCII LF (`\n`). CRLF is also accepted. The server buffers incoming bytes until a complete line is received, so commands may arrive split across multiple TCP packets (required for 8-bit clients using FujiNet netstream).
+
+Persistent connections prefix commands with `x-` (e.g. `x-add-client atari,2,40,22\n`). Responses are raw bytes (not line-framed). Linux CLI testing with `echo` works because `echo` adds a newline by default.
 
 ## CLI interaction
 

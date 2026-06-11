@@ -46,6 +46,7 @@ class TcpServer(
         val input = socket.openReadChannel()
         val output = socket.openWriteChannel(autoFlush = true)
         var isKeepActive = true
+        val lineBuffer = TcpLineBuffer()
 
         try {
             while (isKeepActive) {
@@ -62,19 +63,16 @@ class TcpServer(
                     logger.info("client connection closed")
                     break
                 } else {
-                    val command = buffer.copyOf(bytesRead)
-                    // in this scenario we can strip the string of any CR or LF (e.g. for linux cli from "echo").
-                    // For a more general binary scenario we would not convert to string, but everything for Bouncy World is strings on the commands
-                    val commandString = command.toString(Charsets.UTF_8).trim()
+                    val commandLines = lineBuffer.append(buffer, bytesRead)
+                    for (commandString in commandLines) {
+                        isKeepActive = commandString.startsWith("x-")
+                        val response = process(commandString.substringAfter("x-").trim())
+                        output.writeByteArray(response)
 
-                    // Check if this is from a client maintaining a persistent connection (sending command with "x-" at the start)
-                    isKeepActive = commandString.startsWith("x-")
-                    val response = process(commandString.substringAfter("x-").trim())
-                    output.writeByteArray(response)
-                    // logger.info("sending client data len: ${response.size} (${String.format("%02x", response.size)}):\n${response.toCustomHexDump()}")
-
-                    if (commandString.startsWith("close")) {
-                        isKeepActive = false
+                        if (commandString.startsWith("close")) {
+                            isKeepActive = false
+                            break
+                        }
                     }
                 }
             }
