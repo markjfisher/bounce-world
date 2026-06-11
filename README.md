@@ -107,7 +107,7 @@ This is only useful for testing, as the client will time out after 60s.
 - POST `/client`, body: `name,version,x-width,y-width`
 
 ```shell
-$ curl -s -X POST http://oscar.home:8080/client -d 'fen2,1,40,22' -o - | xxd -p
+$ curl -s -X POST http://your-host:8080/client -d 'fen2,1,40,22' -o - | xxd -p
 00
 ```
 which shows the hexadecimal value of the client id.
@@ -119,7 +119,7 @@ which shows the hexadecimal value of the client id.
 returns a simple array of the clients ids and names as a json object:
 
 ```
-❯ curl -s -X GET http://oscar.home:8080/get-clients
+❯ curl -s -X GET http://your-host:8080/get-clients
 [{"id":0,"name":"fen3"},{"id":1,"name":"fen2"},{"id":2,"name":"fen1"}]
 ```
 
