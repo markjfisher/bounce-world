@@ -105,7 +105,7 @@ Change the port the TCP server listens on.
 
 ### TCP command protocol
 
-Commands sent to the TCP port are UTF-8 text, **one command per line**, terminated with ASCII LF (`\n`). CRLF is also accepted. The server buffers incoming bytes until a complete line is received, so commands may arrive split across multiple TCP packets (required for 8-bit clients using FujiNet netstream).
+Commands sent to the TCP port are UTF-8 text, **one command per line**. Line terminators accepted: LF (`\n`, 0x0A), CR (`\r`, 0x0D), or Atari ATASCII EOL (0x9B — what CC65 `\n` emits on Atari). The server buffers incoming bytes until a complete line is received, so commands may arrive split across multiple TCP packets (required for 8-bit clients using FujiNet netstream).
 
 Persistent connections prefix commands with `x-` (e.g. `x-add-client atari,2,40,22\n`). Responses are raw bytes (not line-framed). Linux CLI testing with `echo` works because `echo` adds a newline by default.
 

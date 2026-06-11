@@ -27,6 +27,10 @@ class TcpServer(
     private val port: Int,
     private val scope: CoroutineScope,
 ) {
+    companion object {
+        // Idle timeout waiting for the next TCP read
+        private const val READ_TIMEOUT_MS = 10_000L
+    }
     fun start() {
         logger.info("Starting TCP server on interface: $host, port: $port")
         scope.launch {
@@ -48,23 +52,45 @@ class TcpServer(
         var isKeepActive = true
         val lineBuffer = TcpLineBuffer()
 
+        logger.info("TCP client connected from ${socket.remoteAddress}")
+
         try {
             while (isKeepActive) {
                 val buffer = ByteArray(1024)
-                // allow client 5s to send something
-                val bytesRead: Int? = withTimeoutOrNull(5_000) {
+                val bytesRead: Int? = withTimeoutOrNull(READ_TIMEOUT_MS) {
                     input.readAvailable(buffer, 0, buffer.size)
                 }
 
                 if (bytesRead == null) {
-                    logger.info("No client command to process, exiting")
+                    if (lineBuffer.hasPending()) {
+                        logger.warn(
+                            "TCP read timeout with incomplete command; pending=${lineBuffer.pendingDebug()}",
+                        )
+                    } else {
+                        logger.info("TCP read timeout with no data received, closing connection")
+                    }
                     break
                 } else if (bytesRead == -1 || input.isClosedForRead) {
-                    logger.info("client connection closed")
+                    if (lineBuffer.hasPending()) {
+                        logger.warn(
+                            "TCP client closed with incomplete command; pending=${lineBuffer.pendingDebug()}",
+                        )
+                    } else {
+                        logger.info("TCP client connection closed")
+                    }
                     break
+                } else if (bytesRead == 0) {
+                    continue
                 } else {
+                    // logger.info(
+                    //     "TCP received $bytesRead bytes: ${buffer.formatForTcpLog(bytesRead)}",
+                    // )
                     val commandLines = lineBuffer.append(buffer, bytesRead)
+                    // if (commandLines.isEmpty() && lineBuffer.hasPending()) {
+                    //     logger.info("TCP awaiting remainder of command; pending=${lineBuffer.pendingDebug()}")
+                    // }
                     for (commandString in commandLines) {
+                        // logger.info("TCP command: >$commandString<")
                         isKeepActive = commandString.startsWith("x-")
                         val response = process(commandString.substringAfter("x-").trim())
                         output.writeByteArray(response)
@@ -193,6 +219,20 @@ class TcpServer(
             logger.error("Broadcast Command: invalid parameters $arg")
             return byteArrayOf(0)
         }
+    }
+
+    private fun ByteArray.formatForTcpLog(length: Int): String {
+        val hex = take(length).joinToString(" ") { byte -> "%02x".format(byte) }
+        val text = take(length).joinToString("") { byte ->
+            when (byte.toUByte().toInt()) {
+                in 0x20..0x7e -> byte.toInt().toChar().toString()
+                0x0a -> "\\n"
+                0x0d -> "\\r"
+                0x9b -> "\\x9b"
+                else -> "."
+            }
+        }
+        return "hex=[$hex] text=[$text]"
     }
 
     private fun doAddClient(arg: String): ByteArray {

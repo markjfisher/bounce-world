@@ -25,4 +25,12 @@ class TcpLineBufferTest {
             "x-w 3",
         )
     }
+
+    @Test
+    fun `handles Atari ATASCII EOL 0x9B as single byte`() {
+        val payload = byteArrayOf(
+            0x78, 0x2d, 0x73, 0x68, 0x61, 0x70, 0x65, 0x2d, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x9b.toByte(),
+        )
+        buffer.append(payload, payload.size) shouldContainExactly listOf("x-shape-count")
+    }
 }
