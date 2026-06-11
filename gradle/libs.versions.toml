@@ -1,49 +1,45 @@
-
 [versions]
-kotlin-version = "2.1.0"
-ktor-version = "3.0.3"
-logback-version = "1.5.14"
-joml-version = "1.10.8"
-mockk-version = "1.13.14"
+joml-version = "1.10.9"
+kilua-rpc-version = "0.0.45"
 kotest-ktor-version = "2.0.0"
-kotest-runner-junit5-version = "5.9.1"
-kvision-version = "8.1.0"
-taskinfo-version = "2.2.0"
+kotest-runner-junit5-version = "6.1.11"
+kotlin-version = "2.3.21"
+ksp-version = "2.3.9"
+ktor-version = "3.5.0"
+kvision-version = "9.6.0"
+logback-version = "1.5.34"
+mockk-version = "1.14.11"
+taskinfo-version = "3.0.2"
 
 [libraries]
+joml-core = { module = "org.joml:joml", version.ref = "joml-version" }
+kilua-rpc-ktor = { module = "dev.kilua:kilua-rpc-ktor", version.ref = "kilua-rpc-version" }
+kotest-ktor-assertions = { module = "io.kotest:kotest-assertions-core-jvm", version.ref = "kotest-runner-junit5-version" }
+kotest-ktor-core = { module = "io.kotest.extensions:kotest-assertions-ktor", version.ref = "kotest-ktor-version" }
+kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest-runner-junit5-version" }
+ktor-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor-version" }
+ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor-version" }
+ktor-server-compression = { module = "io.ktor:ktor-server-compression", version.ref = "ktor-version" }
+ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml-jvm", version.ref = "ktor-version" }
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor-version" }
 ktor-server-netty = { module = "io.ktor:ktor-server-netty-jvm", version.ref = "ktor-version" }
-ktor-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor-version" }
-ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml-jvm", version.ref = "ktor-version" }
-ktor-server-compression = { module = "io.ktor:ktor-server-compression", version.ref = "ktor-version" }
-
-## which serialization library - was using jackson, but kvision is kotlinx-serialization, so swapping
-#ktor-jackson = { module = "io.ktor:ktor-serialization-jackson", version.ref = "ktor-version" }
-ktor-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor-version" }
-
-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
-joml-core = { module = "org.joml:joml", version.ref = "joml-version" }
-
-## kvision
-kvision-server-ktor = { module = "io.kvision:kvision-server-ktor", version.ref = "kvision-version" }
-kvision-core = { module = "io.kvision:kvision", version.ref = "kvision-version" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor-version" }
 kvision-bootstrap = { module = "io.kvision:kvision-bootstrap", version.ref = "kvision-version" }
-kvision-state = { module = "io.kvision:kvision-state", version.ref = "kvision-version" }
+kvision-common-remote = { module = "io.kvision:kvision-common-remote", version.ref = "kvision-version" }
+kvision-core = { module = "io.kvision:kvision", version.ref = "kvision-version" }
 kvision-fontawesome = { module = "io.kvision:kvision-fontawesome", version.ref = "kvision-version" }
 kvision-i18n = { module = "io.kvision:kvision-i18n", version.ref = "kvision-version" }
-
-
-## testing
-ktor-server-test-host = { module = "io.ktor:ktor-server-test-host-jvm", version.ref = "ktor-version" }
-kotest-ktor-core = { module = "io.kotest.extensions:kotest-assertions-ktor", version.ref = "kotest-ktor-version" }
-kotest-ktor-assertions = { module = "io.kotest:kotest-assertions-core-jvm", version.ref = "kotest-runner-junit5-version" }
-kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest-runner-junit5-version" }
+kvision-state = { module = "io.kvision:kvision-state", version.ref = "kvision-version" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
 mockk-core = { module = "io.mockk:mockk", version.ref = "mockk-version" }
 
 [plugins]
+kilua-rpc = { id = "dev.kilua.rpc", version.ref = "kilua-rpc-version" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
-kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-version" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin-version" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-version" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp-version" }
 ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
 kvision = { id = "io.kvision", version.ref = "kvision-version" }
 taskinfo = { id = "org.barfuin.gradle.taskinfo", version.ref = "taskinfo-version" }
+version-catalog-update = { id = "nl.littlerobots.version-catalog-update", version = "1.1.0" }

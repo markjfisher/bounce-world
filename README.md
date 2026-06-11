@@ -33,8 +33,12 @@ $ java -jar path/to/server-2.0.0.jar
 
 ### Running the dev build
 
-* jsRun - Starts a webpack dev server on port 3000
-* jvmRun - Starts a dev server on port 8080
+Run both processes (in separate terminals):
+
+* `./gradlew :server:jvmRun` — Ktor backend on port 8080 (RPC + REST + TCP)
+* `./gradlew :server:jsBrowserDevelopmentRun` — webpack dev server on port 3000 (proxies `/rpc/*` and `/rpcws/*` to the backend; replaces the old `jsRun` task)
+
+Open http://localhost:3000 in the browser. The webpack server only serves the frontend; RPC calls require the JVM backend to be running.
 
 ### Packaging
 

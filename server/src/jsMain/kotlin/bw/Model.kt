@@ -1,6 +1,6 @@
 package bw
 
-import io.kvision.remote.getService
+import dev.kilua.rpc.getService
 import io.kvision.state.ObservableList
 import io.kvision.state.ObservableValue
 import io.kvision.state.observableListOf
@@ -10,9 +10,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 object Model {
-    private val bouncyService = BouncyService()
+    private val bouncyService = getService<IBouncyService>()
     private val wsBouncyService = getService<IBouncyWsService>()
-//    private val bwChannel = Channel<Int>()
 
     val worldData = ObservableValue(WorldShared())
     val clients: ObservableList<GameClientShared> = observableListOf()
@@ -37,23 +36,11 @@ object Model {
     }
 
     suspend fun connectToServer() {
-        // if the connection closes (e.g. server restarted), this will ensure we retry
         while (true) {
             try {
                 wsBouncyService.socketConnection { _, input ->
                     coroutineScope {
-        //                    launch {
-        //                        // SEND SIDE - nothing uses this yet, could use it for updates, but there's a full REST interface the client can use
-        //                        while (true) {
-        //                            for (i in bwChannel) {
-        //                                println("sending: $i")
-        //                                output.send(i)
-        //                            }
-        //                            delay(200)
-        //                        }
-        //                    }
                         launch {
-                            // RECEIVE SIDE - gets updates on world state directly from server
                             while (true) {
                                 for (newWorldData in input) {
                                     worldData.value = newWorldData

@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [2.2.0]
+
+- Major version bump of all libraries and fixes to codebase to support, including:
+  - java 25 (from 17)
+  - kotlin 2.3.21 (not 2.4 because of ksp only at 2.3.9)
+  - ktor 3.5.0 (from 3.0.3)
+  - kvision (version 8 to 9)
+  - kvision-server-rpc -> kilua-rpc-ktor + kvision-common-remote
+- This fixes the standard "./gradlew build" which had metadata issues in kvision 8
+- css/html moved to resources folder
+- default packaging from jar -> jarWithJs
+
 ## [2.1.1]
 
 - Fixed an edge bouncing issue where body would be close enough to it that it

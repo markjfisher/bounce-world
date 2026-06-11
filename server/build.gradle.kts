@@ -3,24 +3,29 @@ import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
-    // This gives a "java not compatible with multiplatform" warning, but the web app doesn't work without it
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.kilua.rpc)
     alias(libs.plugins.kvision)
     alias(libs.plugins.taskinfo)
 }
 
 group = "bounce.world"
-version = "2.1.1"
+version = "2.2.0"
 
 kotlin {
-    jvmToolchain(17)
-    js(IR) {
+    jvmToolchain(25)
+    js {
         browser {
+            useEsModules()
             commonWebpackConfig {
                 outputFileName = "main.bundle.js"
                 sourceMaps = true
             }
         }
         binaries.executable()
+        compilerOptions {
+            target.set("es2015")
+        }
     }
     jvm {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -34,7 +39,8 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
-                api(libs.kvision.server.ktor)
+                implementation(libs.kilua.rpc.ktor)
+                implementation(libs.kvision.common.remote)
             }
         }
         jvmMain {
@@ -45,8 +51,6 @@ kotlin {
                 implementation(libs.ktor.serialization.json)
                 implementation(libs.ktor.server.compression)
                 implementation(libs.logback.classic)
-                // This stops the hocon loader from being put in the the jar file at META-INF/services/io.ktor.server.config.ConfigLoader
-                // implementation(libs.ktor.server.config.yaml)
                 implementation(libs.joml.core)
             }
         }
@@ -58,7 +62,6 @@ kotlin {
                 implementation(libs.kotest.runner.junit5)
                 implementation(libs.mockk.core)
             }
-
         }
         jsMain {
             dependencies {
@@ -66,9 +69,7 @@ kotlin {
                 implementation(libs.kvision.bootstrap)
                 implementation(libs.kvision.state)
                 implementation(libs.kvision.fontawesome)
-                // implementation(libs.kvision.i18n)
             }
-
         }
     }
 }

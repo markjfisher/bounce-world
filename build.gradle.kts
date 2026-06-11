@@ -1,13 +1,29 @@
+plugins {
+    alias(libs.plugins.version.catalog.update)
+}
+
+versionCatalogUpdate {
+    pin {
+        versions.set(
+            listOf(
+                "kotlin-version",
+                "ksp-version",
+                "kilua-rpc-version",
+                "kvision-version",
+            ),
+        )
+    }
+}
+
 tasks {
     getByName<Wrapper>("wrapper") {
-        gradleVersion = "8.12"
+        gradleVersion = "9.1.0"
         distributionType = Wrapper.DistributionType.ALL
     }
 }
 
 defaultTasks(
-    ":server:clean", ":server:jar"
-    // ":server:jar"
+    ":server:clean", ":server:jarWithJs",
 )
 
 allprojects {
@@ -20,5 +36,4 @@ allprojects {
         maven(url = "https://raw.githubusercontent.com/kotlin-graphics/mary/master")
         maven(url = "https://jitpack.io")
     }
-
 }
