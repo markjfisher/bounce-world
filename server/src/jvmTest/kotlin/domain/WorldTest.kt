@@ -21,6 +21,7 @@ class WorldTest : StringSpec({
         "world.heartbeatTimeoutMillis" to "10000",
         "world.locationPattern" to "grid",
         "world.enableWrapping" to "true",
+        "world.loggingRequests" to "false",
         "world.tcp.host" to "0.0.0.0",
         "world.tcp.port" to "9002"
     )

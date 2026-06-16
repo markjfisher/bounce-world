@@ -59,6 +59,7 @@ fun main() = runBlocking {
             shapesCommandProcessor,
             worldConfig.tcpHost,
             worldConfig.tcpPort,
+            worldConfig.loggingRequests,
             this
         )
         tcpServer.start()

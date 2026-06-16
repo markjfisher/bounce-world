@@ -25,6 +25,7 @@ class TcpServer(
     private val scp: ShapesCommandProcessor,
     private val host: String,
     private val port: Int,
+    private val loggingRequests: Boolean,
     private val scope: CoroutineScope,
 ) {
     companion object {
@@ -82,17 +83,26 @@ class TcpServer(
                 } else if (bytesRead == 0) {
                     continue
                 } else {
-                    // logger.info(
-                    //     "TCP received $bytesRead bytes: ${buffer.formatForTcpLog(bytesRead)}",
-                    // )
+                    if (loggingRequests) {
+                        logger.info(
+                            "TCP << $bytesRead bytes: ${buffer.formatForTcpLog(bytesRead)}",
+                        )
+                    }
                     val commandLines = lineBuffer.append(buffer, bytesRead)
-                    // if (commandLines.isEmpty() && lineBuffer.hasPending()) {
-                    //     logger.info("TCP awaiting remainder of command; pending=${lineBuffer.pendingDebug()}")
-                    // }
+                    if (loggingRequests && commandLines.isEmpty() && lineBuffer.hasPending()) {
+                        logger.info("TCP awaiting remainder of command; pending=${lineBuffer.pendingDebug()}")
+                    }
                     for (commandString in commandLines) {
-                        // logger.info("TCP command: >$commandString<")
+                        if (loggingRequests) {
+                            logger.info("TCP command: >$commandString<")
+                        }
                         isKeepActive = commandString.startsWith("x-")
                         val response = process(commandString.substringAfter("x-").trim())
+                        if (loggingRequests) {
+                            logger.info(
+                                "TCP >> ${response.size} bytes: ${response.formatForTcpLog(response.size)}",
+                            )
+                        }
                         output.writeByteArray(response)
 
                         if (commandString.startsWith("close")) {

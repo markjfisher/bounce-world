@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "bounce.world"
-version = "2.2.1"
+version = "2.2.2"
 
 kotlin {
     jvmToolchain(25)

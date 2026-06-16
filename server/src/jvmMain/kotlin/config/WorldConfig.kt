@@ -14,6 +14,7 @@ class WorldConfig(config: ApplicationConfig) {
     var heartbeatTimeoutMillis = config.property("world.heartbeatTimeoutMillis").getString().toLong()
     var locationPattern = config.property("world.locationPattern").getString()
     var enableWrapping = config.property("world.enableWrapping").getString().toBoolean()
+    var loggingRequests = config.property("world.loggingRequests").getString().toBoolean()
 
     var tcpHost = config.property("world.tcp.host").getString()
     var tcpPort = config.property("world.tcp.port").getString().toInt()
