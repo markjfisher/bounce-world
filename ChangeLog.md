@@ -4,10 +4,17 @@
 
 ## [2.3.0]
 
-- Added new port 9003 that responds on all TCP requests with byte length, and removed the new "d" endpoint in favour of new port so that all commands
-  get the new length if the client uses it instead
+- Added new port 9003 that responds on all TCP requests with byte length in first 2 bytes
+- Removed the new "d" endpoint in favour of new port so that all commands
+  get the new length if the client uses it instead. From this version on,
+  clients are in sync with the server version.
+
+The server is compatible with older clients on port 9002, but for newer clients, they must
+use 9003 which also gives the size of the packet as the first 2 bytes of the response.
 
 ## [2.2.2] - REMOVED
+
+THIS VERSION WAS REMOVED FROM RELEASES AS IT ONLY HAD 1 TCP PORT DOING BYTE COUNT WHICH WAS INCONSITENT
 
 - Add new "d" command that does same as "w" (world data for client) but also prepends data with total
   size of the payload for client validation, thus clients can send "x-d <id>" and get the same data plus
