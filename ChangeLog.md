@@ -2,7 +2,12 @@
 
 ## [Unreleased]
 
-## [2.2.2]
+## [2.3.0]
+
+- Added new port 9003 that responds on all TCP requests with byte length, and removed the new "d" endpoint in favour of new port so that all commands
+  get the new length if the client uses it instead
+
+## [2.2.2] - REMOVED
 
 - Add new "d" command that does same as "w" (world data for client) but also prepends data with total
   size of the payload for client validation, thus clients can send "x-d <id>" and get the same data plus

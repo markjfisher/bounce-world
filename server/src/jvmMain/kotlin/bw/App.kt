@@ -60,9 +60,24 @@ fun main() = runBlocking {
             worldConfig.tcpHost,
             worldConfig.tcpPort,
             worldConfig.loggingRequests,
-            this
+            prependResponseSize = false,
+            this,
         )
         tcpServer.start()
+    }
+
+    launch(Dispatchers.IO) {
+        val framedTcpServer = TcpServer(
+            worldCommandProcessor,
+            clientCommandProcessor,
+            shapesCommandProcessor,
+            worldConfig.tcpHost,
+            worldConfig.tcpFramedPort,
+            worldConfig.loggingRequests,
+            prependResponseSize = true,
+            this,
+        )
+        framedTcpServer.start()
     }
 
     embeddedServer(factory = Netty, environment = env, configure = { envConfig(env) }, module = {

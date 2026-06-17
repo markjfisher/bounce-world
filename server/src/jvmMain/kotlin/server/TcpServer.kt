@@ -26,14 +26,25 @@ class TcpServer(
     private val host: String,
     private val port: Int,
     private val loggingRequests: Boolean,
+    private val prependResponseSize: Boolean,
     private val scope: CoroutineScope,
 ) {
     companion object {
         // Idle timeout waiting for the next TCP read
         private const val READ_TIMEOUT_MS = 10_000L
+        private const val PACKET_SIZE_BYTES = 2
+
+        fun prependPacketSize(payload: ByteArray): ByteArray {
+            val totalSize = PACKET_SIZE_BYTES + payload.size
+            return byteArrayOf(
+                (totalSize and 0xFF).toByte(),
+                ((totalSize shr 8) and 0xFF).toByte(),
+            ) + payload
+        }
     }
     fun start() {
-        logger.info("Starting TCP server on interface: $host, port: $port")
+        val mode = if (prependResponseSize) "framed" else "legacy"
+        logger.info("Starting TCP server ($mode) on interface: $host, port: $port")
         scope.launch {
             val serverSocket = aSocket(SelectorManager(this.coroutineContext)).tcp().bind(host, port)
             while (true) {
@@ -97,7 +108,8 @@ class TcpServer(
                             logger.info("TCP command: >$commandString<")
                         }
                         isKeepActive = commandString.startsWith("x-")
-                        val response = processCommand(commandString.substringAfter("x-").trim())
+                        val payload = processCommand(commandString.substringAfter("x-").trim())
+                        val response = formatResponse(payload)
                         if (loggingRequests) {
                             logger.info(
                                 "TCP >> ${response.size} bytes: ${response.formatForTcpLog(response.size)}",
@@ -124,6 +136,10 @@ class TcpServer(
         }
     }
 
+    internal fun formatResponse(payload: ByteArray): ByteArray {
+        return if (prependResponseSize) prependPacketSize(payload) else payload
+    }
+
     internal fun processCommand(command: String): ByteArray {
         val commandRegex = """^[a-zA-Z-]+\s""".toRegex()
 
@@ -134,7 +150,6 @@ class TcpServer(
         return when {
             // WORLD commands
             command.startsWith("w ") -> doGetWorldData(rp(command))
-            command.startsWith("d ") -> doGetWorldDataWithSize(rp(command))
             command == "ws" -> wcp.getWorldState()
             command == "status" -> serializeObjectToByteArray(wcp.getStatus())
             command == "reset" -> wcp.resetWorld()
@@ -178,15 +193,6 @@ class TcpServer(
             return byteArrayOf(0)
         }
         return wcp.getWorldData(clientId)
-    }
-
-    private fun doGetWorldDataWithSize(arg: String): ByteArray {
-        val clientId = arg.toIntOrNull()
-        if (clientId == null) {
-            logger.error("No client id found for >$arg<")
-            return WorldCommandProcessor.prependPacketSize(byteArrayOf(0))
-        }
-        return wcp.getWorldDataWithSize(clientId)
     }
 
     private fun doNewBody(arg: String): ByteArray {

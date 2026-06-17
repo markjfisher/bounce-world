@@ -18,5 +18,6 @@ class WorldConfig(config: ApplicationConfig) {
 
     var tcpHost = config.property("world.tcp.host").getString()
     var tcpPort = config.property("world.tcp.port").getString().toInt()
+    var tcpFramedPort = config.property("world.tcp.framed.port").getString().toInt()
 
 }

@@ -23,7 +23,8 @@ class WorldTest : StringSpec({
         "world.enableWrapping" to "true",
         "world.loggingRequests" to "false",
         "world.tcp.host" to "0.0.0.0",
-        "world.tcp.port" to "9002"
+        "world.tcp.port" to "9002",
+        "world.tcp.framed.port" to "9003"
     )
 
     val config = WorldConfig(defaultWorldApplicationConfig)

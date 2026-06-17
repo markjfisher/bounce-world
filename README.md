@@ -101,13 +101,35 @@ will keep a persistent connection open and not have the open/close additional ti
 
 - `TCP_PORT=9002`
 
-Change the port the TCP server listens on.
+Change the port the legacy TCP server listens on. This is the default port for existing clients.
+
+- `TCP_FRAMED_PORT=9003`
+
+Change the port for the framed TCP server. Both TCP ports are started by default and share the same
+command set; only the response wire format differs (see below).
 
 ### TCP command protocol
 
-Commands sent to the TCP port are UTF-8 text, **one command per line**. Line terminators accepted: LF (`\n`, 0x0A), CR (`\r`, 0x0D), or Atari ATASCII EOL (0x9B — what CC65 `\n` emits on Atari). The server buffers incoming bytes until a complete line is received, so commands may arrive split across multiple TCP packets (required for 8-bit clients using FujiNet netstream).
+Commands sent to either TCP port are UTF-8 text, **one command per line**. Line terminators accepted: LF (`\n`, 0x0A), CR (`\r`, 0x0D), or Atari ATASCII EOL (0x9B — what CC65 `\n` emits on Atari). The server buffers incoming bytes until a complete line is received, so commands may arrive split across multiple TCP packets (required for 8-bit clients using FujiNet netstream).
 
-Persistent connections prefix commands with `x-` (e.g. `x-add-client atari,2,40,22\n`). Responses are raw bytes (not line-framed). Linux CLI testing with `echo` works because `echo` adds a newline by default.
+Persistent connections prefix commands with `x-` (e.g. `x-add-client atari,2,40,22\n`). Linux CLI testing with `echo` works because `echo` adds a newline by default.
+
+#### Legacy TCP port (`TCP_PORT`, default 9002)
+
+Responses are raw bytes (not line-framed). This is the wire format used by existing clients.
+
+#### Framed TCP port (`TCP_FRAMED_PORT`, default 9003)
+
+The framed port accepts the same commands as the legacy port, but **every response** is prefixed with a
+2-byte little-endian total packet size. The size includes those 2 bytes, so a client can read the length
+first and then keep reading until the full packet has arrived — even when the TCP stream delivers the
+response in multiple fragments.
+
+Example: a 1-byte response (such as a client id from `add-client`) is sent as 3 bytes: `03 00 <payload>`.
+
+New clients that need reliable reassembly over fragmented reads should connect to the framed port and
+interpret all responses using this length prefix. Existing clients should continue to use the legacy
+port unchanged.
 
 ## CLI interaction
 
