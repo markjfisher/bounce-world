@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [2.2.2]
+
+- Add new "d" command that does same as "w" (world data for client) but also prepends data with total
+  size of the payload for client validation, thus clients can send "x-d <id>" and get the same data plus
+  2 bytes for length at start and detect fragmentation.
+- Add world.loggingRequests parameter to allow server to be started with WORLD_LOGGING_REQUESTS=true for debugging TCP
+
 ## [2.2.1]
 
 - Add TcpLineBuffer to ensure requests are complete before trying to process

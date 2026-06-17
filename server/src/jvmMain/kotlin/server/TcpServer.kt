@@ -97,7 +97,7 @@ class TcpServer(
                             logger.info("TCP command: >$commandString<")
                         }
                         isKeepActive = commandString.startsWith("x-")
-                        val response = process(commandString.substringAfter("x-").trim())
+                        val response = processCommand(commandString.substringAfter("x-").trim())
                         if (loggingRequests) {
                             logger.info(
                                 "TCP >> ${response.size} bytes: ${response.formatForTcpLog(response.size)}",
@@ -124,7 +124,7 @@ class TcpServer(
         }
     }
 
-    private fun process(command: String): ByteArray {
+    internal fun processCommand(command: String): ByteArray {
         val commandRegex = """^[a-zA-Z-]+\s""".toRegex()
 
         // rp == remove prefix
@@ -134,6 +134,7 @@ class TcpServer(
         return when {
             // WORLD commands
             command.startsWith("w ") -> doGetWorldData(rp(command))
+            command.startsWith("d ") -> doGetWorldDataWithSize(rp(command))
             command == "ws" -> wcp.getWorldState()
             command == "status" -> serializeObjectToByteArray(wcp.getStatus())
             command == "reset" -> wcp.resetWorld()
@@ -177,6 +178,15 @@ class TcpServer(
             return byteArrayOf(0)
         }
         return wcp.getWorldData(clientId)
+    }
+
+    private fun doGetWorldDataWithSize(arg: String): ByteArray {
+        val clientId = arg.toIntOrNull()
+        if (clientId == null) {
+            logger.error("No client id found for >$arg<")
+            return WorldCommandProcessor.prependPacketSize(byteArrayOf(0))
+        }
+        return wcp.getWorldDataWithSize(clientId)
     }
 
     private fun doNewBody(arg: String): ByteArray {

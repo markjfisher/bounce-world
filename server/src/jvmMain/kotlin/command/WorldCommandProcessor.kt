@@ -27,6 +27,20 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
         return clientData
     }
 
+    fun getWorldDataWithSize(id: Int): ByteArray = prependPacketSize(getWorldData(id))
+
+    companion object {
+        private const val PACKET_SIZE_BYTES = 2
+
+        fun prependPacketSize(payload: ByteArray): ByteArray {
+            val totalSize = PACKET_SIZE_BYTES + payload.size
+            return byteArrayOf(
+                (totalSize and 0xFF).toByte(),
+                ((totalSize shr 8) and 0xFF).toByte(),
+            ) + payload
+        }
+    }
+
     fun getWorldState(): ByteArray {
         val data = mutableListOf<Byte>()
         addWord(data, world.currentSimulator.width)
