@@ -26,12 +26,11 @@ class TcpServer(
     private val host: String,
     private val port: Int,
     private val loggingRequests: Boolean,
+    private val readTimeoutMillis: Long,
     private val prependResponseSize: Boolean,
     private val scope: CoroutineScope,
 ) {
     companion object {
-        // Idle timeout waiting for the next TCP read
-        private const val READ_TIMEOUT_MS = 10_000L
         private const val PACKET_SIZE_BYTES = 2
 
         fun prependPacketSize(payload: ByteArray): ByteArray {
@@ -69,7 +68,7 @@ class TcpServer(
         try {
             while (isKeepActive) {
                 val buffer = ByteArray(1024)
-                val bytesRead: Int? = withTimeoutOrNull(READ_TIMEOUT_MS) {
+                val bytesRead: Int? = withTimeoutOrNull(readTimeoutMillis) {
                     input.readAvailable(buffer, 0, buffer.size)
                 }
 

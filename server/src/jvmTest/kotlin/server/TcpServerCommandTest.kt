@@ -28,6 +28,7 @@ class TcpServerCommandTest {
         "world.loggingRequests" to "false",
         "world.tcp.host" to "0.0.0.0",
         "world.tcp.port" to "9002",
+        "world.tcp.readTimeoutMillis" to "30000",
         "world.tcp.framed.port" to "9003",
     )
 
@@ -52,6 +53,7 @@ class TcpServerCommandTest {
             "127.0.0.1",
             if (prependResponseSize) config.tcpFramedPort else config.tcpPort,
             false,
+            config.tcpReadTimeoutMillis,
             prependResponseSize,
             CoroutineScope(Dispatchers.Unconfined),
         )

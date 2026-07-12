@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [2.3.1]
+
+- Add new TCP_READ_TIMEOUT_MILLIS env var to control read timeout, default 30000
+
 ## [2.3.0]
 
 - Added new port 9003 that responds on all TCP requests with byte length in first 2 bytes

@@ -60,6 +60,7 @@ fun main() = runBlocking {
             worldConfig.tcpHost,
             worldConfig.tcpPort,
             worldConfig.loggingRequests,
+            worldConfig.tcpReadTimeoutMillis,
             prependResponseSize = false,
             this,
         )
@@ -74,6 +75,7 @@ fun main() = runBlocking {
             worldConfig.tcpHost,
             worldConfig.tcpFramedPort,
             worldConfig.loggingRequests,
+            worldConfig.tcpReadTimeoutMillis,
             prependResponseSize = true,
             this,
         )
