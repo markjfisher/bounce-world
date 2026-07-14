@@ -18,6 +18,7 @@ import logger
 import org.joml.Vector2f
 import simulator.WorldSimulator
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sin
@@ -62,8 +63,8 @@ open class World(
         clients.putAll(newClients)
     }
 
-    fun getWorldWidth() = worldBoundary().x * config.width
-    fun getWorldHeight() = worldBoundary().y * config.height
+    fun getWorldWidth() = clients.values.maxOfOrNull { it.region.x + it.region.width } ?: config.width
+    fun getWorldHeight() = clients.values.maxOfOrNull { it.region.y + it.region.height } ?: config.height
 
     // last heartbeat received
     val clientHeartbeats = mutableMapOf<Int, Long>()
@@ -189,20 +190,24 @@ open class World(
     open fun addClient(gameClient: GameClient) {
         val nextPoint = findNextUnoccupiedScreen()
         gameClient.position = nextPoint
+        if (gameClient.worldSize.width <= 0 || gameClient.worldSize.height <= 0) {
+            gameClient.worldSize = ScreenSize(config.width, config.height)
+        }
         clients[gameClient.id] = gameClient
         occupiedScreens[nextPoint] = gameClient
 
-        // adjust the simulator's dimensions
-        currentSimulator.width = getWorldWidth()
-        currentSimulator.height = getWorldHeight()
+        recalculateLayout()
     }
 
     fun createClient(gameClientInfo: GameClientInfo): GameClient {
         val client = GameClient(
-            id = nextClientId++, name = gameClientInfo.name, version = gameClientInfo.version, screenSize = gameClientInfo.screenSize
+            id = nextClientId++,
+            name = gameClientInfo.name,
+            version = gameClientInfo.version,
+            screenSize = gameClientInfo.screenSize,
+            worldSize = gameClientInfo.worldSize ?: ScreenSize(config.width, config.height)
         )
         addClient(client)
-        client.updateWorldBounds(config.width, config.height)
         clientHeartbeats[client.id] = System.currentTimeMillis()
         addEventToAllClients(StatusEvent.CLIENT_CHANGE)
         return client
@@ -222,13 +227,17 @@ open class World(
             grid.x >= worldBoundary().x || grid.y >= worldBoundary().y || grid.x < 0 || grid.y < 0 -> Point(0, 0)
             else -> grid
         }
-        val offsetX = correctedGrid.x * config.width
-        val offsetY = correctedGrid.y * config.height
+        val region = occupiedScreens[correctedGrid]?.region ?: ClientRegion(
+            correctedGrid.x * config.width,
+            correctedGrid.y * config.height,
+            config.width,
+            config.height
+        )
         // Create a position that's within a screen's boundaries, but will be inside the particular client's boundary that created it.
         // caters for the radius of the shape by reducing the possible x/y coordinates it starts at to be within a screen's size
         val pos = Vector2f(
-            offsetX + Random.nextFloat() * (config.width.toFloat() - shape.sideLength - 5f) + shape.sideLength / 2f + 2,
-            offsetY + Random.nextFloat() * (config.height.toFloat() - shape.sideLength - 5f) + shape.sideLength / 2f + 2
+            region.x + Random.nextFloat() * (region.width.toFloat() - shape.sideLength - 5f) + shape.sideLength / 2f + 2,
+            region.y + Random.nextFloat() * (region.height.toFloat() - shape.sideLength - 5f) + shape.sideLength / 2f + 2
         )
         return Body.from(id = nextId, position = pos, velocity = velocity, shape = shape)
     }
@@ -264,7 +273,98 @@ open class World(
         if (entriesForClient.isNotEmpty()) {
             occupiedScreens.remove(entriesForClient.keys.first())
         }
+        recalculateLayout()
         addEventToAllClients(StatusEvent.CLIENT_CHANGE)
+    }
+
+    private fun recalculateLayout() {
+        val oldWidth = currentSimulator.width
+        val oldHeight = currentSimulator.height
+
+        when (currentLocationPattern) {
+            "grid", "right" -> recalculateTrackLayout()
+            else -> throw Error("Unknown location pattern ${config.locationPattern}")
+        }
+
+        val newWidth = getWorldWidth()
+        val newHeight = getWorldHeight()
+        resizeSimulators(newWidth, newHeight)
+
+        if (newWidth < oldWidth || newHeight < oldHeight) {
+            reconcileBodiesAfterResize(newWidth, newHeight)
+        }
+    }
+
+    private fun recalculateTrackLayout() {
+        if (clients.isEmpty()) return
+
+        val columnWidths = occupiedScreens.entries
+            .groupBy({ it.key.x }, { it.value.worldSize.width })
+            .mapValues { (_, widths) -> widths.max() }
+        val rowHeights = occupiedScreens.entries
+            .groupBy({ it.key.y }, { it.value.worldSize.height })
+            .mapValues { (_, heights) -> heights.max() }
+
+        val sortedColumns = columnWidths.keys.sorted()
+        val sortedRows = rowHeights.keys.sorted()
+
+        val columnOffsets = mutableMapOf<Int, Int>()
+        var x = 0
+        sortedColumns.forEach { column ->
+            columnOffsets[column] = x
+            x += columnWidths.getValue(column)
+        }
+
+        val rowOffsets = mutableMapOf<Int, Int>()
+        var y = 0
+        sortedRows.forEach { row ->
+            rowOffsets[row] = y
+            y += rowHeights.getValue(row)
+        }
+
+        occupiedScreens.forEach { (slot, client) ->
+            client.setRegion(
+                x = columnOffsets.getValue(slot.x),
+                y = rowOffsets.getValue(slot.y),
+                width = client.worldSize.width,
+                height = client.worldSize.height
+            )
+        }
+    }
+
+    private fun resizeSimulators(width: Int, height: Int) {
+        wrappedSimulator.width = width
+        wrappedSimulator.height = height
+        boundedSimulator.width = width
+        boundedSimulator.height = height
+    }
+
+    private fun reconcileBodiesAfterResize(width: Int, height: Int) {
+        currentSimulator.updateBodies { bodies ->
+            bodies.forEach { body ->
+                if (isWrapping) {
+                    body.position.x = wrap(body.position.x, width)
+                    body.position.y = wrap(body.position.y, height)
+                    body.intendedPosition.set(body.position)
+                } else {
+                    val minX = body.radius
+                    val maxX = max(minX, width - body.radius)
+                    val minY = body.radius
+                    val maxY = max(minY, height - body.radius)
+                    body.position.x = body.position.x.coerceIn(minX, maxX)
+                    body.position.y = body.position.y.coerceIn(minY, maxY)
+                    body.intendedPosition.set(body.position)
+                }
+            }
+        }
+    }
+
+    private fun wrap(value: Float, max: Int): Float {
+        return if (value < 0) {
+            (value % max + max) % max
+        } else {
+            value % max
+        }
     }
 
     fun worldBoundary(): Point {
@@ -391,7 +491,7 @@ open class World(
         val gameClients = clients.values.toList()
         fun clientIdThatOwns(p: Point): Int {
             return gameClients.firstOrNull { c ->
-                p.within(c.worldBounds)
+                c.region.contains(p)
             }?.id ?: -1
         }
 

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [2.4.0]
+
+- Allow clients to specify a world width and height they want to use, to allow msdos to use 80x24
+
 ## [2.3.1]
 
 - Add new TCP_READ_TIMEOUT_MILLIS env var to control read timeout, default 30000

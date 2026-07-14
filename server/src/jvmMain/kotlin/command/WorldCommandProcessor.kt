@@ -165,8 +165,8 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                 byteArrayOf(0)
             } else {
                 val gameClient = world.getClient(clientId)!!
-                val scaleX = gameClient.screenSize.width.toFloat() / config.width
-                val scaleY = gameClient.screenSize.height.toFloat() / config.height
+                val scaleX = gameClient.screenSize.width.toFloat() / gameClient.region.width
+                val scaleY = gameClient.screenSize.height.toFloat() / gameClient.region.height
 
                 // Cap to 240 shapes to keep count within 1 byte
                 val capped = visibleShapes.take(240)
@@ -184,7 +184,7 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                 buf.put(count.toByte())
 
                 for (vs in capped) {
-                    val adjusted = vs.position - gameClient.worldBounds.first
+                    val adjusted = vs.position - gameClient.region.upperLeft
                     val sx = (adjusted.x * scaleX).roundToInt().toByte()
                     val sy = (adjusted.y * scaleY).roundToInt().toByte()
 

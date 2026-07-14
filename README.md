@@ -78,10 +78,11 @@ Changes simulator to use a wrapped world rather than bouncing off the edges of t
 will wrap up and down, left and right instead of bouncing within the boundary. With wrapping it's like
 there are no walls around the edges to keep the bodies in.
 
-- `WORLD_WIDTH=40`, `WORLD_HEIGHT=22`
+- `WORLD_WIDTH=40`, `WORLD_HEIGHT=24`
 
-Shouldn't really be changed, but can be. The width/height per window when adding clients to world. If you change this, then
-the bodies will not render correctly on the client, as positions may get skewed.
+Default width/height per client world region. Existing clients use this region size regardless of their screen dimensions.
+Newer clients can pass optional `worldWidth,worldHeight` values when registering so their visible world region matches their
+actual screen aspect/size.
 
 - `HOST=0.0.0.0`
 
@@ -113,6 +114,7 @@ command set; only the response wire format differs (see below).
 Commands sent to either TCP port are UTF-8 text, **one command per line**. Line terminators accepted: LF (`\n`, 0x0A), CR (`\r`, 0x0D), or Atari ATASCII EOL (0x9B — what CC65 `\n` emits on Atari). The server buffers incoming bytes until a complete line is received, so commands may arrive split across multiple TCP packets (required for 8-bit clients using FujiNet netstream).
 
 Persistent connections prefix commands with `x-` (e.g. `x-add-client atari,2,40,22\n`). Linux CLI testing with `echo` works because `echo` adds a newline by default.
+New clients may include optional world dimensions: `x-add-client dos,2,80,24,80,24\n`.
 
 #### Legacy TCP port (`TCP_PORT`, default 9002)
 
@@ -139,13 +141,20 @@ The world service has a REST interface that supports many commands to interact w
 
 This is only useful for testing, as the client will time out after 60s.
 
-- POST `/client`, body: `name,version,x-width,y-width`
+- POST `/client`, body: `name,version,x-width,y-width[,world-width,world-height]`
 
 ```shell
 $ curl -s -X POST http://your-host:8080/client -d 'fen2,1,40,22' -o - | xxd -p
 00
 ```
 which shows the hexadecimal value of the client id.
+
+The first width/height pair is the client's integer screen size. If the optional world width/height pair is omitted, the
+server allocates the legacy `WORLD_WIDTH` x `WORLD_HEIGHT` world region. For a wider text mode client, use both pairs:
+
+```shell
+$ curl -s -X POST http://your-host:8080/client -d 'dos,2,80,24,80,24' -o - | xxd -p
+```
 
 ### simple list of clients with ids
 

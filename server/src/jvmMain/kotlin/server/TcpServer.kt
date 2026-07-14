@@ -261,23 +261,31 @@ class TcpServer(
     }
 
     private fun doAddClient(arg: String): ByteArray {
-        // add-client name,version,screenWidth,screenHeight
-        val parts = arg.split(',', limit = 4)
-        return if (parts.size == 4) {
+        // add-client name,version,screenWidth,screenHeight[,worldWidth,worldHeight]
+        val parts = arg.split(',', limit = 6)
+        return if (parts.size == 4 || parts.size == 6) {
             val name = parts[0]
             val version = parts[1].toIntOrNull()
             val screenWidth = parts[2].toIntOrNull()
             val screenHeight = parts[3].toIntOrNull()
+            val worldWidth = parts.getOrNull(4)?.toIntOrNull()
+            val worldHeight = parts.getOrNull(5)?.toIntOrNull()
 
-            if (version == null || screenWidth == null || screenHeight == null || name.isEmpty()) {
+            if (
+                version == null ||
+                screenWidth == null ||
+                screenHeight == null ||
+                (parts.size == 6 && (worldWidth == null || worldHeight == null)) ||
+                name.isEmpty()
+            ) {
                 logger.error("Invalid Parameters given: >$arg<")
                 byteArrayOf(0)
             } else {
-                val gameClient = ccp.addClient(name, version, screenWidth, screenHeight)
+                val gameClient = ccp.addClient(name, version, screenWidth, screenHeight, worldWidth, worldHeight)
                 byteArrayOf(gameClient.id.toByte())
             }
         } else {
-            logger.error("Incorrect data format, should have: 'name,version,width,height'")
+            logger.error("Incorrect data format, should have: 'name,version,width,height[,worldWidth,worldHeight]'")
             byteArrayOf(0)
         }
     }

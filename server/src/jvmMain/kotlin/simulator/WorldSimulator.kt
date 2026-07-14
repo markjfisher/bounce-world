@@ -16,6 +16,9 @@ interface WorldSimulator {
     /** Execute a read under the simulator’s lock on a stable snapshot view (no mutation allowed). */
     fun <T> withBodiesRead(block: (List<Body>) -> T): T
 
+    /** Execute a write under the simulator's lock for world-level body reconciliation. */
+    fun updateBodies(block: (MutableList<Body>) -> Unit)
+
     fun forEachBody(block: (Body) -> Unit) {
         withBodiesRead { list -> list.forEach(block) }
     }

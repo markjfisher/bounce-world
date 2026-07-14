@@ -36,6 +36,13 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
     override fun <T> withBodiesRead(block: (List<Body>) -> T): T =
         lock.withLock { block(bodies) }
 
+    override fun updateBodies(block: (MutableList<Body>) -> Unit) {
+        lock.withLock {
+            drainAdds()
+            block(bodies)
+        }
+    }
+
     override fun bodyCount(): Int = lock.withLock { bodies.size }
 
     val stepTime = 1f / config.updatesPerSecond
