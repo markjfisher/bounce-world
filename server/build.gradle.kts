@@ -61,6 +61,7 @@ kotlin {
                 implementation(libs.ktor.server.test.host)
                 implementation(libs.kotest.runner.junit5)
                 implementation(libs.mockk.core)
+                runtimeOnly(libs.junit.jupiter.engine)
             }
         }
         jsMain {

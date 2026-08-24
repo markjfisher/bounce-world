@@ -171,9 +171,12 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                 // Cap to 240 shapes to keep count within 1 byte
                 val capped = visibleShapes.take(240)
                 val count = capped.size
+                val wideCoords = gameClient.version >= 3
+                val coordBytes = if (wideCoords) 2 else 1
 
-                // Layout: [count:byte] then for each shape [shapeId:byte][x:byte][y:byte]
-                val capacity = 1 + count * 3
+                // Layout: [count:byte] then for each shape [shapeId:byte][x][y]
+                // where x/y are 1 byte for pre-v3 clients and 2 bytes (LE short) for v3+
+                val capacity = 1 + count * (1 + coordBytes * 2)
                 val buf = ByteBuffer
                     .allocate(capacity)
                     .order(ByteOrder.LITTLE_ENDIAN) // choose and stick to an endianness
@@ -185,12 +188,17 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
 
                 for (vs in capped) {
                     val adjusted = vs.position - gameClient.region.upperLeft
-                    val sx = (adjusted.x * scaleX).roundToInt().toByte()
-                    val sy = (adjusted.y * scaleY).roundToInt().toByte()
+                    val sx = (adjusted.x * scaleX).roundToInt()
+                    val sy = (adjusted.y * scaleY).roundToInt()
 
                     buf.put(vs.shapeId.toByte())
-                    buf.put(sx)
-                    buf.put(sy)
+                    if (wideCoords) {
+                        buf.putShort(sx.toShort())
+                        buf.putShort(sy.toShort())
+                    } else {
+                        buf.put(sx.toByte())
+                        buf.put(sy.toByte())
+                    }
                 }
 
                 buf.array()

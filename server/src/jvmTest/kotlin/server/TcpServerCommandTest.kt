@@ -4,9 +4,11 @@ import command.ClientCommandProcessor
 import command.ShapesCommandProcessor
 import command.WorldCommandProcessor
 import config.WorldConfig
+import domain.GameClient
 import domain.GameClientInfo
 import domain.ScreenSize
 import domain.VisibleShape
+import domain.World
 import factory.WorldFactory
 import geometry.Point
 import io.kotest.matchers.shouldBe
@@ -111,5 +113,54 @@ class TcpServerCommandTest {
         val payload = server.processCommand("w not-a-number")
 
         server.formatResponse(payload) shouldBe byteArrayOf(0x03, 0x00, 0x00)
+    }
+
+    private fun worldWithClient(version: Int): Triple<World, GameClient, WorldCommandProcessor> {
+        val config = WorldConfig(defaultWorldApplicationConfig)
+        val world = WorldFactory.create(config)
+        val client = world.createClient(
+            GameClientInfo(
+                name = "atari",
+                version = version,
+                screenSize = ScreenSize(320, 256),
+                worldSize = ScreenSize(320, 256),
+            ),
+        )
+        return Triple(world, client, WorldCommandProcessor(world, config))
+    }
+
+    @Test
+    fun `v2 clients get single byte coordinates`() {
+        val (world, client, wcp) = worldWithClient(version = 2)
+        world.currentClientVisibleShapes[client.id] = mutableSetOf(
+            VisibleShape(shapeId = 7, position = Point(100, 50), bodyId = 1),
+        )
+
+        val data = wcp.asBinary(client.id)
+
+        data.size shouldBe 4
+        data[0] shouldBe 1
+        data[1] shouldBe 7
+        data[2].toUByte().toInt() shouldBe 100
+        data[3].toUByte().toInt() shouldBe 50
+    }
+
+    @Test
+    fun `v3 clients get little-endian two byte coordinates`() {
+        val (world, client, wcp) = worldWithClient(version = 3)
+        world.currentClientVisibleShapes[client.id] = mutableSetOf(
+            VisibleShape(shapeId = 7, position = Point(300, 200), bodyId = 1),
+        )
+
+        val data = wcp.asBinary(client.id)
+
+        data.size shouldBe 6
+        data[0] shouldBe 1
+        data[1] shouldBe 7
+        // 300 = 0x012C and 200 = 0x00C8, little-endian shorts
+        data[2].toUByte().toInt() shouldBe (300 and 0xFF)
+        data[3].toUByte().toInt() shouldBe (300 shr 8)
+        data[4].toUByte().toInt() shouldBe (200 and 0xFF)
+        data[5].toUByte().toInt() shouldBe (200 shr 8)
     }
 }
