@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [3.0.0]
+
+- Version 3.0+ clients will now get x/y coordinates of shapes as 16 bit values, not 8, allowing larger clients (e.g. amiga) using 320x256
+- Fix build to always run  tests :scream:
+- Fix broken tests - LOL. The tests were just out-by-1, the code was fine.
+- Fix wrapping of client id to be bound to 1-255 skipping active ids
+
 ## [2.4.0]
 
 - Allow clients to specify a world width and height they want to use, to allow msdos to use 80x24

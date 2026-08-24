@@ -23,7 +23,7 @@ tasks {
 }
 
 defaultTasks(
-    ":server:clean", ":server:jarWithJs",
+    ":server:clean", ":server:check", ":server:jarWithJs",
 )
 
 allprojects {

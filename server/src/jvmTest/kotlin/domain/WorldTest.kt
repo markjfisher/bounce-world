@@ -3,6 +3,7 @@ package domain
 import config.WorldConfig
 import factory.WorldFactory
 import geometry.Point
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
@@ -225,5 +226,37 @@ class WorldTest : StringSpec({
         val resizedBody = world.currentSimulator.mapBodies { it }.single()
         resizedBody.position.x shouldBeLessThanOrEqualTo 39f
         resizedBody.position.y shouldBeLessThanOrEqualTo 23f
+    }
+
+    "client ids recycle the lowest free id after a client disconnects" {
+        val world = World(config, simulator, boundSimulator)
+        val c1 = world.createClient(GameClientInfo(name = "Client 1"))
+        val c2 = world.createClient(GameClientInfo(name = "Client 2"))
+        val c3 = world.createClient(GameClientInfo(name = "Client 3"))
+
+        c1.id shouldBe 1
+        c2.id shouldBe 2
+        c3.id shouldBe 3
+
+        // stale id is freed and handed out again
+        world.removeClient(c1.id)
+        world.createClient(GameClientInfo(name = "Replacement")).id shouldBe 1
+
+        // a still-connected id is skipped, not reused
+        world.removeClient(c2.id)
+        val c4 = world.createClient(GameClientInfo(name = "Client 4"))
+        c4.id shouldBe 2
+        world.getClient(3)?.name shouldBe "Client 3"
+    }
+
+    "client ids wrap past 255 without colliding with connected clients" {
+        val world = World(config, simulator, boundSimulator)
+        repeat(254) { world.createClient(GameClientInfo(name = "Filler $it")) }
+        val longLived = world.createClient(GameClientInfo(name = "Long lived"))
+        longLived.id shouldBe 255
+
+        val overflow = shouldThrow<IllegalStateException> {
+            world.createClient(GameClientInfo(name = "One too many"))
+        }
     }
 })

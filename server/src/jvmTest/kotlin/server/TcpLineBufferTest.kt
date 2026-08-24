@@ -9,18 +9,22 @@ class TcpLineBufferTest {
 
     @Test
     fun `yields nothing until LF arrives`() {
-        buffer.append("x-add-client atari,2,40".toByteArray(), 22) shouldBe emptyList()
+        val payload = "x-add-client atari,2,40".toByteArray()
+        buffer.append(payload, payload.size) shouldBe emptyList()
     }
 
     @Test
     fun `reassembles command split across reads`() {
-        buffer.append("x-add-client ata".toByteArray(), 14) shouldBe emptyList()
-        buffer.append("ri,2,40,22\n".toByteArray(), 12) shouldContainExactly listOf("x-add-client atari,2,40,22")
+        val first = "x-add-client ata".toByteArray()
+        val second = "ri,2,40,22\n".toByteArray()
+        buffer.append(first, first.size) shouldBe emptyList()
+        buffer.append(second, second.size) shouldContainExactly listOf("x-add-client atari,2,40,22")
     }
 
     @Test
     fun `handles CRLF and multiple lines in one read`() {
-        buffer.append("x-shape-count\r\nx-w 3\n".toByteArray(), 22) shouldContainExactly listOf(
+        val payload = "x-shape-count\r\nx-w 3\n".toByteArray()
+        buffer.append(payload, payload.size) shouldContainExactly listOf(
             "x-shape-count",
             "x-w 3",
         )

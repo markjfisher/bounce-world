@@ -90,7 +90,6 @@ open class World(
     private var isStarted = false
     var isFrozen = false
     private var stopped = false
-    private var nextClientId = 1        // reserve 0 for an error response
     private val stepTime = 1f / config.updatesPerSecond
     var isWrapping = config.enableWrapping
 
@@ -201,7 +200,7 @@ open class World(
 
     fun createClient(gameClientInfo: GameClientInfo): GameClient {
         val client = GameClient(
-            id = nextClientId++,
+            id = nextFreeClientId(),
             name = gameClientInfo.name,
             version = gameClientInfo.version,
             screenSize = gameClientInfo.screenSize,
@@ -211,6 +210,16 @@ open class World(
         clientHeartbeats[client.id] = System.currentTimeMillis()
         addEventToAllClients(StatusEvent.CLIENT_CHANGE)
         return client
+    }
+
+    // Client ids travel on the wire as a single unsigned byte (0 is reserved for errors),
+    // so allocate the lowest free id in 1..255. This recycles ids of disconnected clients
+    // and wraps past 255, skipping any id still in use by a connected client.
+    private fun nextFreeClientId(): Int {
+        for (id in 1..255) {
+            if (clients[id] == null) return id
+        }
+        throw IllegalStateException("No free client id available (255 clients already connected)")
     }
 
     fun at(point: Point): GameClient? = occupiedScreens[point]
