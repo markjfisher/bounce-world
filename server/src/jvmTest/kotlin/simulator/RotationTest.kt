@@ -110,6 +110,29 @@ class RotationTest : StringSpec({
         abs(b.angularVelocity) shouldBeGreaterThan 0f
     }
 
+    "grazing collision conserves total spin energy exactly" {
+        val sim = BoundedWorldSimulator(config)
+        val a = bodyAt(11.8f, 11.5f, 4f, 0f, 1f, mass = 2f)
+        val b = bodyAt(12.6f, 12.4f, 0f, 0f, 1f)
+        // give them some pre-existing spin so the test exercises transfer, not just creation
+        a.angularVelocity = 1.5f
+        b.angularVelocity = -0.5f
+
+        fun spinEnergy(): Float {
+            fun inertia(body: Body) = 0.5f * body.mass * body.radius * body.radius
+            return inertia(a) * a.angularVelocity * a.angularVelocity +
+                inertia(b) * b.angularVelocity * b.angularVelocity
+        }
+
+        val energyBefore = spinEnergy()
+
+        sim.resolveCollision(a, b)
+
+        val energyAfter = spinEnergy()
+        // exact conservation (float-exact by construction of the rescale); allow only rounding noise
+        abs(energyAfter - energyBefore) shouldBeLessThan 1e-5f
+    }
+
     "copy preserves rotation state" {
         val b = bodyAt(1f, 2f, 3f, 4f, 5f)
         b.angle = 2.5f

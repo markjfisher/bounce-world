@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.math.abs
+import kotlin.math.sqrt
 
 @OptIn(InternalAPI::class)
 abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
@@ -60,6 +61,12 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
      * [spinFriction], driving the slip toward zero. Linear velocities are left untouched
      * (a deliberate simplification: friction here feeds rotation only).
      *
+     * The friction impulse is dissipative (like real friction), so afterwards both spins are
+     * rescaled to restore the exact pre-collision total spin energy. This mirrors the linear
+     * world's restitution-1 policy: spin is never created or destroyed by a collision, it only
+     * sloshes between bodies, keeping the system lively forever. Wall bounces likewise leave
+     * spin untouched.
+     *
      * @param normal unit vector from a's centre toward b's centre at the moment of contact
      */
     protected fun applySpinFromCollision(a: Body, b: Body, normal: Vector2f) {
@@ -75,10 +82,26 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
         val inertiaB = 0.5f * b.mass * b.radius * b.radius
         val invAngularMass = (a.radius * a.radius) / inertiaA + (b.radius * b.radius) / inertiaB
 
+        // total spin energy before the impulse: E = sum of I w^2 / 2
+        val energyBefore = inertiaA * a.angularVelocity * a.angularVelocity +
+            inertiaB * b.angularVelocity * b.angularVelocity
+
         val jt = -spinFriction * slip / invAngularMass
 
         a.angularVelocity += jt * a.radius / inertiaA
         b.angularVelocity += jt * b.radius / inertiaB
+
+        if (energyBefore > ENERGY_EPSILON) {
+            val energyAfter = inertiaA * a.angularVelocity * a.angularVelocity +
+                inertiaB * b.angularVelocity * b.angularVelocity
+            if (energyAfter > ENERGY_EPSILON) {
+                // restore the pre-collision spin energy exactly by scaling both spins uniformly;
+                // uniform scaling preserves the transfer ratio between the two bodies
+                val scale = sqrt(energyBefore / energyAfter)
+                a.angularVelocity *= scale
+                b.angularVelocity *= scale
+            }
+        }
     }
 
     protected fun integrateRotation(body: Body) {
@@ -89,6 +112,7 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
     companion object {
         const val TAU = (2 * Math.PI).toFloat()
         private const val SLIP_EPSILON = 1e-6f
+        private const val ENERGY_EPSILON = 1e-9f
     }
 
 
