@@ -57,6 +57,7 @@ data class BoundedWorldSimulator(
         for (body in bodies) {
             update(body)
             edges(body)
+            integrateRotation(body)
         }
 
     }
@@ -65,7 +66,7 @@ data class BoundedWorldSimulator(
         return Vector2f(a.position).sub(b.position).length()
     }
 
-    private fun resolveCollision(bodyA: Body, bodyB: Body) {
+    internal fun resolveCollision(bodyA: Body, bodyB: Body) {
         // This is super simple, and assumes that 2 bodies are not travelling fast enough to be on the other side of
         // each other after the time step.
         // TODO: use quadratic solver to calculate if there's an actual collision in the timestep rather than just looking at their relative distance
@@ -94,6 +95,9 @@ data class BoundedWorldSimulator(
 
             val deltaVB = Vector2f(impactVector).mul((-2f * bodyA.mass * numerator) / denominator)
             bodyB.velocity.add(deltaVB)
+
+            // impactVector was normalized in place earlier then scaled to sumOfRadii; re-derive the unit normal
+            applySpinFromCollision(bodyA, bodyB, Vector2f(impactVector).normalize())
         }
     }
 

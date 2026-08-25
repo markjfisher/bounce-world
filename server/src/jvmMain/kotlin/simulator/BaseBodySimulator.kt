@@ -11,6 +11,7 @@ import org.joml.Vector2f
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.math.abs
 
 @OptIn(InternalAPI::class)
 abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
@@ -46,6 +47,50 @@ abstract class BaseBodySimulator(config: WorldConfig): WorldSimulator {
     override fun bodyCount(): Int = lock.withLock { bodies.size }
 
     val stepTime = 1f / config.updatesPerSecond
+
+    // fraction of tangential slip at a contact converted into spin (0 = frictionless, 1 = full grip)
+    protected open val spinFriction: Float = 0.8f
+
+    /**
+     * Transfer spin between two bodies from tangential friction at their contact point.
+     *
+     * For frictionless circles the contact impulse passes through both centres and imparts no
+     * torque, so spin only arises from the relative *sliding* velocity at the point of contact.
+     * We compute that slip, then apply an opposing angular impulse to each body scaled by
+     * [spinFriction], driving the slip toward zero. Linear velocities are left untouched
+     * (a deliberate simplification: friction here feeds rotation only).
+     *
+     * @param normal unit vector from a's centre toward b's centre at the moment of contact
+     */
+    protected fun applySpinFromCollision(a: Body, b: Body, normal: Vector2f) {
+        val tangent = Vector2f(-normal.y, normal.x)
+        // surface velocity of each body at the contact point along the tangent
+        val contactVelocityA = a.angularVelocity * a.radius
+        val contactVelocityB = -b.angularVelocity * b.radius
+        val slip = Vector2f(b.velocity).sub(a.velocity).dot(tangent) + contactVelocityA + contactVelocityB
+        if (abs(slip) < SLIP_EPSILON) return
+
+        // disc moment of inertia I = m r^2 / 2; angular inverse effective mass for a tangential impulse
+        val inertiaA = 0.5f * a.mass * a.radius * a.radius
+        val inertiaB = 0.5f * b.mass * b.radius * b.radius
+        val invAngularMass = (a.radius * a.radius) / inertiaA + (b.radius * b.radius) / inertiaB
+
+        val jt = -spinFriction * slip / invAngularMass
+
+        a.angularVelocity += jt * a.radius / inertiaA
+        b.angularVelocity += jt * b.radius / inertiaB
+    }
+
+    protected fun integrateRotation(body: Body) {
+        body.angle = (body.angle + body.angularVelocity * stepTime) % TAU
+        if (body.angle < 0f) body.angle += TAU
+    }
+
+    companion object {
+        const val TAU = (2 * Math.PI).toFloat()
+        private const val SLIP_EPSILON = 1e-6f
+    }
+
 
     override fun snapshotBodyViews(): List<BodyView> = lock.withLock {
         bodies.map { b -> BodyView(b.id, b.position.x, b.position.y, b.radius, b.velocity.x, b.velocity.y) }

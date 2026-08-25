@@ -47,6 +47,7 @@ data class WrappingWorldSimulator(
 
         bodies.forEach { body ->
             body.position.set(if (isWrapping) boundVector(body.intendedPosition) else body.intendedPosition)
+            integrateRotation(body)
         }
         // bound the step number to a byte value
         if (currentStep++ > 255) currentStep = 0
@@ -145,6 +146,8 @@ data class WrappingWorldSimulator(
         // calculate the new velocity of each body
         a.velocity.add(Vector2f(impulse).mul(1 / a.mass).negate())
         b.velocity.add(Vector2f(impulse).mul(1 / b.mass))
+
+        applySpinFromCollision(a, b, collisionNormal)
 
         // work out how much time it would be travelling from the CP with its new velocity in the time remaining
         val timeRemaining = stepTime - collisionTime

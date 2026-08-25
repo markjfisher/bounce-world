@@ -1,8 +1,6 @@
 package domain
 
-import geometry.Point
 import org.joml.Vector2f
-import kotlin.math.roundToInt
 
 data class Body(
     val id: Int = 0,
@@ -12,11 +10,24 @@ data class Body(
     // although a Float, it's actually half of an integer from the sideLength, so will always double to a whole number.
     val radius: Float,
     val shapeId: Int,
+    // orientation of the body's local north, radians, measured counter-clockwise from world +Y
+    var angle: Float = 0f,
+    // spin rate, radians per second, positive is counter-clockwise
+    var angularVelocity: Float = 0f,
 ) {
     val intendedPosition = Vector2f(position)
 
+    // local north as a unit vector, derived from angle so it can never drift off the unit circle
+    fun north(): Vector2f = Vector2f(
+        -kotlin.math.sin(angle),
+        kotlin.math.cos(angle),
+    )
+
     fun copy(): Body {
-        return Body(id, Vector2f(position), Vector2f(velocity), mass, radius, shapeId)
+        return Body(id, Vector2f(position), Vector2f(velocity), mass, radius, shapeId).also {
+            it.angle = angle
+            it.angularVelocity = angularVelocity
+        }
     }
 
     companion object {
@@ -31,44 +42,4 @@ data class Body(
             )
         }
     }
-
-    fun bodyCorners(width: Int, height: Int): List<Point> {
-        val centre = Point(position.x.roundToInt(), position.y.roundToInt())
-        val n = (radius * 2).roundToInt()
-        // calculate the offsets to the centre point for grid positions this body covers
-        val offsets = when {
-            // even width needs offset of -[(n/2 - 1), (n/2 - 1)], + [n/2, n/2]
-            n.mod(2) == 0 -> Pair(
-                Point(n / 2 - 1, n / 2 - 1),
-                Point(n / 2, n / 2)
-            )
-            // odd width needs offset of +/- [(n-1)/2]
-            else -> Pair(
-                Point((n - 1) / 2, (n - 1) / 2),
-                Point((n - 1) / 2, (n - 1) / 2)
-            )
-        }
-        // find the extreme points from centre with these offsets
-        val topLeft = centre - offsets.first
-        val bottomRight = centre + offsets.second
-        val topRight = Point(bottomRight.x, topLeft.y)
-        val bottomLeft = Point(topLeft.x, bottomRight.y)
-
-        return listOf(topLeft, topRight, bottomLeft, bottomRight).map { p -> boundPoint(p, width, height) }
-    }
-
-    private fun boundPoint(p: Point, width: Int, height: Int): Point {
-        val wrappedX = if (p.x < 0) {
-            (p.x % width + width) % width
-        } else {
-            p.x % width
-        }
-        val wrappedY = if (p.y < 0) {
-            (p.y % height + height) % height
-        } else {
-            p.y % height
-        }
-        return Point(wrappedX, wrappedY)
-    }
-
 }
