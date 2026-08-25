@@ -22,6 +22,8 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 import kotlin.random.Random
+import kotlin.math.abs
+import kotlin.math.sqrt
 import kotlin.time.TimeSource
 
 interface WorldUpdateListener {
@@ -230,7 +232,7 @@ open class World(
         val shape = shapes.first { it.id == shapeId }
         val nextId = currentSimulator.nextBodyId()
         val angle = Random.nextFloat() * 2f * Math.PI.toFloat()
-        val velocity = Vector2f(cos(angle), sin(angle)).mul(config.initialSpeed)
+        var velocity = Vector2f(cos(angle), sin(angle)).mul(config.initialSpeed)
         // ensure the client didn't ask for a location outside the world boundary, if they did, put it in the first screen (0,0)
         val correctedGrid = when {
             grid.x >= worldBoundary().x || grid.y >= worldBoundary().y || grid.x < 0 || grid.y < 0 -> Point(0, 0)
@@ -248,8 +250,71 @@ open class World(
             region.x + Random.nextFloat() * (region.width.toFloat() - shape.sideLength - 5f) + shape.sideLength / 2f + 2,
             region.y + Random.nextFloat() * (region.height.toFloat() - shape.sideLength - 5f) + shape.sideLength / 2f + 2
         )
-        return Body.from(id = nextId, position = pos, velocity = velocity, shape = shape)
+        val body = Body.from(id = nextId, position = pos, velocity = velocity, shape = shape)
+        if (isWrapping) {
+            applyAntiDrift(body)
+        }
+        return body
     }
+
+    companion object {
+        // Anti-drift spawn tuning. In a wrapping world total momentum P and (approximately)
+        // total spin L = sum(I*w) are conserved by collisions, so random spawning accumulates a
+        // net drift every body eventually shares. New bodies oppose the current totals:
+        //   - if the required opposing speed/spin is below the respective MIN threshold, the
+        //     world is already near equilibrium, so we spawn fully randomly instead — which
+        //     naturally re-injects drift and keeps the demo lively rather than freezing it.
+        //   - otherwise the new body points against the drift with a random fraction
+        //     [MIN_FRACTION, 1] of the exactly-cancelling magnitude ("chipping away").
+        private const val ANTI_DRIFT_MIN_SPEED = 0.25f
+        private const val ANTI_DRIFT_MIN_SPIN = 0.1f
+        private const val ANTI_DRIFT_MIN_FRACTION = 0.5f
+        private const val SPAWN_MAX_SPIN = 1.0f
+    }
+
+    /**
+     * Bias a freshly created body's linear velocity and spin to oppose the current net momentum
+     * and spin of the wrapping world. See the companion-object notes for the strategy.
+     */
+    private fun applyAntiDrift(body: Body) {
+        currentSimulator.withBodiesRead { existing ->
+            var px = 0f
+            var py = 0f
+            var totalAngularMomentum = 0f
+            for (other in existing) {
+                px += other.mass * other.velocity.x
+                py += other.mass * other.velocity.y
+                totalAngularMomentum += spinInertia(other) * other.angularVelocity
+            }
+
+            // linear: exact cancellation would be v = -P / m_new; take a random fraction of it
+            val neededVx = -px / body.mass
+            val neededVy = -py / body.mass
+            val neededSpeed = sqrt(neededVx * neededVx + neededVy * neededVy)
+            if (neededSpeed >= ANTI_DRIFT_MIN_SPEED) {
+                val fraction = ANTI_DRIFT_MIN_FRACTION + Random.nextFloat() * (1f - ANTI_DRIFT_MIN_FRACTION)
+                val speed = neededSpeed * fraction
+                body.velocity.set(neededVx / neededSpeed * speed, neededVy / neededSpeed * speed)
+            } else {
+                // near equilibrium: full random direction and speed, which re-injects fresh drift
+                val angle = Random.nextFloat() * 2f * Math.PI.toFloat()
+                body.velocity.set(cos(angle), sin(angle)).mul(config.initialSpeed)
+            }
+
+            // spin: exact cancellation would be w = -L / I_new
+            val inertia = spinInertia(body)
+            val neededSpin = -totalAngularMomentum / inertia
+            body.angularVelocity =
+                if (abs(neededSpin) >= ANTI_DRIFT_MIN_SPIN) {
+                    val fraction = ANTI_DRIFT_MIN_FRACTION + Random.nextFloat() * (1f - ANTI_DRIFT_MIN_FRACTION)
+                    neededSpin * fraction
+                } else {
+                    (Random.nextFloat() * 2f - 1f) * SPAWN_MAX_SPIN
+                }
+        }
+    }
+
+    private fun spinInertia(body: Body): Float = 0.5f * body.mass * body.radius * body.radius
 
     private fun findNextUnoccupiedScreen(): Point {
         // walk the sequence of next location points until we find one not in occupiedPoints.

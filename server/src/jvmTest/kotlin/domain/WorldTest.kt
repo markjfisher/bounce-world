@@ -6,6 +6,8 @@ import geometry.Point
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldContainExactly
+import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
+import io.kotest.matchers.floats.shouldBeGreaterThan
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
 import io.ktor.server.config.MapApplicationConfig
@@ -356,5 +358,66 @@ class WorldTest : StringSpec({
 
         leftVisible.single().position shouldBe Vector2f(40.5f, 10.125f)
         rightVisible.single().position shouldBe Vector2f(40.5f, 10.125f)
+    }
+
+    "spawning chips away at net drift in a wrapping world" {
+        val world = WorldFactory.create(worldConfig(enableWrapping = true))
+
+        fun netMomentum(): Float {
+            var px = 0f
+            var py = 0f
+            world.currentSimulator.withBodiesRead { bodies ->
+                bodies.forEach { b ->
+                    px += b.mass * b.velocity.x
+                    py += b.mass * b.velocity.y
+                }
+            }
+            return kotlin.math.sqrt(px * px + py * py)
+        }
+
+        // seed a large net drift well above the anti-drift threshold
+        world.currentSimulator.addBodies(
+            listOf(
+                Body(id = 1, position = Vector2f(20f, 12f), velocity = Vector2f(10f, 0f), mass = 1f, radius = 1f, shapeId = 1),
+                Body(id = 2, position = Vector2f(30f, 12f), velocity = Vector2f(10f, 0f), mass = 1f, radius = 1f, shapeId = 1),
+            )
+        )
+        (world.currentSimulator as BaseBodySimulator).drainAdds()
+
+        // each spawn opposes the remaining drift with fraction [0.5, 1] of the exact cancellation,
+        // so the residual never exceeds half of what it was
+        repeat(3) {
+            val before = netMomentum()
+            before shouldBeGreaterThan 0f
+            world.addRandomBodyWithSize(2)
+            (world.currentSimulator as BaseBodySimulator).drainAdds()
+            netMomentum() shouldBeLessThanOrEqualTo before * 0.5f + 1e-4f
+        }
+    }
+
+    "spinning spawns oppose net angular momentum" {
+        val world = WorldFactory.create(worldConfig(enableWrapping = true))
+
+        fun netAngularMomentum(): Float {
+            var l = 0f
+            world.currentSimulator.withBodiesRead { bodies ->
+                bodies.forEach { b -> l += 0.5f * b.mass * b.radius * b.radius * b.angularVelocity }
+            }
+            return l
+        }
+
+        // seed a strong clockwise bias well above the anti-drift threshold
+        val seeder = Body(id = 1, position = Vector2f(20f, 12f), velocity = Vector2f(0f, 0f), mass = 2f, radius = 2f, shapeId = 1)
+        seeder.angularVelocity = 8f
+        world.currentSimulator.addBodies(listOf(seeder))
+        (world.currentSimulator as BaseBodySimulator).drainAdds()
+
+        repeat(3) {
+            val before = netAngularMomentum()
+            before shouldBeGreaterThan 0f
+            world.addRandomBodyWithSize(3)
+            (world.currentSimulator as BaseBodySimulator).drainAdds()
+            kotlin.math.abs(netAngularMomentum()) shouldBeLessThanOrEqualTo kotlin.math.abs(before) * 0.5f + 1e-4f
+        }
     }
 })
