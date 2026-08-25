@@ -5,11 +5,13 @@ import factory.WorldFactory
 import geometry.Point
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.comparables.shouldBeLessThanOrEqualTo
 import io.ktor.server.config.MapApplicationConfig
 import io.mockk.mockk
 import org.joml.Vector2f
+import simulator.BaseBodySimulator
 import simulator.WorldSimulator
 
 class WorldTest : StringSpec({
@@ -258,5 +260,25 @@ class WorldTest : StringSpec({
         val overflow = shouldThrow<IllegalStateException> {
             world.createClient(GameClientInfo(name = "One too many"))
         }
+    }
+
+    "bounded world never reports a body centre outside the world bounds" {
+        val world = WorldFactory.create(worldConfig(enableWrapping = false))
+        val client = world.createClient(GameClientInfo(name = "Client 1"))
+
+        // body resting against the bottom wall, like BoundedWorldSimulator.edges leaves it
+        val body = Body(
+            id = 1,
+            position = Vector2f(20f, 24f - 2f - 0.2f), // radius 2, EDGE_DELTA 0.2
+            velocity = Vector2f(0f, -1f),
+            mass = 1f,
+            radius = 2f,
+            shapeId = 2,
+        )
+        world.currentSimulator.addBodies(listOf(body))
+        (world.currentSimulator as BaseBodySimulator).drainAdds()
+
+        val visible = world.findVisibleShapesByClient()[client.id].orEmpty()
+        visible shouldContainExactly setOf(VisibleShape(shapeId = 2, position = Point(20, 22), bodyId = 1))
     }
 })

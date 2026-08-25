@@ -496,7 +496,7 @@ open class World(
 
     // find every VisibleShape for every client
     @Suppress("LocalVariableName")
-    private fun findVisibleShapesByClient(): Map<Int, MutableSet<VisibleShape>> {
+    internal fun findVisibleShapesByClient(): Map<Int, MutableSet<VisibleShape>> {
         val gameClients = clients.values.toList()
         fun clientIdThatOwns(p: Point): Int {
             return gameClients.firstOrNull { c ->
@@ -513,6 +513,15 @@ open class World(
         }
 
         currentSimulator.forEachBody { body ->
+            // In a bounded (non-wrapping) world the body centre is always inside the bounds,
+            // so report it directly. The corner-based reconstruction below relies on corners
+            // wrapping across world edges, which would fabricate out-of-bounds centres here.
+            if (!isWrapping) {
+                val centre = Point(body.position.x.roundToInt(), body.position.y.roundToInt())
+                visibleShapesByClient[clientIdThatOwns(centre)]?.add(VisibleShape(body.shapeId, centre, body.id))
+                return@forEachBody
+            }
+
             val bodyWidth = (body.radius * 2).roundToInt()
 
             val corners = body.bodyCorners(currentSimulator.width, currentSimulator.height)
