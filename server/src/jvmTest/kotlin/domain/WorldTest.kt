@@ -304,4 +304,57 @@ class WorldTest : StringSpec({
         visible.position.x shouldBe 15.187f
         visible.position.y shouldBe 3.713f
     }
+
+    "wrapping world reports a body near the seam at both edges with fractional precision" {
+        val world = WorldFactory.create(worldConfig(enableWrapping = true))
+        val client = world.createClient(GameClientInfo(name = "Client 1"))
+
+        // body straddling the vertical seam: centre at x=39.6, radius 1, so it pokes into x=0 side too
+        val body = Body(
+            id = 1,
+            position = Vector2f(39.6f, 12.25f),
+            velocity = Vector2f(0f, 0f),
+            mass = 1f,
+            radius = 1f,
+            shapeId = 2,
+        )
+        world.currentSimulator.addBodies(listOf(body))
+        (world.currentSimulator as BaseBodySimulator).drainAdds()
+
+        val visible = world.findVisibleShapesByClient()[client.id].orEmpty()
+        // wrapped copy x = 39.6f - 40f (computed identically to the implementation for float exactness)
+        visible.map { it.position.x }.toSet() shouldBe setOf(39.6f, 39.6f - 40f)
+        visible.forEach { it.position.y shouldBe 12.25f }
+    }
+
+    "wrapping world gives both clients the partially visible copy of a body straddling their shared edge" {
+        val world = WorldFactory.create(worldConfig(locationPattern = "right", enableWrapping = true))
+        val left = world.createClient(GameClientInfo(name = "Left"))
+        val right = world.createClient(
+            GameClientInfo(
+                name = "Right",
+                screenSize = ScreenSize(40, 24),
+                worldSize = ScreenSize(40, 24),
+            ),
+        )
+        // left client owns region [0,40), right owns [40,80); a body sits across the boundary at x=40.
+        // The simulator wraps over the full 80-wide tiled world, so this is an interior boundary:
+        // both clients receive the same absolute position and asBinary translates it per region.
+        val body = Body(
+            id = 1,
+            position = Vector2f(40.5f, 10.125f),
+            velocity = Vector2f(0f, 0f),
+            mass = 1f,
+            radius = 1f,
+            shapeId = 2,
+        )
+        world.currentSimulator.addBodies(listOf(body))
+        (world.currentSimulator as BaseBodySimulator).drainAdds()
+
+        val leftVisible = world.findVisibleShapesByClient()[left.id].orEmpty()
+        val rightVisible = world.findVisibleShapesByClient()[right.id].orEmpty()
+
+        leftVisible.single().position shouldBe Vector2f(40.5f, 10.125f)
+        rightVisible.single().position shouldBe Vector2f(40.5f, 10.125f)
+    }
 })

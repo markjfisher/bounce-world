@@ -20,7 +20,6 @@ import simulator.WorldSimulator
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 import kotlin.time.TimeSource
@@ -494,66 +493,51 @@ open class World(
         }
     }
 
-    // find every VisibleShape for every client
-    @Suppress("LocalVariableName")
+    // Find every VisibleShape for every client, preserving sub-world-unit float precision so
+    // hi-res clients can scale smoothly to pixels.
+    //
+    // For each body we consider its position plus, in a wrapping world, copies offset by a full
+    // world width/height across the seams. A copy is visible to a client when the body's bounding
+    // box overlaps that client's region — this gives clients at region edges the partially
+    // visible (slightly out-of-region) coordinates they need to draw a body straddling the edge,
+    // including bodies straddling the wrap seam itself. Duplicate copies collapse via the set.
     internal fun findVisibleShapesByClient(): Map<Int, MutableSet<VisibleShape>> {
         val gameClients = clients.values.toList()
-        fun clientIdThatOwns(p: Point): Int {
-            return gameClients.firstOrNull { c ->
-                c.region.contains(p)
-            }?.id ?: -1
-        }
-
         if (gameClients.isEmpty()) return emptyMap()
 
-        // initialise the returned map
         val visibleShapesByClient = mutableMapOf<Int, MutableSet<VisibleShape>>()
         gameClients.forEach { client ->
             visibleShapesByClient[client.id] = mutableSetOf()
         }
 
+        val worldWidth = currentSimulator.width.toFloat()
+        val worldHeight = currentSimulator.height.toFloat()
+
         currentSimulator.forEachBody { body ->
-            // In a bounded (non-wrapping) world the body centre is always inside the bounds,
-            // so report it directly. The corner-based reconstruction below relies on corners
-            // wrapping across world edges, which would fabricate out-of-bounds centres here.
-            if (!isWrapping) {
-                // keep the float position so client pixel scaling stays sub-world-unit smooth;
-                // only the region ownership lookup needs the integer grid
-                val gridPoint = Point(body.position.x.roundToInt(), body.position.y.roundToInt())
-                visibleShapesByClient[clientIdThatOwns(gridPoint)]?.add(
-                    VisibleShape(body.shapeId, Vector2f(body.position), body.id)
-                )
-                return@forEachBody
+            val xs = mutableListOf(body.position.x)
+            val ys = mutableListOf(body.position.y)
+            if (isWrapping) {
+                xs += body.position.x - worldWidth
+                xs += body.position.x + worldWidth
+                ys += body.position.y - worldHeight
+                ys += body.position.y + worldHeight
             }
 
-            val bodyWidth = (body.radius * 2).roundToInt()
-
-            val corners = body.bodyCorners(currentSimulator.width, currentSimulator.height)
-            // We can use each corner in turn, work out its "centre point" relative to a grid that would cover from that corner, and see if the new centre matches the body centre.
-            // Add that to a set of visible points for the shape and "new centre", which will remove duplicates where the corners were in the same non-wrapped position
-            // We won't bother optimizing for 1x1 shape, it will just fall out in the wash, 4 calculations on the same point isn't that much
-            val cNW = corners[0]
-            val cNE = corners[1]
-            val cSW = corners[2]
-            val cSE = corners[3]
-
-            val nd2_1 = bodyWidth / 2 - 1
-            val nd2 = bodyWidth / 2
-            val n_1d2 = (bodyWidth - 1) / 2
-
-            val centre1 = cNW + if (bodyWidth % 2 == 0) Point(nd2_1, nd2_1) else Point(n_1d2, n_1d2)
-            val centre2 = cNE + if (bodyWidth % 2 == 0) Point(-nd2, nd2_1) else Point(-n_1d2, n_1d2)
-            val centre3 = cSW + if (bodyWidth % 2 == 0) Point(nd2_1, -nd2) else Point(n_1d2, -n_1d2)
-            val centre4 = cSE + if (bodyWidth % 2 == 0) Point(-nd2, -nd2) else Point(-n_1d2, -n_1d2)
-
-            // add the visible shape to the client's list. dupes will be removed, and this also caters for both wrapping and no wrapping.
-            // reconstructed centres are integer world units (derived from grid corners), so promote to float
-            fun floatCentre(p: Point) = Vector2f(p.x.toFloat(), p.y.toFloat())
-            visibleShapesByClient[clientIdThatOwns(cNW)]?.add(VisibleShape(body.shapeId, floatCentre(centre1), body.id))
-            visibleShapesByClient[clientIdThatOwns(cNE)]?.add(VisibleShape(body.shapeId, floatCentre(centre2), body.id))
-            visibleShapesByClient[clientIdThatOwns(cSW)]?.add(VisibleShape(body.shapeId, floatCentre(centre3), body.id))
-            visibleShapesByClient[clientIdThatOwns(cSE)]?.add(VisibleShape(body.shapeId, floatCentre(centre4), body.id))
-
+            for (client in gameClients) {
+                val rx = client.region.x.toFloat()
+                val ry = client.region.y.toFloat()
+                val rw = client.region.width.toFloat()
+                val rh = client.region.height.toFloat()
+                for (x in xs) {
+                    if (x + body.radius < rx || x - body.radius > rx + rw) continue
+                    for (y in ys) {
+                        if (y + body.radius < ry || y - body.radius > ry + rh) continue
+                        visibleShapesByClient[client.id]?.add(
+                            VisibleShape(body.shapeId, Vector2f(x, y), body.id)
+                        )
+                    }
+                }
+            }
         }
         return visibleShapesByClient
     }
