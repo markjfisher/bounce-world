@@ -28,6 +28,7 @@ data class GameClient(
     var position: Point = Point(0, 0),
     var screenSize: ScreenSize = ScreenSize(0, 0),
     var worldSize: ScreenSize = ScreenSize(0, 0),
+    val capabilities: Int = 0,
 ) {
     var worldBounds: Pair<Point, Point> = Pair(Point(0, 0), Point(0, 0))
     var region: ClientRegion = ClientRegion()

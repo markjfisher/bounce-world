@@ -4,6 +4,7 @@ import config.WorldConfig
 import domain.BodyData
 import domain.BodySummary
 import domain.ClientBasic
+import domain.ClientCapabilities
 import domain.ClientCommand
 import domain.ClientData
 import domain.VectorData
@@ -15,6 +16,14 @@ import java.nio.ByteOrder
 import kotlin.math.roundToInt
 
 class WorldCommandProcessor(private val world: World, private val config: WorldConfig) {
+    companion object {
+        private const val TAU = (2 * Math.PI).toFloat()
+        // angle wire encoding: uint16 across a full turn, 65535 = 2pi
+        const val MAX_ANGLE_BITS = 65535f
+        // angular velocity wire encoding: int16 fixed point, units of 1/256 rad/s
+        const val ANGULAR_VELOCITY_SCALE = 256f
+    }
+
     fun getWorldData(id: Int): ByteArray {
         if (!world.clientIds().contains(id)) {
             return byteArrayOf(0)
@@ -171,12 +180,16 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                 // Cap to 240 shapes to keep count within 1 byte
                 val capped = visibleShapes.take(240)
                 val count = capped.size
-                val wideCoords = gameClient.version >= 3
+                val wideCoords = ClientCapabilities.has(gameClient.capabilities, ClientCapabilities.WIDE_COORDS)
+                val rotation = ClientCapabilities.has(gameClient.capabilities, ClientCapabilities.ROTATION)
                 val coordBytes = if (wideCoords) 2 else 1
 
-                // Layout: [count:byte] then for each shape [shapeId:byte][x][y]
-                // where x/y are 1 byte for pre-v3 clients and 2 bytes (LE short) for v3+
-                val capacity = 1 + count * (1 + coordBytes * 2)
+                // Layout: [count:byte] then for each shape [shapeId:byte][x][y] plus optional extras:
+                //   wide coords: x/y are 2 bytes (LE short) instead of 1 byte
+                //   rotation:    [angle: uint16 LE][angularVelocity: int16 LE] appended after coordinates;
+                //                angle is scaled across a full turn (65535 = 2pi), omega is 1/256 rad/s
+                val shapeBytes = 1 + coordBytes * 2 + if (rotation) 4 else 0
+                val capacity = 1 + count * shapeBytes
                 val buf = ByteBuffer
                     .allocate(capacity)
                     .order(ByteOrder.LITTLE_ENDIAN) // choose and stick to an endianness
@@ -201,6 +214,12 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                     } else {
                         buf.put(sx.toByte())
                         buf.put(sy.toByte())
+                    }
+                    if (rotation) {
+                        val angleBits = (((vs.angle % TAU + TAU) % TAU) / TAU * MAX_ANGLE_BITS).roundToInt()
+                        buf.putShort(angleBits.coerceIn(0, MAX_ANGLE_BITS.toInt()).toShort())
+                        val omegaBits = (vs.angularVelocity * ANGULAR_VELOCITY_SCALE).roundToInt()
+                        buf.putShort(omegaBits.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort())
                     }
                 }
 

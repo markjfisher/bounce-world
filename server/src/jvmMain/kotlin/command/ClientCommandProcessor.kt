@@ -14,6 +14,7 @@ class ClientCommandProcessor(private val world: World) {
         screenHeight: Int,
         worldWidth: Int? = null,
         worldHeight: Int? = null,
+        capabilities: Int = 0,
     ): GameClient {
         val gameClientInfo = GameClientInfo(
             name = name,
@@ -24,6 +25,7 @@ class ClientCommandProcessor(private val world: World) {
             } else {
                 null
             },
+            capabilities = capabilities,
         )
         val gameClient = world.createClient(gameClientInfo)
         logger.info("Created client: $gameClient")

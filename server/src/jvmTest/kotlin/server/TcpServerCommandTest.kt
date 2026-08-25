@@ -4,6 +4,7 @@ import command.ClientCommandProcessor
 import command.ShapesCommandProcessor
 import command.WorldCommandProcessor
 import config.WorldConfig
+import domain.ClientCapabilities
 import domain.GameClient
 import domain.GameClientInfo
 import domain.ScreenSize
@@ -12,11 +13,13 @@ import domain.World
 import factory.WorldFactory
 import geometry.Point
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.floats.shouldBeLessThan
 import io.ktor.server.config.MapApplicationConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.jupiter.api.Test
 import org.joml.Vector2f
+import java.lang.Math.abs
 import kotlin.math.roundToInt
 
 class TcpServerCommandTest {
@@ -117,7 +120,7 @@ class TcpServerCommandTest {
         server.formatResponse(payload) shouldBe byteArrayOf(0x03, 0x00, 0x00)
     }
 
-    private fun worldWithClient(version: Int): Triple<World, GameClient, WorldCommandProcessor> {
+    private fun worldWithClient(version: Int, capabilities: Int = 0): Triple<World, GameClient, WorldCommandProcessor> {
         val config = WorldConfig(defaultWorldApplicationConfig)
         val world = WorldFactory.create(config)
         val client = world.createClient(
@@ -126,6 +129,7 @@ class TcpServerCommandTest {
                 version = version,
                 screenSize = ScreenSize(320, 256),
                 worldSize = ScreenSize(320, 256),
+                capabilities = capabilities,
             ),
         )
         return Triple(world, client, WorldCommandProcessor(world, config))
@@ -148,8 +152,22 @@ class TcpServerCommandTest {
     }
 
     @Test
-    fun `v3 clients get little-endian two byte coordinates`() {
+    fun `v3 clients without wide coords capability get single byte coordinates`() {
         val (world, client, wcp) = worldWithClient(version = 3)
+        world.currentClientVisibleShapes[client.id] = mutableSetOf(
+            VisibleShape(shapeId = 7, position = Vector2f(300f, 200f), bodyId = 1),
+        )
+
+        val data = wcp.asBinary(client.id)
+
+        // version alone no longer grants anything; legacy layout applies
+        data.size shouldBe 4
+        data[2].toUByte().toInt() shouldBe 44 // 300 wraps in a single byte
+    }
+
+    @Test
+    fun `clients with wide coords capability get little-endian two byte coordinates`() {
+        val (world, client, wcp) = worldWithClient(version = 2, capabilities = ClientCapabilities.WIDE_COORDS)
         world.currentClientVisibleShapes[client.id] = mutableSetOf(
             VisibleShape(shapeId = 7, position = Vector2f(300f, 200f), bodyId = 1),
         )
@@ -167,6 +185,37 @@ class TcpServerCommandTest {
     }
 
     @Test
+    fun `clients with rotation capability get angle and angular velocity appended`() {
+        val (world, client, wcp) = worldWithClient(
+            version = 2,
+            capabilities = ClientCapabilities.WIDE_COORDS or ClientCapabilities.ROTATION,
+        )
+        // angle pi/2 -> quarter of a turn = 16383.75 bits; omega -1.5 rad/s * 256 = -384
+        world.currentClientVisibleShapes[client.id] = mutableSetOf(
+            VisibleShape(shapeId = 9, position = Vector2f(10f, 10f), bodyId = 1,
+                angle = (Math.PI / 2).toFloat(), angularVelocity = -1.5f),
+        )
+
+        val data = wcp.asBinary(client.id)
+
+        // count + shapeId + x(2) + y(2) + angle(2) + omega(2)
+        data.size shouldBe 10
+        data[0] shouldBe 1
+        data[1] shouldBe 9
+        val x = data[2].toUByte().toInt() or (data[3].toUByte().toInt() shl 8)
+        val y = data[4].toUByte().toInt() or (data[5].toUByte().toInt() shl 8)
+        // screen size == world size in this fixture, so scale is 1.0
+        x shouldBe 10
+        y shouldBe 10
+
+        val angleBits = data[6].toUByte().toInt() or (data[7].toUByte().toInt() shl 8)
+        val expectedAngleBits = (((Math.PI / 2) / (2 * Math.PI)) * 65535.0).toFloat()
+        abs(angleBits - expectedAngleBits) shouldBeLessThan 1.0f
+        val omegaBits = (data[8].toUByte().toInt() or (data[9].toUByte().toInt() shl 8)).toShort().toInt()
+        omegaBits shouldBe -384
+    }
+
+    @Test
     fun `fractional world positions scale to sub-world-unit pixels`() {
         val config = WorldConfig(defaultWorldApplicationConfig)
         val world = WorldFactory.create(config)
@@ -176,6 +225,7 @@ class TcpServerCommandTest {
                 version = 3,
                 screenSize = ScreenSize(320, 192),
                 worldSize = ScreenSize(40, 24),
+                capabilities = ClientCapabilities.WIDE_COORDS,
             ),
         )
         // 15.187 world units * 8 px-per-unit = 121.496 -> 121, not the quantised 15 * 8 = 120

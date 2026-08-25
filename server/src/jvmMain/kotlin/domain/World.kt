@@ -203,7 +203,8 @@ open class World(
             name = gameClientInfo.name,
             version = gameClientInfo.version,
             screenSize = gameClientInfo.screenSize,
-            worldSize = gameClientInfo.worldSize ?: ScreenSize(config.width, config.height)
+            worldSize = gameClientInfo.worldSize ?: ScreenSize(config.width, config.height),
+            capabilities = gameClientInfo.capabilities,
         )
         addClient(client)
         clientHeartbeats[client.id] = System.currentTimeMillis()
@@ -533,7 +534,7 @@ open class World(
                     for (y in ys) {
                         if (y + body.radius < ry || y - body.radius > ry + rh) continue
                         visibleShapesByClient[client.id]?.add(
-                            VisibleShape(body.shapeId, Vector2f(x, y), body.id)
+                            VisibleShape(body.shapeId, Vector2f(x, y), body.id, body.angle, body.angularVelocity)
                         )
                     }
                 }

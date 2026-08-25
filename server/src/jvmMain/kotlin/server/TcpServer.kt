@@ -261,32 +261,41 @@ class TcpServer(
     }
 
     private fun doAddClient(arg: String): ByteArray {
-        // add-client name,version,screenWidth,screenHeight[,worldWidth,worldHeight]
-        val parts = arg.split(',', limit = 6)
-        return if (parts.size == 4 || parts.size == 6) {
+        // add-client name,version,screenWidth,screenHeight[,worldWidth,worldHeight[,capabilities]]
+        // capabilities: integer bitmask (decimal or 0x hex); absent/0 = legacy behaviour
+        val parts = arg.split(',', limit = 7)
+        return if (parts.size == 4 || parts.size == 6 || parts.size == 7) {
             val name = parts[0]
             val version = parts[1].toIntOrNull()
             val screenWidth = parts[2].toIntOrNull()
             val screenHeight = parts[3].toIntOrNull()
             val worldWidth = parts.getOrNull(4)?.toIntOrNull()
             val worldHeight = parts.getOrNull(5)?.toIntOrNull()
+            val capabilities = parts.getOrNull(6)?.parseCapabilityFlags()
 
             if (
                 version == null ||
                 screenWidth == null ||
                 screenHeight == null ||
-                (parts.size == 6 && (worldWidth == null || worldHeight == null)) ||
+                (parts.size >= 6 && (worldWidth == null || worldHeight == null)) ||
+                capabilities == null ||
                 name.isEmpty()
             ) {
                 logger.error("Invalid Parameters given: >$arg<")
                 byteArrayOf(0)
             } else {
-                val gameClient = ccp.addClient(name, version, screenWidth, screenHeight, worldWidth, worldHeight)
+                val gameClient = ccp.addClient(name, version, screenWidth, screenHeight, worldWidth, worldHeight, capabilities)
                 byteArrayOf(gameClient.id.toByte())
             }
         } else {
-            logger.error("Incorrect data format, should have: 'name,version,width,height[,worldWidth,worldHeight]'")
+            logger.error("Incorrect data format, should have: 'name,version,width,height[,worldWidth,worldHeight[,capabilities]]'")
             byteArrayOf(0)
         }
+    }
+
+    private fun String.parseCapabilityFlags(): Int? = when {
+        equals("0", ignoreCase = false) -> 0
+        startsWith("0x", ignoreCase = true) -> toIntOrNull(16)?.let { it and 0xFFFF }
+        else -> toIntOrNull()?.let { if (it < 0) null else it }
     }
 }

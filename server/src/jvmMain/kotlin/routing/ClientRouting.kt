@@ -21,10 +21,10 @@ fun Application.clientRouting() {
                 val gameClientInfoString = call.receiveText()
                 val parts = gameClientInfoString.split(",")
                 // Allow simple comma separated fields so the client doesn't have to write JSON for the sake of it
-                if (parts.size != 4 && parts.size != 6) {
+                if (parts.size != 4 && parts.size != 6 && parts.size != 7) {
                     call.respond(
                         HttpStatusCode.BadRequest,
-                        "Incorrect data format, should have: 'name,version,width,height[,worldWidth,worldHeight]'"
+                        "Incorrect data format, should have: 'name,version,width,height[,worldWidth,worldHeight[,capabilities]]'"
                     )
                     return@post
                 }
@@ -34,19 +34,23 @@ fun Application.clientRouting() {
                 val screenHeight = parts[3].toIntOrNull()
                 val worldWidth = parts.getOrNull(4)?.toIntOrNull()
                 val worldHeight = parts.getOrNull(5)?.toIntOrNull()
+                val capabilities = parts.getOrNull(6)?.let {
+                    if (it.startsWith("0x", ignoreCase = true)) it.substring(2).toIntOrNull(16) else it.toIntOrNull()
+                }
 
                 if (
                     version == null ||
                     screenWidth == null ||
                     screenHeight == null ||
-                    (parts.size == 6 && (worldWidth == null || worldHeight == null)) ||
+                    (parts.size >= 6 && (worldWidth == null || worldHeight == null)) ||
+                    capabilities == null ||
                     name.isEmpty()
                 ) {
                     call.respond(HttpStatusCode.BadRequest, "Invalid Parameters")
                     return@post
                 }
 
-                val gameClient = commandProcessor.addClient(name, version, screenWidth, screenHeight, worldWidth, worldHeight)
+                val gameClient = commandProcessor.addClient(name, version, screenWidth, screenHeight, worldWidth, worldHeight, capabilities)
                 call.respondBytes(byteArrayOf(gameClient.id.toByte()), status = HttpStatusCode.Created)
             }
         }
