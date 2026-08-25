@@ -517,8 +517,12 @@ open class World(
             // so report it directly. The corner-based reconstruction below relies on corners
             // wrapping across world edges, which would fabricate out-of-bounds centres here.
             if (!isWrapping) {
-                val centre = Point(body.position.x.roundToInt(), body.position.y.roundToInt())
-                visibleShapesByClient[clientIdThatOwns(centre)]?.add(VisibleShape(body.shapeId, centre, body.id))
+                // keep the float position so client pixel scaling stays sub-world-unit smooth;
+                // only the region ownership lookup needs the integer grid
+                val gridPoint = Point(body.position.x.roundToInt(), body.position.y.roundToInt())
+                visibleShapesByClient[clientIdThatOwns(gridPoint)]?.add(
+                    VisibleShape(body.shapeId, Vector2f(body.position), body.id)
+                )
                 return@forEachBody
             }
 
@@ -542,11 +546,13 @@ open class World(
             val centre3 = cSW + if (bodyWidth % 2 == 0) Point(nd2_1, -nd2) else Point(n_1d2, -n_1d2)
             val centre4 = cSE + if (bodyWidth % 2 == 0) Point(-nd2, -nd2) else Point(-n_1d2, -n_1d2)
 
-            // add the visible shape to the client's list. dupes will be removed, and this also caters for both wrapping and no wrapping
-            visibleShapesByClient[clientIdThatOwns(cNW)]?.add(VisibleShape(body.shapeId, centre1, body.id))
-            visibleShapesByClient[clientIdThatOwns(cNE)]?.add(VisibleShape(body.shapeId, centre2, body.id))
-            visibleShapesByClient[clientIdThatOwns(cSW)]?.add(VisibleShape(body.shapeId, centre3, body.id))
-            visibleShapesByClient[clientIdThatOwns(cSE)]?.add(VisibleShape(body.shapeId, centre4, body.id))
+            // add the visible shape to the client's list. dupes will be removed, and this also caters for both wrapping and no wrapping.
+            // reconstructed centres are integer world units (derived from grid corners), so promote to float
+            fun floatCentre(p: Point) = Vector2f(p.x.toFloat(), p.y.toFloat())
+            visibleShapesByClient[clientIdThatOwns(cNW)]?.add(VisibleShape(body.shapeId, floatCentre(centre1), body.id))
+            visibleShapesByClient[clientIdThatOwns(cNE)]?.add(VisibleShape(body.shapeId, floatCentre(centre2), body.id))
+            visibleShapesByClient[clientIdThatOwns(cSW)]?.add(VisibleShape(body.shapeId, floatCentre(centre3), body.id))
+            visibleShapesByClient[clientIdThatOwns(cSE)]?.add(VisibleShape(body.shapeId, floatCentre(centre4), body.id))
 
         }
         return visibleShapesByClient

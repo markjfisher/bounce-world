@@ -16,6 +16,8 @@ import io.ktor.server.config.MapApplicationConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.jupiter.api.Test
+import org.joml.Vector2f
+import kotlin.math.roundToInt
 
 class TcpServerCommandTest {
     private val defaultWorldApplicationConfig = MapApplicationConfig(
@@ -45,7 +47,7 @@ class TcpServerCommandTest {
             ),
         )
         world.currentClientVisibleShapes[client.id] = mutableSetOf(
-            VisibleShape(shapeId = 1, position = Point(10, 10), bodyId = 1),
+            VisibleShape(shapeId = 1, position = Vector2f(10f, 10f), bodyId = 1),
         )
         val wcp = WorldCommandProcessor(world, config)
         val server = TcpServer(
@@ -133,7 +135,7 @@ class TcpServerCommandTest {
     fun `v2 clients get single byte coordinates`() {
         val (world, client, wcp) = worldWithClient(version = 2)
         world.currentClientVisibleShapes[client.id] = mutableSetOf(
-            VisibleShape(shapeId = 7, position = Point(100, 50), bodyId = 1),
+            VisibleShape(shapeId = 7, position = Vector2f(100f, 50f), bodyId = 1),
         )
 
         val data = wcp.asBinary(client.id)
@@ -149,7 +151,7 @@ class TcpServerCommandTest {
     fun `v3 clients get little-endian two byte coordinates`() {
         val (world, client, wcp) = worldWithClient(version = 3)
         world.currentClientVisibleShapes[client.id] = mutableSetOf(
-            VisibleShape(shapeId = 7, position = Point(300, 200), bodyId = 1),
+            VisibleShape(shapeId = 7, position = Vector2f(300f, 200f), bodyId = 1),
         )
 
         val data = wcp.asBinary(client.id)
@@ -163,4 +165,32 @@ class TcpServerCommandTest {
         data[4].toUByte().toInt() shouldBe (200 and 0xFF)
         data[5].toUByte().toInt() shouldBe (200 shr 8)
     }
+
+    @Test
+    fun `fractional world positions scale to sub-world-unit pixels`() {
+        val config = WorldConfig(defaultWorldApplicationConfig)
+        val world = WorldFactory.create(config)
+        val client = world.createClient(
+            GameClientInfo(
+                name = "hires",
+                version = 3,
+                screenSize = ScreenSize(320, 192),
+                worldSize = ScreenSize(40, 24),
+            ),
+        )
+        // 15.187 world units * 8 px-per-unit = 121.496 -> 121, not the quantised 15 * 8 = 120
+        world.currentClientVisibleShapes[client.id] = mutableSetOf(
+            VisibleShape(shapeId = 3, position = Vector2f(15.187f, 3.713f), bodyId = 1),
+        )
+
+        val data = wcpFor(world).asBinary(client.id)
+
+        data.size shouldBe 6
+        val x = (data[2].toUByte().toInt()) or (data[3].toUByte().toInt() shl 8)
+        val y = (data[4].toUByte().toInt()) or (data[5].toUByte().toInt() shl 8)
+        x shouldBe 121
+        y shouldBe ((3.713f * (192f / 24f)).roundToInt())
+    }
+
+    private fun wcpFor(world: World) = WorldCommandProcessor(world, WorldConfig(defaultWorldApplicationConfig))
 }

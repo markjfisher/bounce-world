@@ -187,9 +187,12 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                 buf.put(count.toByte())
 
                 for (vs in capped) {
-                    val adjusted = vs.position - gameClient.region.upperLeft
-                    val sx = (adjusted.x * scaleX).roundToInt()
-                    val sy = (adjusted.y * scaleY).roundToInt()
+                    // translate into the client's region, scale float world units to client pixels,
+                    // and only round once, at the final pixel step
+                    val adjustedX = vs.position.x - gameClient.region.upperLeft.x
+                    val adjustedY = vs.position.y - gameClient.region.upperLeft.y
+                    val sx = (adjustedX * scaleX).roundToInt()
+                    val sy = (adjustedY * scaleY).roundToInt()
 
                     buf.put(vs.shapeId.toByte())
                     if (wideCoords) {

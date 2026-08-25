@@ -279,6 +279,29 @@ class WorldTest : StringSpec({
         (world.currentSimulator as BaseBodySimulator).drainAdds()
 
         val visible = world.findVisibleShapesByClient()[client.id].orEmpty()
-        visible shouldContainExactly setOf(VisibleShape(shapeId = 2, position = Point(20, 22), bodyId = 1))
+        visible shouldContainExactly setOf(
+            VisibleShape(shapeId = 2, position = Vector2f(20f, 21.8f), bodyId = 1)
+        )
+    }
+
+    "visible shapes preserve fractional world positions for smooth client scaling" {
+        val world = WorldFactory.create(worldConfig(enableWrapping = false))
+        world.createClient(GameClientInfo(name = "Client 1"))
+
+        val body = Body(
+            id = 1,
+            position = Vector2f(15.187f, 3.713f),
+            velocity = Vector2f(0f, 0f),
+            mass = 1f,
+            radius = 1f,
+            shapeId = 2,
+        )
+        world.currentSimulator.addBodies(listOf(body))
+        (world.currentSimulator as BaseBodySimulator).drainAdds()
+
+        val visible = world.findVisibleShapesByClient().values.single().single()
+        // must NOT be quantised to integer world units before client scaling
+        visible.position.x shouldBe 15.187f
+        visible.position.y shouldBe 3.713f
     }
 })
