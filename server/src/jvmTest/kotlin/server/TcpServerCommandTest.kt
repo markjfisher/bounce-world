@@ -14,6 +14,7 @@ import factory.WorldFactory
 import geometry.Point
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.floats.shouldBeLessThan
+import io.kotest.matchers.ints.shouldBeGreaterThan
 import io.ktor.server.config.MapApplicationConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -118,6 +119,26 @@ class TcpServerCommandTest {
         val payload = server.processCommand("w not-a-number")
 
         server.formatResponse(payload) shouldBe byteArrayOf(0x03, 0x00, 0x00)
+    }
+
+    @Test
+    fun `add-client accepts hex and decimal capability values of any width`() {
+        val (server, _) = tcpServer()
+
+        // high bits well past any current feature; both forms must register successfully
+        listOf("0x8000", "32768", "0x10000", "65536").forEach { caps ->
+            val response = server.processCommand("add-client caps-test,1,40,24,40,24,$caps")
+            response[0].toInt() shouldBeGreaterThan 0
+        }
+    }
+
+    @Test
+    fun `add-client rejects negative or non-numeric capabilities`() {
+        val (server, _) = tcpServer()
+
+        listOf("-1", "not-a-number").forEach { caps ->
+            server.processCommand("add-client caps-test,1,40,24,40,24,$caps") shouldBe byteArrayOf(0)
+        }
     }
 
     private fun worldWithClient(version: Int, capabilities: Int = 0): Triple<World, GameClient, WorldCommandProcessor> {

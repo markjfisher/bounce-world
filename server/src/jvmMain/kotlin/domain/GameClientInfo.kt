@@ -1,9 +1,11 @@
 package domain
 
 /**
- * Client capabilities, negotiated at registration as a bitmask.
+ * Client capabilities, negotiated at registration.
  *
- * Absent or zero means "exact legacy behaviour": 1-byte x/y coordinates and no rotation data.
+ * The value is an integer written as text (decimal or 0x-prefixed hex) in the registration
+ * string — it is never a binary packet field and has no fixed width. Absent or zero means
+ * "exact legacy behaviour": 1-byte x/y coordinates and no rotation data.
  * New features must always be additive bits so old clients never change meaning.
  */
 object ClientCapabilities {

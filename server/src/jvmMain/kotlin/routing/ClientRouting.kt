@@ -36,7 +36,7 @@ fun Application.clientRouting() {
                 val worldHeight = parts.getOrNull(5)?.toIntOrNull()
                 val capabilities = parts.getOrNull(6)?.let {
                     if (it.startsWith("0x", ignoreCase = true)) it.substring(2).toIntOrNull(16) else it.toIntOrNull()
-                }
+                }?.takeIf { caps -> caps >= 0 }
 
                 if (
                     version == null ||

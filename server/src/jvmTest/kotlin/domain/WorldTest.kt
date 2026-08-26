@@ -384,14 +384,18 @@ class WorldTest : StringSpec({
         )
         (world.currentSimulator as BaseBodySimulator).drainAdds()
 
-        // each spawn opposes the remaining drift with fraction [0.5, 1] of the exact cancellation,
-        // so the residual never exceeds half of what it was
+        // worst-case linear momentum a single random spawn can inject (speed = config.initialSpeed)
+        val maxSpawnP = config.initialSpeed * world.shapes.filter { it.sideLength == 2 }.maxOf { it.mass }
+
         repeat(3) {
             val before = netMomentum()
             before shouldBeGreaterThan 0f
             world.addRandomBodyWithSize(2)
             (world.currentSimulator as BaseBodySimulator).drainAdds()
-            netMomentum() shouldBeLessThanOrEqualTo before * 0.5f + 1e-4f
+            val after = netMomentum()
+            // chipping regime: halves the residual. equilibrium regime: at most adds one random
+            // spawn's worth back on top of the tiny residual. both are bounded by this.
+            after shouldBeLessThanOrEqualTo maxOf(before * 0.5f, before + maxSpawnP) + 1e-4f
         }
     }
 
@@ -412,12 +416,22 @@ class WorldTest : StringSpec({
         world.currentSimulator.addBodies(listOf(seeder))
         (world.currentSimulator as BaseBodySimulator).drainAdds()
 
+        // worst-case angular momentum a single random spawn can inject (World.SPAWN_MAX_SPIN = 1 rad/s)
+        val maxSpawnL = world.shapes.filter { it.sideLength == 3 }
+            .maxOf { 0.5f * it.mass * (it.sideLength / 2f) * (it.sideLength / 2f) }
+
         repeat(3) {
             val before = netAngularMomentum()
             before shouldBeGreaterThan 0f
             world.addRandomBodyWithSize(3)
             (world.currentSimulator as BaseBodySimulator).drainAdds()
-            kotlin.math.abs(netAngularMomentum()) shouldBeLessThanOrEqualTo kotlin.math.abs(before) * 0.5f + 1e-4f
+            val after = kotlin.math.abs(netAngularMomentum())
+            // chipping regime: halves the residual. equilibrium regime: at most adds one random
+            // spawn's worth back on top of the tiny residual. both are bounded by this.
+            after shouldBeLessThanOrEqualTo maxOf(
+                kotlin.math.abs(before) * 0.5f,
+                kotlin.math.abs(before) + maxSpawnL,
+            ) + 1e-4f
         }
     }
 })

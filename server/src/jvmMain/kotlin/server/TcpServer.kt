@@ -293,9 +293,12 @@ class TcpServer(
         }
     }
 
-    private fun String.parseCapabilityFlags(): Int? = when {
-        equals("0", ignoreCase = false) -> 0
-        startsWith("0x", ignoreCase = true) -> toIntOrNull(16)?.let { it and 0xFFFF }
-        else -> toIntOrNull()?.let { if (it < 0) null else it }
+    // capabilities arrive as text: decimal or 0x-prefixed hex, any non-negative value
+    private fun String.parseCapabilityFlags(): Int? {
+        val parsed = when {
+            startsWith("0x", ignoreCase = true) -> drop(2).toIntOrNull(16)
+            else -> toIntOrNull()
+        } ?: return null
+        return parsed.takeIf { it >= 0 }
     }
 }
