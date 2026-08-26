@@ -16,6 +16,10 @@ object ClientCapabilities {
     // angle is scaled across a full turn (65535 = 2pi), angular velocity is in 1/256 rad/s
     const val ROTATION = 0x02
 
+    // each shape carries its stable logical simulator body id as a uint32 LE.
+    // All visible wrap copies of one body carry the same id.
+    const val BODY_ID = 0x04
+
     fun has(caps: Int, flag: Int): Boolean = (caps and flag) != 0
 }
 

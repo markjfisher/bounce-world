@@ -237,6 +237,38 @@ class TcpServerCommandTest {
     }
 
     @Test
+    fun `clients with body id capability get stable sorted uint32 ids`() {
+        val (world, client, wcp) = worldWithClient(
+            version = 3,
+            capabilities = ClientCapabilities.WIDE_COORDS or ClientCapabilities.BODY_ID,
+        )
+        world.currentClientVisibleShapes[client.id] = mutableSetOf(
+            VisibleShape(shapeId = 4, position = Vector2f(200f, 20f), bodyId = 9),
+            VisibleShape(shapeId = 1, position = Vector2f(-5f, 20f), bodyId = 3),
+            VisibleShape(shapeId = 1, position = Vector2f(315f, 20f), bodyId = 3),
+        )
+
+        val data = wcp.asBinary(client.id)
+
+        // count + three [shapeId + x16 + y16 + bodyId32] records
+        data.size shouldBe 28
+        data[0].toUByte().toInt() shouldBe 3
+        // body 3 sorts before body 9; its copies sort left-to-right.
+        val firstId = data[6].toUByte().toInt() or
+            (data[7].toUByte().toInt() shl 8) or
+            (data[8].toUByte().toInt() shl 16) or
+            (data[9].toUByte().toInt() shl 24)
+        val secondId = data[15].toUByte().toInt() or
+            (data[16].toUByte().toInt() shl 8) or
+            (data[17].toUByte().toInt() shl 16) or
+            (data[18].toUByte().toInt() shl 24)
+        data[1].toUByte().toInt() shouldBe 1
+        firstId shouldBe 3
+        secondId shouldBe 3
+        data[19].toUByte().toInt() shouldBe 4
+    }
+
+    @Test
     fun `fractional world positions scale to sub-world-unit pixels`() {
         val config = WorldConfig(defaultWorldApplicationConfig)
         val world = WorldFactory.create(config)

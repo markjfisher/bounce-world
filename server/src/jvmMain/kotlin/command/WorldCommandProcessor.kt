@@ -177,18 +177,28 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                 val scaleX = gameClient.screenSize.width.toFloat() / gameClient.region.width
                 val scaleY = gameClient.screenSize.height.toFloat() / gameClient.region.height
 
-                // Cap to 240 shapes to keep count within 1 byte
-                val capped = visibleShapes.take(240)
+                // A MutableSet deliberately removes duplicate copies, but its iteration
+                // order is not a wire contract. Stabilise packets for reproducible
+                // clients/tests; body id is the logical identity and x/y order copies.
+                val capped = visibleShapes
+                    .sortedWith(compareBy<domain.VisibleShape> { it.bodyId }
+                        .thenBy { it.position.x }
+                        .thenBy { it.position.y }
+                        .thenBy { it.shapeId })
+                    .take(240)
                 val count = capped.size
                 val wideCoords = ClientCapabilities.has(gameClient.capabilities, ClientCapabilities.WIDE_COORDS)
                 val rotation = ClientCapabilities.has(gameClient.capabilities, ClientCapabilities.ROTATION)
+                val bodyId = ClientCapabilities.has(gameClient.capabilities, ClientCapabilities.BODY_ID)
                 val coordBytes = if (wideCoords) 2 else 1
 
                 // Layout: [count:byte] then for each shape [shapeId:byte][x][y] plus optional extras:
                 //   wide coords: x/y are 2 bytes (LE short) instead of 1 byte
                 //   rotation:    [angle: uint16 LE][angularVelocity: int16 LE] appended after coordinates;
                 //                angle is scaled across a full turn (65535 = 2pi), omega is 1/256 rad/s
-                val shapeBytes = 1 + coordBytes * 2 + if (rotation) 4 else 0
+                //   body id:     [bodyId: uint32 LE] appended after all pre-existing optional fields.
+                val shapeBytes = 1 + coordBytes * 2 +
+                    (if (rotation) 4 else 0) + (if (bodyId) 4 else 0)
                 val capacity = 1 + count * shapeBytes
                 val buf = ByteBuffer
                     .allocate(capacity)
@@ -220,6 +230,9 @@ class WorldCommandProcessor(private val world: World, private val config: WorldC
                         buf.putShort(angleBits.coerceIn(0, MAX_ANGLE_BITS.toInt()).toShort())
                         val omegaBits = (vs.angularVelocity * ANGULAR_VELOCITY_SCALE).roundToInt()
                         buf.putShort(omegaBits.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort())
+                    }
+                    if (bodyId) {
+                        buf.putInt(vs.bodyId)
                     }
                 }
 
