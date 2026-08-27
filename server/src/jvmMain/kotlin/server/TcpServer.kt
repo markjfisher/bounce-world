@@ -271,7 +271,11 @@ class TcpServer(
             val screenHeight = parts[3].toIntOrNull()
             val worldWidth = parts.getOrNull(4)?.toIntOrNull()
             val worldHeight = parts.getOrNull(5)?.toIntOrNull()
-            val capabilities = parts.getOrNull(6)?.parseCapabilityFlags()
+            val capabilities = if (parts.size == 7) {
+                parts[6].parseCapabilityFlags()
+            } else {
+                0
+            }
 
             if (
                 version == null ||

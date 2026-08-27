@@ -133,6 +133,19 @@ class TcpServerCommandTest {
     }
 
     @Test
+    fun `add-client accepts legacy registrations without capabilities`() {
+        val (server, _) = tcpServer()
+
+        listOf(
+            "legacy-screen,2,80,24",
+            "legacy-world,2,80,24,80,24",
+        ).forEach { registration ->
+            val response = server.processCommand("add-client $registration")
+            response[0].toInt() shouldBeGreaterThan 0
+        }
+    }
+
+    @Test
     fun `add-client rejects negative or non-numeric capabilities`() {
         val (server, _) = tcpServer()
 

@@ -34,9 +34,13 @@ fun Application.clientRouting() {
                 val screenHeight = parts[3].toIntOrNull()
                 val worldWidth = parts.getOrNull(4)?.toIntOrNull()
                 val worldHeight = parts.getOrNull(5)?.toIntOrNull()
-                val capabilities = parts.getOrNull(6)?.let {
-                    if (it.startsWith("0x", ignoreCase = true)) it.substring(2).toIntOrNull(16) else it.toIntOrNull()
-                }?.takeIf { caps -> caps >= 0 }
+                val capabilities = if (parts.size == 7) {
+                    parts[6].let {
+                        if (it.startsWith("0x", ignoreCase = true)) it.substring(2).toIntOrNull(16) else it.toIntOrNull()
+                    }?.takeIf { caps -> caps >= 0 }
+                } else {
+                    0
+                }
 
                 if (
                     version == null ||
